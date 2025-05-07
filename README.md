@@ -48,15 +48,7 @@ What things you need to install the software and how to install them :
 
 1. Clone the git repository
 
-   ```bash
-   git clone https://github.com/map4d/ttdaotaolaixe.git
-   ```
-
 1. Go into the project directory
-
-   ```bash
-   cd ttdaotaolaixe/
-   ```
 
 1. Checkout working branch
 
