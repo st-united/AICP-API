@@ -1,19 +1,19 @@
-import { StatusEnum } from '@Constant/enums';
-
 export class UserDto {
+  username: string;
+
   email: string;
 
-  phone: string;
+  fullName: string;
 
-  status: StatusEnum;
+  avatarUrl?: string;
 
-  name: string;
+  provider?: string;
 
-  password: string;
+  status: boolean;
 
-  dateOfBirth: Date;
+  createdAt: Date;
 
-  address: string;
+  updatedAt: Date;
 
-  identityId: string;
+  deletedAt?: Date;
 }

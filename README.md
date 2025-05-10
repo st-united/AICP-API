@@ -56,10 +56,10 @@ What things you need to install the software and how to install them :
    git checkout <branch>
    ```
 
-1. Install NPM dependencies
+1. Install Yarn dependencies
 
    ```bash
-   npm i
+   yarn install
    ```
 
 1. Copy `.env.example` to `.env`
@@ -74,6 +74,12 @@ What things you need to install the software and how to install them :
 
    ```bash
    docker-compose up -d --build
+   ```
+
+1. Migrate DB
+
+   ```bash
+   npx prisma migrate dev --name init
    ```
 
 ---

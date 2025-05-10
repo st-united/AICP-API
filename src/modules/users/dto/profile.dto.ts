@@ -2,25 +2,29 @@ import { Expose } from 'class-transformer';
 
 export class ProfileDto {
   @Expose()
+  username: string;
+
+  @Expose()
   email: string;
 
   @Expose()
-  phone: string;
+  fullName: string;
 
   @Expose()
-  name: string;
-
-  password: string;
+  avatarUrl?: string;
 
   @Expose()
-  dateOfBirth: Date;
+  provider?: string;
 
   @Expose()
-  address: string;
+  status?: boolean;
 
   @Expose()
-  identityId: string;
+  createdAt?: Date;
 
   @Expose()
-  avatar: string;
+  updatedAt?: Date;
+
+  @Expose()
+  deletedAt?: Date;
 }

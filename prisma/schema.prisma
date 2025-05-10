@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  username     String     @unique
+  email        String     @unique
+  password     String
+  fullName     String     @map("full_name")
+  avatarUrl    String?    @map("avatar_url")
+  provider     String?
+  status       Boolean    @default(true)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+  refreshToken String?    @unique @map("refresh_token")
+  
+  roles        UserRole[]
+
+  @@map("Users")
+}
+
+model Role {
+  id                 String           @id @default(uuid())
+  name               String           @unique
+  description        String?
+  isOrganizationRole Boolean         @default(false) @map("is_organization_role")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  users              UserRole[]
+  permissions        RolePermission[]
+
+  @@map("Roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  slug        String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  roles       RolePermission[]
+
+  @@map("Permissions")
+}
+
+model UserRole {
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("UserRoles")
+}
+
+model RolePermission {
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("RolePermissions")
+}

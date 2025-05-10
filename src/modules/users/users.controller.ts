@@ -25,27 +25,29 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { UserDto } from './dto/user.dto';
-
-@Controller('users')
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CreateUserDto } from './dto/request/create-user.dto';
+import { Public } from '../auth/guards/decorator/public.decorator';
+@ApiTags('users')
 @UseGuards(JwtAccessTokenGuard)
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Public()
   @Post()
+  @ApiOperation({ summary: 'Create a new user' })
   @UseInterceptors(FileInterceptor('avatar', fileOption('users')))
   async create(
     @UploadedFile()
     avatar: Express.Multer.File,
-    @Body() createUserDto
+    @Body() createUserDto: CreateUserDto
   ) {
-    if (!avatar && createUserDto.containFile === 'true') {
-      throw new BadRequestException('Hình ảnh không hợp lệ');
-    }
     return await this.usersService.create(avatar, createUserDto);
   }
 
   @Patch('reset-password/:id')
-  async resetPassword(@Param('id', ParseIntPipe) id: number): Promise<ResponseItem<UserDto>> {
+  async resetPassword(@Param('id', ParseIntPipe) id: string): Promise<ResponseItem<UserDto>> {
     return await this.usersService.resetPassword(id);
   }
 
@@ -70,38 +72,35 @@ export class UsersController {
   }
 
   @Delete(':id')
-  async deleteUser(@Param('id', ParseIntPipe) id: number): Promise<ResponseItem<null>> {
+  async deleteUser(@Param('id', ParseIntPipe) id: string): Promise<ResponseItem<null>> {
     return await this.usersService.deleteUser(id);
   }
 
   @Get(':id')
-  async getUser(@Param('id', ParseIntPipe) id: number): Promise<ResponseItem<UserDto>> {
+  async getUser(@Param('id', ParseIntPipe) id: string): Promise<ResponseItem<UserDto>> {
     return await this.usersService.getUser(id);
   }
 
   @Patch(':id')
-  async update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto
-  ): Promise<ResponseItem<UserDto>> {
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
     return await this.usersService.update(id, updateUserDto);
   }
 
-  @Post('avatar/:identityId')
+  @Post('avatar/:id')
   @UseInterceptors(FileInterceptor('avatar', fileOption('users')))
   async uploadAvatar(
-    @Param('identityId') identityId: string,
+    @Param('id') id: string,
     @UploadedFile()
     avatar: Express.Multer.File
   ): Promise<any> {
     if (avatar) {
-      return await this.usersService.uploadAvatar(identityId, avatar);
+      return await this.usersService.uploadAvatar(id, avatar);
     }
     throw new BadRequestException('Hình ảnh không hợp lệ');
   }
 
-  @Patch('avatar/:identityId')
-  async removeAvatar(@Param('identityId') identityId: string): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.removeAvatar(identityId);
+  @Patch('avatar/:id')
+  async removeAvatar(@Param('id') id: string): Promise<ResponseItem<UserDto>> {
+    return await this.usersService.removeAvatar(id);
   }
 }

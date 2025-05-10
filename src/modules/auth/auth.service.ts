@@ -1,43 +1,41 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
 
-import { UserEntity } from '@UsersModule/entities';
 import { CredentialsDto } from './dto/credentials.dto';
-import { StatusEnum } from '@Constant/enums';
 import { UserPayloadDto } from './dto/user-payload.dto';
 import { JwtPayload } from '@Constant/types';
 import { ResponseItem } from '@app/common/dtos';
 import { TokenDto } from './dto/token.dto';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    @InjectRepository(UserEntity)
-    private userRepository: Repository<UserEntity>
+    private readonly prisma: PrismaService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
-    const user = await this.userRepository.findOneBy({
-      email: credentialsDto.email,
-      status: StatusEnum.ACTIVE,
-      deletedBy: null,
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: credentialsDto.email,
+        status: true,
+        deletedAt: null,
+      },
     });
 
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
 
-    const comparePassword = await bcrypt.compareSync(credentialsDto.password, user.password);
+    const comparePassword = bcrypt.compareSync(credentialsDto.password, user.password);
     if (!comparePassword) throw new UnauthorizedException('Tài khoản không đúng');
 
     return {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.fullName,
     };
   }
 
@@ -53,7 +51,10 @@ export class AuthService {
       expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES'),
     });
 
-    await this.userRepository.update(userPayloadDto.id, { refreshToken });
+    await this.prisma.user.update({
+      where: { id: userPayloadDto.id },
+      data: { refreshToken },
+    });
 
     const data = {
       name: userPayloadDto.name,
@@ -64,9 +65,13 @@ export class AuthService {
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
 
-  async logout(userId: string) {
-    const logout = await this.userRepository.update(userId, { refreshToken: null });
-    if (!logout) {
+  async logout(userId: string): Promise<ResponseItem<string>> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+
+    if (!user) {
       throw new BadRequestException('Đăng xuất không thành công');
     }
 
@@ -74,13 +79,16 @@ export class AuthService {
   }
 
   async refreshToken(token: string): Promise<ResponseItem<TokenDto>> {
-    const user = await this.userRepository.findOneBy({
-      refreshToken: token,
-      status: StatusEnum.ACTIVE,
-      deletedBy: null,
+    const user = await this.prisma.user.findFirst({
+      where: {
+        refreshToken: token,
+        status: true,
+        deletedAt: null,
+      },
     });
 
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
+
     const payload: JwtPayload = { sub: user.id, email: user.email };
 
     const data = {
