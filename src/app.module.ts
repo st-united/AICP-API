@@ -4,10 +4,10 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { UsersModule } from '@UsersModule/users.module';
-import { DatabaseModule } from '@app/config/database.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { XMLMiddleware } from './common/middleware/xml.middleware';
 import { AuthModule } from './modules/auth/auth.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -29,9 +29,9 @@ import { AuthModule } from './modules/auth/auth.module';
         JWT_REFRESH_EXPIRES: Joi.string().required(),
       }),
     }),
-    DatabaseModule,
     UsersModule,
     AuthModule,
+    PrismaModule,
   ],
   providers: [
     {
