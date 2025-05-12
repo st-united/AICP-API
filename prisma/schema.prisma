@@ -9,13 +9,13 @@ datasource db {
 
 model User {
   id           String     @id @default(uuid())
-  username     String     @unique
   email        String     @unique
   password     String
   fullName     String     @map("full_name")
+  phoneNumber  String     @unique @map("phone_number")
   avatarUrl    String?    @map("avatar_url")
   provider     String?
-  status       Boolean    @default(true)
+  status       Boolean    @default(false)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
   deletedAt    DateTime?  @map("deleted_at")

@@ -14,34 +14,27 @@ import { UserDto } from './dto/user.dto';
 import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
+import { UserProviderEnum } from '@Constant/index';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly configService: ConfigService, private readonly prisma: PrismaService) {}
 
-  async create(avatar, params: CreateUserDto): Promise<ResponseItem<UserResponseDto>> {
+  async create(params: CreateUserDto): Promise<ResponseItem<UserResponseDto>> {
     const emailExisted = await this.prisma.user.findUnique({
       where: { email: params.email },
     });
-    const usernameExisted = await this.prisma.user.findUnique({
-      where: { username: params.username },
-    });
-    if (usernameExisted) throw new BadRequestException('Tên đăng nhập đã tồn tại');
 
     if (emailExisted) throw new BadRequestException('Email đã tồn tại');
 
-    if (avatar) {
-      params = { ...params, avatarUrl: avtPathName('users', avatar.filename) };
-    } else {
-      params = { ...params, avatarUrl: null };
-    }
-
-    // Hash the password before saving
     const hashedPassword = await bcrypt.hash(params.password, 10);
     params = { ...params, password: hashedPassword };
 
     const user = await this.prisma.user.create({
-      data: params,
+      data: {
+        ...params,
+        provider: UserProviderEnum.EMAIL,
+      },
     });
     return new ResponseItem(user, 'Tạo mới dữ liệu thành công', UserResponseDto);
   }

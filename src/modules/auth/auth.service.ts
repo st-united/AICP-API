@@ -9,13 +9,17 @@ import { ResponseItem } from '@app/common/dtos';
 import { TokenDto } from './dto/token.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { RegisterUserDto } from './dto/register-user.dto';
+import { UserResponseDto } from '@UsersModule/dto/response/user-response.dto';
+import { UsersService } from '@UsersModule/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private userService: UsersService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
@@ -99,5 +103,13 @@ export class AuthService {
     };
 
     return new ResponseItem(data, 'Làm mới token thành công');
+  }
+
+  async register(params: RegisterUserDto): Promise<ResponseItem<UserResponseDto>> {
+    const user = await this.userService.create(params);
+
+    //Update send email validation later
+
+    return new ResponseItem(user.data, 'Đăng ký thành công', UserResponseDto);
   }
 }

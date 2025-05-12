@@ -1,11 +1,12 @@
 import { ResponseItem } from '@app/common/dtos';
-import { Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
 import { TokenDto } from './dto/token.dto';
 import { JwtAccessTokenGuard } from './guards/jwt-access-token.guard';
 import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { RegisterUserDto } from './dto/register-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -30,5 +31,10 @@ export class AuthController {
   refresh(@Headers('Authorization') auth: string) {
     const token = auth.replace('Bearer ', '');
     return this.authService.refreshToken(token);
+  }
+
+  @Post('register')
+  async register(@Body() params: RegisterUserDto) {
+    return await this.authService.register(params);
   }
 }

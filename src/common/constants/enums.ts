@@ -12,3 +12,9 @@ export enum SortEnum {
   ASC = 'asc',
   DESC = 'desc',
 }
+
+export enum UserProviderEnum {
+  EMAIL = 'EMAIL',
+  GOOGLE = 'GOOGLE',
+  GITHUB = 'GITHUB',
+}

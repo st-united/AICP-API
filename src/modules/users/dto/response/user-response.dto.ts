@@ -6,10 +6,6 @@ import { Exclude, Expose } from 'class-transformer';
 export class UserResponseDto {
   @Expose()
   @ApiProperty()
-  username: string;
-
-  @Expose()
-  @ApiProperty()
   email: string;
 
   @Expose()
@@ -23,6 +19,10 @@ export class UserResponseDto {
   @Expose()
   @ApiProperty({ required: false })
   provider?: string;
+
+  @Expose()
+  @ApiProperty()
+  phoneNumber: string;
 
   @Expose()
   @ApiProperty()
