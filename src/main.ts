@@ -9,6 +9,7 @@ import { AppModule } from '@app/app.module';
 async function bootstrap() {
   const appOptions = { cors: true };
   const app = await NestFactory.create(AppModule, appOptions);
+  console.log('Starting AICP API...');
 
   const configService = app.get(ConfigService);
 
