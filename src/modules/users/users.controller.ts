@@ -40,10 +40,11 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('avatar', fileOption('users')))
   async create(
     @UploadedFile()
-    avatar: Express.Multer.File,
-    @Body() createUserDto: CreateUserDto
+    // avatar: Express.Multer.File,
+    @Body()
+    createUserDto: CreateUserDto
   ) {
-    return await this.usersService.create(avatar, createUserDto);
+    return await this.usersService.create(createUserDto);
   }
 
   @Patch('reset-password/:id')

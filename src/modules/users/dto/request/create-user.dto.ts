@@ -4,10 +4,6 @@ import { IsNotEmpty, IsOptional, IsBoolean, IsDate } from 'class-validator';
 export class CreateUserDto {
   @Expose()
   @IsNotEmpty()
-  username: string;
-
-  @Expose()
-  @IsNotEmpty()
   email: string;
 
   @Expose()
@@ -17,6 +13,10 @@ export class CreateUserDto {
   @Expose()
   @IsNotEmpty()
   fullName: string;
+
+  @Expose()
+  @IsNotEmpty()
+  phoneNumber: string;
 
   @Expose()
   @IsOptional()
@@ -29,7 +29,7 @@ export class CreateUserDto {
   @Expose()
   @IsBoolean()
   @IsOptional()
-  status?: boolean = true;
+  status?: boolean = false;
 
   @Expose()
   @IsOptional()
