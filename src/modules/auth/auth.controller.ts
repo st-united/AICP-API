@@ -3,11 +3,12 @@ import { Body, Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '
 
 import { AuthService } from './auth.service';
 import { TokenDto } from './dto/token.dto';
+import { LoginDto } from './dto/login.dto';
 import { JwtAccessTokenGuard } from './guards/jwt-access-token.guard';
 import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -16,6 +17,10 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @HttpCode(200)
   @Post('login')
+  @ApiOperation({ summary: 'Login for user' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiBody({ type: LoginDto })
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
     return this.authService.login(request.user);
   }
