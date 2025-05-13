@@ -28,7 +28,7 @@ export class EmailService {
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {
     try {
       await this.transporter.sendMail({
-        from: 'no-reply@devplus.com',
+        from: this.configService.get<string>('MAIL_FROM'),
         to,
         subject,
         html,

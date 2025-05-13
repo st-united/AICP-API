@@ -123,7 +123,7 @@ export class AuthService {
     return new ResponseItem(user, 'Đăng ký thành công', UserResponseDto);
   }
 
-  async activateAccount(token: string): Promise<ResponseItem<UserResponseDto>> {
+  async activateAccount(token: string): Promise<ResponseItem<null>> {
     try {
       const decoded = jwt.verify(token, process.env.JWT_ACTIVATE_SECRETKEY) as { userId: string };
 
@@ -136,9 +136,9 @@ export class AuthService {
         throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
       }
 
-      const updateUser = await this.userService.updateUserStatus(user.id, true);
+      await this.userService.updateUserStatus(user.id, true);
 
-      return new ResponseItem(updateUser, 'Kích hoạt tài khoản thành công', UserResponseDto);
+      return new ResponseItem(null, 'Account activation successful');
     } catch (error) {
       throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn');
     }

@@ -212,12 +212,12 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async updateUserStatus(id: string, status: boolean): Promise<UserResponseDto> {
-    const user = await this.prisma.user.update({
+  async updateUserStatus(id: string, status: boolean): Promise<string> {
+    await this.prisma.user.update({
       where: { id },
       data: { status },
     });
 
-    return user;
+    return 'Cập nhật trạng thái thành công';
   }
 }
