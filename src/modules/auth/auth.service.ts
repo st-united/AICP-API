@@ -110,6 +110,6 @@ export class AuthService {
 
     //Update send email validation later
 
-    return new ResponseItem(user.data, 'Đăng ký thành công', UserResponseDto);
+    return new ResponseItem(user, 'Đăng ký thành công', UserResponseDto);
   }
 }

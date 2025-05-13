@@ -20,7 +20,7 @@ import { UserProviderEnum } from '@Constant/index';
 export class UsersService {
   constructor(private readonly configService: ConfigService, private readonly prisma: PrismaService) {}
 
-  async create(params: CreateUserDto): Promise<ResponseItem<UserResponseDto>> {
+  async create(params: CreateUserDto): Promise<UserResponseDto> {
     const emailExisted = await this.prisma.user.findUnique({
       where: { email: params.email },
     });
@@ -36,7 +36,7 @@ export class UsersService {
         provider: UserProviderEnum.EMAIL,
       },
     });
-    return new ResponseItem(user, 'Tạo mới dữ liệu thành công', UserResponseDto);
+    return user;
   }
 
   async resetPassword(id: string): Promise<ResponseItem<UserDto>> {
