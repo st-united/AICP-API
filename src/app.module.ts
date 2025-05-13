@@ -8,6 +8,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { XMLMiddleware } from './common/middleware/xml.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
     UsersModule,
     AuthModule,
     PrismaModule,
+    EmailModule,
   ],
   providers: [
     {
