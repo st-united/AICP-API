@@ -10,6 +10,7 @@ import { JwtAccessTokenStrategy } from './strategies/jwt-access-token.strategy';
 import { JwtRefreshTokenStrategy } from './strategies/jwt-refresh-token.strategy';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersModule } from '@UsersModule/users.module';
+import { ActivationTokenStrategy } from './strategies/activation-token.strategy';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { UsersModule } from '@UsersModule/users.module';
     LocalStrategy,
     JwtAccessTokenStrategy,
     JwtRefreshTokenStrategy,
+    ActivationTokenStrategy,
     ConfigService,
     PrismaService,
   ],

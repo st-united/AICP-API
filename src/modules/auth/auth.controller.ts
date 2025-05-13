@@ -1,5 +1,5 @@
 import { ResponseItem } from '@app/common/dtos';
-import { Body, Controller, Get, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
 import { TokenDto } from './dto/token.dto';
@@ -40,5 +40,10 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid data' })
   async register(@Body() params: RegisterUserDto) {
     return await this.authService.register(params);
+  }
+
+  @Get('activate')
+  async activateAccount(@Query('token') token: string) {
+    return await this.authService.activateAccount(token);
   }
 }
