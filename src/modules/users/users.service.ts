@@ -207,4 +207,17 @@ export class UsersService {
 
     return new ResponseItem(updatedUser, 'Xóa ảnh đại diện thành công');
   }
+
+  async findById(id: string): Promise<UserResponseDto> {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  async updateUserStatus(id: string, status: boolean): Promise<string> {
+    await this.prisma.user.update({
+      where: { id },
+      data: { status },
+    });
+
+    return 'Cập nhật trạng thái thành công';
+  }
 }

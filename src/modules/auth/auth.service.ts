@@ -12,6 +12,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UserResponseDto } from '@UsersModule/dto/response/user-response.dto';
 import { UsersService } from '@UsersModule/users.service';
+import * as jwt from 'jsonwebtoken';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +21,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    private userService: UsersService
+    private readonly userService: UsersService,
+    private readonly emailService: EmailService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
@@ -108,8 +111,36 @@ export class AuthService {
   async register(params: RegisterUserDto): Promise<ResponseItem<UserResponseDto>> {
     const user = await this.userService.create(params);
 
-    //Update send email validation later
+    const activationToken = this.jwtService.sign(
+      { userId: user.id },
+      {
+        secret: this.configService.get<string>('JWT_ACTIVATE_SECRETKEY'),
+        expiresIn: this.configService.get<string>('JWT_ACTIVATE_EXPIRES'),
+      }
+    );
+    await this.emailService.sendActivationEmail(user.fullName, user.email, activationToken);
 
     return new ResponseItem(user, 'Đăng ký thành công', UserResponseDto);
+  }
+
+  async activateAccount(token: string): Promise<ResponseItem<null>> {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_ACTIVATE_SECRETKEY) as { userId: string };
+
+      const user = await this.userService.findById(decoded.userId);
+      if (!user) {
+        throw new BadRequestException('Người dùng không tồn tại');
+      }
+
+      if (user.status) {
+        throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
+      }
+
+      await this.userService.updateUserStatus(user.id, true);
+
+      return new ResponseItem(null, 'Account activation successful');
+    } catch (error) {
+      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn');
+    }
   }
 }
