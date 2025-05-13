@@ -3,8 +3,9 @@ FROM node:16.18.0-alpine
 WORKDIR /app
 
 COPY package*.json /app/
+COPY yarn*.lock /app/
 
-RUN npm install --force
+RUN yarn install
 
 RUN apk update && apk upgrade && apk add --no-cache bash git openjpeg-tools
 

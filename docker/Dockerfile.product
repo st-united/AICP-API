@@ -4,13 +4,15 @@ FROM node:16.18.0-alpine
 WORKDIR /app
 #
 COPY package*.json /app/
+COPY yarn*.lock /app/
+
 # Same as npm install
-RUN npm install --force
+RUN yarn install
 
 RUN apk update && apk upgrade && apk add --no-cache bash git openjpeg-tools
 
 COPY . .
 
-RUN npm run build
+RUN yarn build
 
 CMD [ "node", "dist/main.js" ]
