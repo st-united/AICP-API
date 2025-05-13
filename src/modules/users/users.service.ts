@@ -35,6 +35,15 @@ export class UsersService {
         ...params,
         provider: UserProviderEnum.EMAIL,
       },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phoneNumber: true,
+        status: true,
+        provider: true,
+        avatarUrl: true,
+      },
     });
 
     return user;

@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json /app/
 
-RUN npm install --force
+RUN npm install
 
 RUN apk update && apk upgrade && apk add --no-cache bash git openjpeg-tools
 

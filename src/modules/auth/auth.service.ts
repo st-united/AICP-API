@@ -29,7 +29,7 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: {
         email: credentialsDto.email,
-        status: true,
+        // status: true,
         deletedAt: null,
       },
     });
@@ -37,7 +37,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
 
     const comparePassword = bcrypt.compareSync(credentialsDto.password, user.password);
-    if (!comparePassword) throw new UnauthorizedException('Tài khoản không đúng');
+    if (!comparePassword) throw new UnauthorizedException('Mật khẩu không đúng');
 
     return {
       id: user.id,
