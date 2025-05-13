@@ -14,12 +14,14 @@ import { UserDto } from './dto/user.dto';
 import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
-import { UserProviderEnum } from '@Constant/index';
-import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly configService: ConfigService, private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService
+  ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
     const emailExisted = await this.prisma.user.findUnique({
@@ -209,16 +211,17 @@ export class UsersService {
     return new ResponseItem(updatedUser, 'Xóa ảnh đại diện thành công');
   }
 
-  async findById(id: string): Promise<UserResponseDto> {
-    return this.prisma.user.findUnique({ where: { id } });
-  }
-
-  async updateUserStatus(id: string, status: boolean): Promise<string> {
-    await this.prisma.user.update({
-      where: { id },
-      data: { status },
+  async forgotPassword(email: string): Promise<ResponseItem<any>> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
     });
 
-    return 'Cập nhật trạng thái thành công';
+    if (!user) {
+      throw new BadRequestException('Nhân viên không tồn tại');
+    }
+
+    return new ResponseItem(user, 'Gửi email thành công');
   }
 }
