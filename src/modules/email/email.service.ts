@@ -25,8 +25,8 @@ export class EmailService {
     await this.sendEmail(email, 'Kích hoạt tài khoản DevPlus', template);
   }
 
-  async sendResetPasswordEmail(fullName: string, email: string, id: string, token: string): Promise<void> {
-    const resetLink = `${this.configService.get('FE_APP_URL')}/reset-password?id=${id}&token=${token}`;
+  async sendForgotPasswordEmail(fullName: string, email: string, token: string): Promise<void> {
+    const resetLink = `${this.configService.get('FE_APP_URL')}/reset-password?token=${token}`;
 
     const template = this.generateEmailForgotPasswordTemplate(fullName, resetLink);
     await this.sendEmail(email, 'Quên Mật khẩu', template);
