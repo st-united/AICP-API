@@ -27,8 +27,6 @@ model User {
   exam           Exam[]
   mentor         Mentor[]
   mentor_booking MentorBooking[]
-
-  @@map("users")
 }
 
 model Role {
@@ -41,8 +39,6 @@ model Role {
 
   users       UserRole[]
   permissions RolePermission[]
-
-  @@map("roles")
 }
 
 model Permission {
@@ -54,8 +50,6 @@ model Permission {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   roles RolePermission[]
-
-  @@map("permissions")
 }
 
 model UserRole {
@@ -68,7 +62,6 @@ model UserRole {
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
-  @@map("user_roles")
 }
 
 model RolePermission {
@@ -81,7 +74,6 @@ model RolePermission {
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
-  @@map("role_permissions")
 }
 
 model Question {
@@ -102,8 +94,6 @@ model Question {
   userAnswers     UserAnswer[]
   criteria        Criteria?          @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
   examSetQuestion ExamSetQuestion[]
-
-  @@map("questions")
 }
 
 model Category {
@@ -117,8 +107,6 @@ model Category {
   courses          Course[]
   criteriaCategory CriteriaCategory[]
   categoryDomain   CategoryDomain[]
-
-  @@map("categories")
 }
 
 model QuestionCategory {
@@ -131,7 +119,6 @@ model QuestionCategory {
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([questionId, categoryId])
-  @@map("question_category")
 }
 
 model Course {
@@ -147,8 +134,6 @@ model Course {
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   domain   Domain?  @relation(fields: [domainId], references: [id], onDelete: Cascade)
-
-  @@map("courses")
 }
 
 model AnswerOption {
@@ -161,8 +146,6 @@ model AnswerOption {
 
   question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
   selections UserAnswerSelection[]
-
-  @@map("answer_option")
 }
 
 model UserAnswer {
@@ -178,8 +161,6 @@ model UserAnswer {
   question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   selections UserAnswerSelection[]
-
-  @@map("user_answer")
 }
 
 model UserAnswerSelection {
@@ -192,7 +173,6 @@ model UserAnswerSelection {
   userAnswer   UserAnswer   @relation(fields: [userAnswerId], references: [id], onDelete: Cascade)
 
   @@id([userAnswerId, answerOptionId])
-  @@map("user_answer_selections")
 }
 
 model Criteria {
@@ -205,8 +185,6 @@ model Criteria {
 
   questions  Question[]
   categories CriteriaCategory[]
-
-  @@map("criteria")
 }
 
 model CriteriaCategory {
@@ -219,7 +197,6 @@ model CriteriaCategory {
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([categoryId, criteriaId])
-  @@map("criteria_categories")
 }
 
 model Domain {
@@ -231,8 +208,6 @@ model Domain {
 
   courses    Course[]
   categories CategoryDomain[]
-
-  @@map("domains")
 }
 
 model CategoryDomain {
@@ -245,7 +220,6 @@ model CategoryDomain {
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([categoryId, domainId])
-  @@map("category_domains")
 }
 
 model ExamSet {
@@ -257,8 +231,6 @@ model ExamSet {
 
   exams     Exam[]
   questions ExamSetQuestion[]
-
-  @@map("exam_sets")
 }
 
 model Exam {
@@ -273,8 +245,6 @@ model Exam {
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   examSet ExamSet? @relation(fields: [examSetId], references: [id], onDelete: Cascade)
-
-  @@map("exams")
 }
 
 model ExamSetQuestion {
@@ -288,7 +258,6 @@ model ExamSetQuestion {
   examSet  ExamSet  @relation(fields: [examSetId], references: [id], onDelete: Cascade)
 
   @@id([examSetId, questionId])
-  @@map("exam_set_questions")
 }
 
 model Mentor {
@@ -300,8 +269,6 @@ model Mentor {
 
   user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings MentorBooking[]
-
-  @@map("mentors")
 }
 
 model MentorBooking {
@@ -316,8 +283,6 @@ model MentorBooking {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-
-  @@map("mentor_bookings")
 }
 
 enum QuestionType {
