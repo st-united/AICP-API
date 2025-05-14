@@ -215,14 +215,12 @@ export class UsersService {
     return new ResponseItem(updatedUser, 'Xóa ảnh đại diện thành công');
   }
 
-  async forgotPassword(email: string): Promise<ResponseItem<boolean>> {
+  async sendForgotPassword(email: string): Promise<ResponseItem<boolean>> {
     const user = await this.prisma.user.findUnique({
       where: {
         email,
       },
     });
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (!user) {
       throw new BadRequestException('Người dùng không tồn tại!');
@@ -232,11 +230,43 @@ export class UsersService {
 
     const token: string = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
+      expiresIn: this.configService.get<string>('JWT_FORGOT_PASSWORD_ACTIVATE_EXPIRES'),
     });
 
-    this.emailService.sendResetPasswordEmail(user.fullName, user.email, user.id, token);
+    this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
 
     return new ResponseItem(true, 'Gửi email thành công');
+  }
+  async updateNewPassword(token: string, password: string): Promise<ResponseItem<boolean>> {
+    try {
+      const verifiedToken = this.jwtService.verify(token, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
+      });
+
+      const userId = verifiedToken.sub;
+
+      const foundUser = await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
+
+      const hashedNewPassword = await bcrypt.hash(password, 10);
+
+      await this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          password: hashedNewPassword,
+        },
+      });
+
+      return new ResponseItem(true, 'Đổi mật khẩu thành công!');
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired token', { cause: error });
+    }
   }
 }
