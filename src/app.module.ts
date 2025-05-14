@@ -1,4 +1,4 @@
-import * as Joi from '@hapi/joi';
+import * as Joi from 'joi';
 import { ClassSerializerInterceptor, MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -17,13 +17,13 @@ import { EmailModule } from './modules/email/email.module';
       validationSchema: Joi.object({
         APP_PORT: Joi.number().required(),
 
-        DB_POSTGRE_HOST: Joi.string().required(),
-        DB_POSTGRE_PORT: Joi.number().required(),
-        DB_POSTGRE_USERNAME: Joi.string().required(),
-        DB_POSTGRE_PASSWORD: Joi.string().required(),
-        DB_POSTGRE_DATABASE: Joi.string().required(),
-        DB_POSTGRE_SYNCHRONIZE: Joi.boolean().required(),
-        DB_POSTGRE_LOGGING: Joi.boolean().required(),
+        DB_POSTGRES_HOST: Joi.string().required(),
+        DB_POSTGRES_PORT: Joi.number().required(),
+        DB_POSTGRES_USERNAME: Joi.string().required(),
+        DB_POSTGRES_PASSWORD: Joi.string().required(),
+        DB_POSTGRES_DATABASE: Joi.string().required(),
+        DB_POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
+        DB_POSTGRES_LOGGING: Joi.boolean().required(),
         JWT_ACCESS_SECRETKEY: Joi.string().required(),
         JWT_ACCESS_EXPIRES: Joi.string().required(),
         JWT_REFRESH_SECRETKEY: Joi.string().required(),
