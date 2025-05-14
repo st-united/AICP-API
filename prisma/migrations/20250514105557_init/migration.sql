@@ -10,7 +10,7 @@ CREATE TYPE "MentorBookingStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED', 'C
 -- CreateTable
 CREATE TABLE "users" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "username" VARCHAR NOT NULL,
+    "phoneNumber" VARCHAR NOT NULL,
     "email" VARCHAR NOT NULL,
     "password" VARCHAR NOT NULL,
     "full_name" VARCHAR NOT NULL,
@@ -263,7 +263,7 @@ CREATE TABLE "mentor_bookings" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
+CREATE UNIQUE INDEX "users_phoneNumber_key" ON "users"("phoneNumber");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");

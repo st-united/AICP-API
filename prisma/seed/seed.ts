@@ -117,56 +117,56 @@ async function main() {
   // 4. Create users and assign roles
   const usersData = [
     {
-      username: 'superadmin',
+      phoneNumber: '0901234567',
       email: 'superadmin@example.com',
       fullName: 'Super Admin',
       password: 'SuperAdmin123',
       role: 'super admin',
     },
     {
-      username: 'admin',
+      phoneNumber: '0912345678',
       email: 'admin@example.com',
       fullName: 'Admin User',
       password: 'Admin123',
       role: 'admin',
     },
     {
-      username: 'companyuser',
+      phoneNumber: '0923456789',
       email: 'company@example.com',
       fullName: 'Company Manager',
       password: 'Company123',
       role: 'company',
     },
     {
-      username: 'regularuser',
+      phoneNumber: '0934567890',
       email: 'user@example.com',
       fullName: 'Regular User',
       password: 'User123',
       role: 'user',
     },
     {
-      username: 'mentor1',
+      phoneNumber: '0945678901',
       email: 'mentor1@example.com',
       fullName: 'John Mentor',
       password: 'Mentor123',
       role: 'mentor',
     },
     {
-      username: 'examiner1',
+      phoneNumber: '0956789012',
       email: 'examiner@example.com',
       fullName: 'Eva Examiner',
       password: 'Examiner123',
       role: 'examiner',
     },
     {
-      username: 'user1',
+      phoneNumber: '0967890123',
       email: 'user1@example.com',
       fullName: 'User One',
       password: 'User123',
       role: 'user',
     },
     {
-      username: 'user2',
+      phoneNumber: '0978901234',
       email: 'user2@example.com',
       fullName: 'User Two',
       password: 'User123',
@@ -182,7 +182,7 @@ async function main() {
       where: { email: userData.email },
       update: {},
       create: {
-        username: userData.username,
+        phoneNumber: userData.phoneNumber,
         email: userData.email,
         password: hashedPassword,
         fullName: userData.fullName,
@@ -191,7 +191,7 @@ async function main() {
       },
     });
 
-    userMap[userData.username] = user;
+    userMap[userData.email] = user;
 
     await prisma.userRole.upsert({
       where: {
@@ -641,21 +641,21 @@ async function main() {
   // 13. Create some sample exams
   const examData = [
     {
-      username: 'user1',
+      email: 'user1@example.com',
       examSetName: 'AI Foundations Assessment',
       startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000), // 45 minutes after start
       totalScore: 75.5,
     },
     {
-      username: 'user2',
+      email: 'user2@example.com',
       examSetName: 'AI Ethics and Impact',
       startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       finishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 60 minutes after start
       totalScore: 82.0,
     },
     {
-      username: 'regularuser',
+      email: 'user@example.com',
       examSetName: 'Comprehensive AI Assessment',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // 90 minutes after start
@@ -669,7 +669,7 @@ async function main() {
   for (const data of examData) {
     await prisma.exam.create({
       data: {
-        userId: userMap[data.username].id,
+        userId: userMap[data.email].id,
         examSetId: examSetMap[data.examSetName].id,
         startedAt: data.startedAt,
         finishedAt: data.finishedAt,
@@ -681,11 +681,11 @@ async function main() {
   // 14. Create Mentors
   const mentorsData = [
     {
-      username: 'mentor1',
+      email: 'mentor1@example.com',
       expertise: 'Machine Learning, Deep Learning, Computer Vision',
     },
     {
-      username: 'admin', // Admin can also be a mentor
+      email: 'admin@example.com', // Admin can also be a mentor
       expertise: 'AI Ethics, Responsible AI, Policy',
     },
   ];
@@ -693,7 +693,7 @@ async function main() {
   for (const mentorData of mentorsData) {
     await prisma.mentor.create({
       data: {
-        userId: userMap[mentorData.username].id,
+        userId: userMap[mentorData.email].id,
         expertise: mentorData.expertise,
       },
     });
@@ -708,39 +708,39 @@ async function main() {
 
   const mentorBookingsData = [
     {
-      userUsername: 'regularuser',
-      mentorUsername: 'mentor1',
+      userEmail: 'user@example.com',
+      mentorEmail: 'mentor1@example.com',
       scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days in future
       status: MentorBookingStatus.ACCEPTED,
       notes: 'Discussion about AI career path and required skills',
     },
     {
-      userUsername: 'user1',
-      mentorUsername: 'mentor1',
+      userEmail: 'user1@example.com',
+      mentorEmail: 'mentor1@example.com',
       scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days in future
       status: MentorBookingStatus.PENDING,
       notes: 'Help with practical ML project implementation',
     },
     {
-      userUsername: 'user2',
-      mentorUsername: 'admin',
+      userEmail: 'user2@example.com',
+      mentorEmail: 'admin@example.com',
       scheduledAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days in future
       status: MentorBookingStatus.ACCEPTED,
       notes: 'Guidance on ethical considerations in healthcare AI',
     },
   ];
 
-  const mentorUsernameMap = {};
+  const mentorEmailMap = {};
   for (const mentor of mentors) {
-    const username = mentor.user.username;
-    mentorUsernameMap[username] = mentor;
+    const email = mentor.user.email;
+    mentorEmailMap[email] = mentor;
   }
 
   for (const bookingData of mentorBookingsData) {
     await prisma.mentorBooking.create({
       data: {
-        userId: userMap[bookingData.userUsername].id,
-        mentorId: mentorUsernameMap[bookingData.mentorUsername].id,
+        userId: userMap[bookingData.userEmail].id,
+        mentorId: mentorEmailMap[bookingData.mentorEmail].id,
         scheduledAt: bookingData.scheduledAt,
         status: bookingData.status,
         notes: bookingData.notes,
@@ -751,7 +751,7 @@ async function main() {
   // 16. Create sample user answers
   const sampleUserAnswers = [
     {
-      username: 'user1',
+      email: 'user1@example.com',
       questionIndex: 0, // Single choice question
       answerText: 'Học qua internet (Internet Learning)',
       manualScore: null,
@@ -759,7 +759,7 @@ async function main() {
       answerOptionIndex: 3, // The correct option (Học qua internet)
     },
     {
-      username: 'user1',
+      email: 'user1@example.com',
       questionIndex: 2, // True/false question
       answerText: 'Đúng',
       manualScore: null,
@@ -767,7 +767,7 @@ async function main() {
       answerOptionIndex: 0, // The correct option (Đúng)
     },
     {
-      username: 'user2',
+      email: 'user2@example.com',
       questionIndex: 3, // Essay question
       answerText:
         'Để thiết kế hệ thống AI hỗ trợ chẩn đoán y tế, tôi sẽ xây dựng một hệ thống dựa trên mô hình học sâu kết hợp với quy trình xác thực lâm sàng. Hệ thống sẽ gồm các thành phần: 1) Module thu thập và xử lý dữ liệu hình ảnh y tế, 2) Mô hình AI phân loại và nhận diện bất thường, 3) Hệ thống giải thích kết quả, 4) Interface người dùng thân thiện cho nhân viên y tế. Dữ liệu cần thiết bao gồm datasets hình ảnh y tế được gán nhãn bởi chuyên gia, hồ sơ bệnh án, và thông tin kết quả điều trị. Các thách thức chính bao gồm: bảo mật dữ liệu bệnh nhân, đảm bảo độ chính xác và tin cậy trong chẩn đoán, giải quyết vấn đề thiếu minh bạch trong AI, và tích hợp vào quy trình làm việc hiện tại của các cơ sở y tế.',
@@ -776,7 +776,7 @@ async function main() {
       answerOptionIndex: null, // Essay doesn't have options
     },
     {
-      username: 'regularuser',
+      email: 'user@example.com',
       questionIndex: 4, // Essay question about ethics
       answerText:
         'AI trong tuyển dụng có thể cải thiện hiệu quả quy trình nhưng cũng gây ra nhiều vấn đề đạo đức và xã hội. Trước tiên, AI có thể tạo ra thiên kiến khi được huấn luyện trên dữ liệu lịch sử có thể bất công với các nhóm thiểu số. Thứ hai, việc thiếu minh bạch trong quá trình ra quyết định có thể làm ứng viên cảm thấy bị đối xử bất công. Thứ ba, quá phụ thuộc vào AI có thể dẫn đến việc bỏ lỡ những ứng viên tiềm năng có tài năng nhưng không phù hợp với tiêu chí máy móc. Để giảm thiểu rủi ro, các tổ chức cần: đảm bảo dữ liệu huấn luyện đa dạng và công bằng, thiết lập quy trình kiểm tra và đánh giá thường xuyên, kết hợp đánh giá của con người và AI, cung cấp thông tin minh bạch cho ứng viên, và tuân thủ các quy định pháp lý về quyền riêng tư và công bằng trong tuyển dụng.',
@@ -785,7 +785,7 @@ async function main() {
       answerOptionIndex: null, // Essay doesn't have options
     },
     {
-      username: 'regularuser',
+      email: 'user@example.com',
       questionIndex: 1, // Multiple choice
       answerText: 'GPT-4, Claude, Llama 2',
       manualScore: null,
@@ -798,7 +798,7 @@ async function main() {
   for (const answerData of sampleUserAnswers) {
     const userAnswer = await prisma.userAnswer.create({
       data: {
-        userId: userMap[answerData.username].id,
+        userId: userMap[answerData.email].id,
         questionId: questions[answerData.questionIndex].id,
         answerText: answerData.answerText,
         manualScore: answerData.manualScore,
