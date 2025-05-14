@@ -16,7 +16,12 @@
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "lint:staged": "lint-staged",
     "prepare": "husky install",
-    "seed": "node dist/seed"
+    "db:migrate": "npx prisma migrate dev",
+    "db:reset": "npx prisma migrate reset",
+    "db:pull": "npx prisma db pull --force",
+    "db:seed": "ts-node prisma/seed/seed.ts",
+    "db:studio": "prisma studio",
+    "generateType": "npx prisma generate"
   },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
