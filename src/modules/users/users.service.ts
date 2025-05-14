@@ -17,7 +17,10 @@ import { UserResponseDto } from './dto/response/user-response.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly configService: ConfigService, private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService
+  ) {}
 
   async create(avatar, params: CreateUserDto): Promise<ResponseItem<UserResponseDto>> {
     const emailExisted = await this.prisma.user.findUnique({
