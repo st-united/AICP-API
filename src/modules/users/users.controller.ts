@@ -115,7 +115,7 @@ export class UsersController {
   @ApiTags('users')
   @Public()
   @Post('/forgot-password')
-  async forgotPassword(@Body('email') email: string): Promise<ResponseItem<UserDto>> {
+  async forgotPassword(@Body('email') email: string): Promise<ResponseItem<boolean>> {
     return await this.usersService.forgotPassword(email);
   }
 }

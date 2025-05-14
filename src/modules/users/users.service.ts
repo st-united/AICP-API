@@ -224,6 +224,8 @@ export class UsersService {
       },
     });
 
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     if (!user) {
       throw new BadRequestException('Người dùng không tồn tại!');
     }
@@ -271,7 +273,5 @@ export class UsersService {
       throw new BadRequestException('Invalid or expired token', { cause: error });
     }
     // this.emailService.sendResetPasswordEmail(user.fullName,user.email, user.id);
-
-    return new ResponseItem(user, 'Gửi email thành công');
   }
 }
