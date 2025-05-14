@@ -14,12 +14,16 @@ import { UserDto } from './dto/user.dto';
 import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
+import { JwtPayload } from '@Constant/types';
+import { JwtService } from '@nestjs/jwt';
+import { EmailService } from '@app/modules/email/email.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
     private readonly emailService: EmailService
   ) {}
 
@@ -211,17 +215,28 @@ export class UsersService {
     return new ResponseItem(updatedUser, 'Xóa ảnh đại diện thành công');
   }
 
-  async forgotPassword(email: string): Promise<ResponseItem<any>> {
+  async forgotPassword(email: string): Promise<ResponseItem<boolean>> {
     const user = await this.prisma.user.findUnique({
       where: {
         email,
       },
     });
 
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
+      throw new BadRequestException('Người dùng không tồn tại!');
     }
 
-    return new ResponseItem(user, 'Gửi email thành công');
+    const payload: JwtPayload = { sub: user.id, email: user.email };
+
+    const token: string = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
+      expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
+    });
+
+    this.emailService.sendResetPasswordEmail(user.fullName, user.email, user.id, token);
+
+    return new ResponseItem(true, 'Gửi email thành công');
   }
 }
