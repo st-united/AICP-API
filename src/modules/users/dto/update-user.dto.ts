@@ -21,13 +21,13 @@ export class UpdateUserDto {
   @IsString()
   avatarUrl?: string;
 
-  // @ApiProperty({ description: 'provider', example: 'email' })
+  @ApiProperty({ description: 'provider', example: 'email' })
   @Expose()
   @IsOptional()
   @IsString()
   provider?: string;
 
-  // @ApiProperty({ description: 'status', example: true })
+  @ApiProperty({ description: 'status', example: true })
   @Expose()
   @IsOptional()
   @IsBoolean()

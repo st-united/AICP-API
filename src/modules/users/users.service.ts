@@ -15,6 +15,7 @@ import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { UserProviderEnum } from '@Constant/index';
+import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -129,7 +130,7 @@ export class UsersService {
     return new ResponseItem(result, 'Thành công');
   }
 
-  async updateProfile(id: string, updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
+  async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
