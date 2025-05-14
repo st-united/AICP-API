@@ -224,8 +224,6 @@ export class UsersService {
       },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     if (!user) {
       throw new BadRequestException('Người dùng không tồn tại!');
     }
