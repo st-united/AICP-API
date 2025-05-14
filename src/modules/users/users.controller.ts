@@ -25,7 +25,7 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { UserDto } from './dto/user.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/request/create-user.dto';
 import { Public } from '../auth/guards/decorator/public.decorator';
 @ApiTags('users')
@@ -63,11 +63,17 @@ export class UsersController {
   }
 
   @Get('me')
+  @ApiOperation({ summary: 'Get profile' })
+  @ApiResponse({ status: 201, description: 'Get profile success' })
+  @ApiResponse({ status: 400, description: 'Get profile failed' })
   async getProfile(@Req() req): Promise<ResponseItem<ProfileDto>> {
     return await this.usersService.getProfile(req.user.userId);
   }
 
   @Patch('profile')
+  @ApiOperation({ summary: 'Update profile' })
+  @ApiResponse({ status: 201, description: 'Update profile successfully' })
+  @ApiResponse({ status: 400, description: 'Update profile failed' })
   async updateProfile(@Req() req, @Body() updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
     return await this.usersService.updateProfile(req.user.userId, updateUserDto);
   }
