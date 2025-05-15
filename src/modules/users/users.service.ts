@@ -218,27 +218,32 @@ export class UsersService {
   }
 
   async sendForgotPassword(email: string): Promise<ResponseItem<boolean>> {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
 
-    if (!user) {
-      throw new BadRequestException('Người dùng không tồn tại!');
+      if (!user) {
+        throw new BadRequestException('Người dùng không tồn tại!');
+      }
+
+      const payload: JwtPayload = { sub: user.id, email: user.email };
+
+      const token: string = this.jwtService.sign(payload, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
+        expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
+      });
+
+      await this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
+
+      return new ResponseItem(true, 'Gửi email thành công');
+    } catch (error) {
+      throw new BadRequestException('Cauth a error: ', { cause: error });
     }
-
-    const payload: JwtPayload = { sub: user.id, email: user.email };
-
-    const token: string = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
-    });
-
-    this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
-
-    return new ResponseItem(true, 'Gửi email thành công');
   }
+
   async updateNewPassword(token: string, password: string): Promise<ResponseItem<boolean>> {
     try {
       const verifiedToken = this.jwtService.verify(token, {
