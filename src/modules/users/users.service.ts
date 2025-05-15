@@ -270,6 +270,5 @@ export class UsersService {
     } catch (error) {
       throw new BadRequestException('Invalid or expired token', { cause: error });
     }
-    // this.emailService.sendResetPasswordEmail(user.fullName,user.email, user.id);
   }
 }
