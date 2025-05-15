@@ -34,21 +34,34 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async deleteAllSessions(userId: string) {
-    const sessionKey = `${userId}_*`;
-    await this.redisClient.del(sessionKey);
+    const pattern = `${userId}_*`;
+    let cursor = '0';
+
+    do {
+      const [newCursor, keys] = await this.redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = newCursor;
+      if (keys.length > 0) {
+        await this.redisClient.del(...keys);
+      }
+    } while (cursor !== '0');
   }
 
   async deleteOtherSessions(userId: string, ip: string, userAgent: string): Promise<void> {
     const clientInfo = concatTwoStringWithoutSpecialCharacters(ip, userAgent, '_');
     const currentSessionKey = `${userId}_${clientInfo}`;
+    const pattern = `${userId}_*`;
 
-    // Get all keys matching the userId pattern
-    const allKeys = await this.redisClient.keys(`${userId}_*`);
+    let cursor = '0';
+    // delete all sessions except the current one
+    do {
+      const [newCursor, keys] = await this.redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+      cursor = newCursor;
 
-    // Delete all sessions except the current one
-    const deletePromises = allKeys.filter((key) => key !== currentSessionKey).map((key) => this.redisClient.del(key));
-
-    await Promise.all(deletePromises);
+      const keysToDelete = keys.filter((key) => key !== currentSessionKey);
+      if (keysToDelete.length > 0) {
+        await this.redisClient.del(...keysToDelete);
+      }
+    } while (cursor !== '0');
   }
 
   async getValue(key: string): Promise<string> {
