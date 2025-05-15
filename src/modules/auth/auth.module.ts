@@ -12,12 +12,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersModule } from '@UsersModule/users.module';
 import { ActivationTokenStrategy } from './strategies/activation-token.strategy';
 import { EmailModule } from '../email/email.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
     PassportModule,
     UsersModule,
     EmailModule,
+    RedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

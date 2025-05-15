@@ -47,20 +47,35 @@ export class AuthService {
   }
 
   async login(userPayloadDto: UserPayloadDto): Promise<ResponseItem<TokenDto>> {
+    let refreshToken: string;
     const payload: JwtPayload = { sub: userPayloadDto.id, email: userPayloadDto.email };
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRETKEY'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES'),
+    // Check if user already has a refresh token
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userPayloadDto.id },
+      select: { refreshToken: true },
     });
+
+    if (existingUser) {
+      refreshToken = existingUser.refreshToken;
+    }
+
+    // Only generate new refresh token if one doesn't exist
+    if (!refreshToken) {
+      refreshToken = this.jwtService.sign(payload, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRETKEY'),
+        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES'),
+      });
+
+      await this.prisma.user.update({
+        where: { id: userPayloadDto.id },
+        data: { refreshToken },
+      });
+    }
+
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
       expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES'),
-    });
-
-    await this.prisma.user.update({
-      where: { id: userPayloadDto.id },
-      data: { refreshToken },
     });
 
     const data = {
@@ -72,17 +87,28 @@ export class AuthService {
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
 
-  async logout(userId: string): Promise<ResponseItem<string>> {
+  async logoutWithMessage(userId: string, message: string): Promise<ResponseItem<string>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException(message + ' không thành công');
+    }
+    return new ResponseItem('', message + ' thành công');
+  }
+
+  async logoutAllDevices(userId: string): Promise<ResponseItem<string>> {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: null },
     });
 
     if (!user) {
-      throw new BadRequestException('Đăng xuất không thành công');
+      throw new BadRequestException('Đăng xuất tất cả thiết bị không thành công');
     }
 
-    return new ResponseItem('', 'Đăng xuất thành công');
+    return new ResponseItem('', 'Đăng xuất tất cả thiết bị thành công');
   }
 
   async refreshToken(token: string): Promise<ResponseItem<TokenDto>> {

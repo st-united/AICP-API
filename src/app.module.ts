@@ -9,6 +9,7 @@ import { XMLMiddleware } from './common/middleware/xml.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { EmailModule } from './modules/email/email.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   imports: [
@@ -28,12 +29,17 @@ import { EmailModule } from './modules/email/email.module';
         JWT_ACCESS_EXPIRES: Joi.string().required(),
         JWT_REFRESH_SECRETKEY: Joi.string().required(),
         JWT_REFRESH_EXPIRES: Joi.string().required(),
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().required(),
+        REDIS_SESSION_EXPIRES_IN: Joi.string().required(),
       }),
     }),
     UsersModule,
     AuthModule,
     PrismaModule,
     EmailModule,
+    RedisModule,
   ],
   providers: [
     {
