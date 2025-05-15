@@ -31,6 +31,14 @@ export class UsersService {
 
     if (emailExisted) throw new BadRequestException('Email đã tồn tại');
 
+    if (params.phoneNumber) {
+      const phoneExisted = await this.prisma.user.findUnique({
+        where: { phoneNumber: params.phoneNumber },
+      });
+
+      if (phoneExisted) throw new BadRequestException('Số điện thoại đã tồn tại');
+    }
+
     const hashedPassword = await bcrypt.hash(params.password, 10);
     params = { ...params, password: hashedPassword };
 
