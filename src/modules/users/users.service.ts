@@ -14,14 +14,20 @@ import { UserDto } from './dto/user.dto';
 import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
-import { UserProviderEnum } from '@Constant/index';
+import { JwtPayload } from '@Constant/types';
+import { JwtService } from '@nestjs/jwt';
+import { EmailService } from '@app/modules/email/email.service';
+import { UserProviderEnum } from '@Constant/enums';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
+import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly emailService: EmailService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -231,5 +237,65 @@ export class UsersService {
     });
 
     return 'Cập nhật trạng thái thành công';
+  }
+
+  async sendForgotPassword(email: string): Promise<ResponseItem<boolean>> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: {
+          email,
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('Người dùng không tồn tại!');
+      }
+
+      const payload: JwtPayload = { sub: user.id, email: user.email };
+
+      const token: string = this.jwtService.sign(payload, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
+        expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
+      });
+
+      await this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
+
+      return new ResponseItem(true, 'Gửi email thành công');
+    } catch (error) {
+      throw new BadRequestException('Cauth a error: ', { cause: error });
+    }
+  }
+
+  async updateNewPassword(updateForgotPasswordUserDto: UpdateForgotPasswordUserDto): Promise<ResponseItem<boolean>> {
+    try {
+      const verifiedToken = this.jwtService.verify(updateForgotPasswordUserDto.token, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
+      });
+
+      const userId = verifiedToken.sub;
+
+      const foundUser = await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
+
+      const hashedNewPassword = await bcrypt.hash(updateForgotPasswordUserDto.password, 10);
+
+      await this.prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          password: hashedNewPassword,
+        },
+      });
+
+      return new ResponseItem(true, 'Đổi mật khẩu thành công!');
+    } catch (error) {
+      throw new BadRequestException('Invalid or expired token', { cause: error });
+    }
   }
 }
