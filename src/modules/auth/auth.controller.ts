@@ -47,11 +47,11 @@ export class AuthController {
     return await this.authService.register(params);
   }
 
-  @ApiOperation({ summary: 'Activate User' })
-  @ApiResponse({ status: 201, description: 'Activation successful' })
-  @ApiResponse({ status: 400, description: 'The activation code is invalid or expired.' })
-  @Get('activate')
-  async activateAccount(@Query('token') token: string) {
-    return await this.authService.activateAccount(token);
-  }
+  // @ApiOperation({ summary: 'Activate User' })
+  // @ApiResponse({ status: 201, description: 'Activation successful' })
+  // @ApiResponse({ status: 400, description: 'The activation code is invalid or expired.' })
+  // @Get('activate')
+  // async activateAccount(@Query('token') token: string) {
+  //   return await this.authService.activateAccount(token);
+  // }
 }

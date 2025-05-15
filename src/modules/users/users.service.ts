@@ -17,6 +17,8 @@ import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '@app/modules/email/email.service';
+import { UserProviderEnum } from '@Constant/enums';
+import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 
 @Injectable()
 export class UsersService {

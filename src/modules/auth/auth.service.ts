@@ -123,24 +123,24 @@ export class AuthService {
     return new ResponseItem(user, 'Đăng ký thành công', UserResponseDto);
   }
 
-  async activateAccount(token: string): Promise<ResponseItem<null>> {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_ACTIVATE_SECRETKEY) as { userId: string };
+  // async activateAccount(token: string): Promise<ResponseItem<null>> {
+  //   try {
+  //     const decoded = jwt.verify(token, process.env.JWT_ACTIVATE_SECRETKEY) as { userId: string };
 
-      const user = await this.userService.findById(decoded.userId);
-      if (!user) {
-        throw new BadRequestException('Người dùng không tồn tại');
-      }
+  //     const user = await this.userService.findById(decoded.userId);
+  //     if (!user) {
+  //       throw new BadRequestException('Người dùng không tồn tại');
+  //     }
 
-      if (user.status) {
-        throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
-      }
+  //     if (user.status) {
+  //       throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
+  //     }
 
-      await this.userService.updateUserStatus(user.id, true);
+  //     await this.userService.updateUserStatus(user.id, true);
 
-      return new ResponseItem(null, 'Account activation successful');
-    } catch (error) {
-      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn');
-    }
-  }
+  //     return new ResponseItem(null, 'Account activation successful');
+  //   } catch (error) {
+  //     throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn');
+  //   }
+  // }
 }
