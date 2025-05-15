@@ -10,6 +10,7 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { RedisService } from '../redis/redis.service';
+import { validateDeviceId } from '@app/common/utils/stringUtils';
 
 @Controller('auth')
 export class AuthController {
@@ -28,10 +29,9 @@ export class AuthController {
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
     const loginResponse = await this.authService.login(request.user);
     if (loginResponse) {
-      const deviceId = request.headers['device-id'];
+      const deviceId = validateDeviceId(request.headers['device-id']);
       const ip = request.ip;
-      const userAgent = request.headers['user-agent'];
-      await this.redisService.saveSessionToRedis(request.user.id, deviceId, ip, userAgent);
+      await this.redisService.saveSessionToRedis(request.user.id, deviceId, ip);
     }
     return loginResponse;
   }
@@ -39,9 +39,7 @@ export class AuthController {
   @UseGuards(JwtAccessTokenGuard)
   @Get('logout')
   async logout(@Req() request) {
-    const ip = request.ip;
-    const userAgent = request.headers['user-agent'];
-    await this.redisService.deleteSession(request.user.userId, ip, userAgent);
+    await this.redisService.deleteSession(request.user.userId, request.clientInfo);
     return this.authService.logoutWithMessage(request.user.userId, 'Đăng xuất');
   }
 
@@ -55,9 +53,7 @@ export class AuthController {
   @UseGuards(JwtAccessTokenGuard)
   @Get('logout-others')
   async logoutOtherDevices(@Req() request) {
-    const ip = request.ip;
-    const userAgent = request.headers['user-agent'];
-    await this.redisService.deleteOtherSessions(request.user.userId, ip, userAgent);
+    await this.redisService.deleteOtherSessions(request.user.userId, request.clientInfo);
     return this.authService.logoutWithMessage(request.user.userId, 'Đăng xuất các thiết bị khác');
   }
 

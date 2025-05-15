@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { EmailModule } from './modules/email/email.module';
 import { RedisModule } from './modules/redis/redis.module';
+import { ClientInfoMiddleware } from './common/middleware/client-info.middleware';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { RedisModule } from './modules/redis/redis.module';
         REDIS_PORT: Joi.number().required(),
         REDIS_PASSWORD: Joi.string().required(),
         REDIS_SESSION_EXPIRES_IN: Joi.string().required(),
+        REDIS_SCAN_COUNT: Joi.number().required(),
       }),
     }),
     UsersModule,
@@ -54,5 +56,6 @@ export class AppModule implements NestModule {
       path: 'report-1/import',
       method: RequestMethod.POST,
     });
+    consumer.apply(ClientInfoMiddleware).forRoutes('*path');
   }
 }

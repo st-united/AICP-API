@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from './decorator/public.decorator';
 import { RedisService } from '@app/modules/redis/redis.service';
+import { RequestCustom } from '@app/common/interfaces/request-custom';
 
 @Injectable()
 export class JwtAccessTokenGuard extends AuthGuard('jwt') {
@@ -22,19 +23,18 @@ export class JwtAccessTokenGuard extends AuthGuard('jwt') {
     if (isPublic) return true;
 
     // Run default JWT guard (check token)
-    const can = await super.canActivate(context);
-    if (!can) return false;
+    const isJwtTokenValid = await super.canActivate(context);
+    if (!isJwtTokenValid) return false;
 
     // Get request and authenticated user
-    const req = context.switchToHttp().getRequest();
+    const req = context.switchToHttp().getRequest<RequestCustom>();
     const user = req.user;
 
-    const ip = req.ip;
-    const userAgent = req.headers['user-agent'];
-
-    const allowed = await this.redisService.isSessionExist(user.userId, ip, userAgent);
+    const allowed = await this.redisService.isSessionExist(user.userId, req.clientInfo);
     if (!allowed) {
-      throw new UnauthorizedException('Thiết bị không được phép truy cập');
+      throw new UnauthorizedException(
+        `Unauthorized device attempt - User: ${user.userId}, ip: ${req.ip}, deviceId: ${req.headers['device-id']}`
+      );
     }
     return true;
   }

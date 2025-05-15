@@ -1,15 +1,16 @@
-export const removeSpecialCharacters = (input: string): string => {
-  return input.replace(/[^a-zA-Z0-9\s]/g, ''); // Remove characters that are not letters, digits, or whitespace
+export const sanitizeString = (input: string, pattern: RegExp = /[^a-zA-Z0-9\s]/g): string => {
+  return input.replace(pattern, '');
 };
 
-export const concatTwoStringWithoutSpecialCharacters = (
-  firstString: string,
-  secondString: string,
-  separator: string
-): string => {
+export const validateDeviceId = (deviceId: string | undefined): string => {
+  if (!deviceId) return 'no-device';
+  return deviceId;
+};
+
+export const concatSanitizedStrings = (firstString: string, secondString: string, separator: string): string => {
   // Remove special characters from both strings
-  const sanitizedFirst = removeSpecialCharacters(firstString);
-  const sanitizedSecond = removeSpecialCharacters(secondString);
+  const sanitizedFirst = sanitizeString(firstString);
+  const sanitizedSecond = sanitizeString(secondString);
   // Combine the sanitized strings
   const combined = sanitizedFirst.concat(separator, sanitizedSecond);
 
