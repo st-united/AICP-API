@@ -19,7 +19,10 @@ import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly configService: ConfigService, private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService
+  ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
     const emailExisted = await this.prisma.user.findUnique({
