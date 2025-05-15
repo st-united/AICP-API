@@ -19,6 +19,7 @@ import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '@app/modules/email/email.service';
 import { UserProviderEnum } from '@Constant/enums';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
+import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 
 @Injectable()
 export class UsersService {
@@ -244,9 +245,9 @@ export class UsersService {
     }
   }
 
-  async updateNewPassword(token: string, password: string): Promise<ResponseItem<boolean>> {
+  async updateNewPassword(updateForgotPasswordUserDto: UpdateForgotPasswordUserDto): Promise<ResponseItem<boolean>> {
     try {
-      const verifiedToken = this.jwtService.verify(token, {
+      const verifiedToken = this.jwtService.verify(updateForgotPasswordUserDto.token, {
         secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
       });
 
@@ -260,7 +261,7 @@ export class UsersService {
 
       if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
 
-      const hashedNewPassword = await bcrypt.hash(password, 10);
+      const hashedNewPassword = await bcrypt.hash(updateForgotPasswordUserDto.password, 10);
 
       await this.prisma.user.update({
         where: {

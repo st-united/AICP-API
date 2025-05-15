@@ -124,7 +124,9 @@ export class UsersController {
   @ApiTags('users')
   @Public()
   @Post('/update-forgot-password')
-  async updateForgotPassword(@Body() { token, password }: UpdateForgotPasswordUserDto): Promise<ResponseItem<boolean>> {
-    return await this.usersService.updateNewPassword(token, password);
+  async updateForgotPassword(
+    @Body() updateForgotPasswordUserDto: UpdateForgotPasswordUserDto
+  ): Promise<ResponseItem<boolean>> {
+    return await this.usersService.updateNewPassword(updateForgotPasswordUserDto);
   }
 }
