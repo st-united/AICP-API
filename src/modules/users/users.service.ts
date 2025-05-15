@@ -232,7 +232,7 @@ export class UsersService {
 
     const token: string = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-      expiresIn: this.configService.get<string>('JWT_FORGOT_PASSWORD_ACTIVATE_EXPIRES'),
+      expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
     });
 
     this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
