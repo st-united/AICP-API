@@ -112,10 +112,4 @@ export class UsersController {
   async removeAvatar(@Param('id') id: string): Promise<ResponseItem<UserDto>> {
     return await this.usersService.removeAvatar(id);
   }
-  @ApiTags('users')
-  @Public()
-  @Post('/forgot-password')
-  async forgotPassword(@Body('email') email: string): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.forgotPassword(email);
-  }
 }
