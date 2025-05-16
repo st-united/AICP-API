@@ -13,6 +13,7 @@ import { UsersModule } from '@UsersModule/users.module';
 import { ActivationTokenStrategy } from './strategies/activation-token.strategy';
 import { EmailModule } from '../email/email.module';
 import { RedisModule } from '../redis/redis.module';
+import { TokenService } from './token.service';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { RedisModule } from '../redis/redis.module';
     ActivationTokenStrategy,
     ConfigService,
     PrismaService,
+    TokenService,
   ],
   exports: [AuthService],
 })

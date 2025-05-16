@@ -17,13 +17,13 @@ export class RedisService implements OnModuleDestroy {
   /**
    * Saves a new session to Redis and sets it as online
    * @param userId - The ID of the user
-   * @param deviceId - The ID of the device
+   * @param userAgent - The user agent of the device
    * @param ip - The IP address of the device
    * @throws {Error} If Redis operation fails
    */
-  async saveSessionToRedis(userId: string, deviceId: string, ip: string) {
+  async saveSessionToRedis(userId: string, userAgent: string, ip: string) {
     try {
-      const clientInfo = concatSanitizedStrings(ip, deviceId, '_');
+      const clientInfo = concatSanitizedStrings(ip, userAgent, '_');
       const sessionKey = `${userId}_${clientInfo}`;
 
       await this.setOnlineSession(userId, sessionKey);
@@ -37,7 +37,7 @@ export class RedisService implements OnModuleDestroy {
   /**
    * Checks if a session exists in Redis
    * @param userId - The ID of the user
-   * @param clientInfo - The client information (IP and device ID)
+   * @param clientInfo - The client information (IP and user agent)
    * @returns {Promise<boolean>} True if session exists, false otherwise
    */
   async isSessionExist(userId: string, clientInfo: string): Promise<boolean> {
@@ -54,7 +54,7 @@ export class RedisService implements OnModuleDestroy {
   /**
    * Deletes a specific session from Redis
    * @param userId - The ID of the user
-   * @param clientInfo - The client information (IP and device ID)
+   * @param clientInfo - The client information (IP and user agent)
    * @throws {Error} If Redis operation fails
    */
   async deleteSession(userId: string, clientInfo: string): Promise<void> {
