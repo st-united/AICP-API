@@ -26,8 +26,8 @@ export class AuthController {
     const userAgent = request.headers['user-agent'];
     const ip = request.ip;
     const userPayloadDto = request.user as UserPayloadDto;
-    const UserAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
-    return await this.authService.login(UserAndSessionPayloadDto);
+    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
+    return await this.authService.login(userAndSessionPayloadDto);
   }
 
   @UseGuards(JwtAccessTokenGuard)
