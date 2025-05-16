@@ -25,7 +25,7 @@ export class AuthController {
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
     const userAgent = request.headers['user-agent'];
     const ip = request.ip;
-    const userPayloadDto = request.user as UserPayloadDto;
+    const userPayloadDto: UserPayloadDto = request.user;
     const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
     return await this.authService.login(userAndSessionPayloadDto);
   }
