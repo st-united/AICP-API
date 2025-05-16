@@ -53,7 +53,8 @@
     "rimraf": "6.0.1",
     "rxjs": "7.8.2",
     "tmp": "0.2.3",
-    "typeorm": "0.3.23"
+    "typeorm": "0.3.23",
+    "ioredis": "^5.6.1"
   },
   "devDependencies": {
     "@babel/core": "7.27.1",

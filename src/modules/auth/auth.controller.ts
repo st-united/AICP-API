@@ -22,13 +22,15 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiBody({ type: LoginDto })
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
-    return this.authService.login(request.user);
+    const userAgent = request.headers['user-agent'];
+    const ip = request.ip;
+    return await this.authService.login(request.user, userAgent, ip);
   }
 
   @UseGuards(JwtAccessTokenGuard)
   @Get('logout')
   async logout(@Req() request) {
-    return this.authService.logout(request.user.userId);
+    return this.authService.handleLogout(request.user.userId);
   }
 
   @UseGuards(JwtRefreshTokenGuard)
