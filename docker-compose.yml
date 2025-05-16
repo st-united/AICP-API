@@ -50,6 +50,8 @@ services:
   redis:
     image: redis:8.0.1-alpine
     container_name: ${APP_NAME}-redis
+    env_file:
+      - .env
     ports:
       - ${REDIS_PORT}:${REDIS_PORT}
     command: redis-server --requirepass ${REDIS_PASSWORD}

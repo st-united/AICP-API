@@ -32,6 +32,7 @@ import { ConfigService } from '@nestjs/config';
 })
 export class RedisModule implements OnApplicationShutdown {
   constructor(private readonly moduleRef: ModuleRef) {}
+
   async onApplicationShutdown() {
     const redisClient = this.moduleRef.get<Redis>(REDIS_CLIENT);
     await redisClient.quit();

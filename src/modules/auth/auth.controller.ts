@@ -9,15 +9,11 @@ import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { RedisService } from '../redis/redis.service';
 import { validateDeviceId } from '@app/common/utils/stringUtils';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly redisService: RedisService
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @UseGuards(LocalAuthGuard)
   @HttpCode(200)
@@ -27,34 +23,27 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiBody({ type: LoginDto })
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
-    const loginResponse = await this.authService.login(request.user);
-    if (loginResponse) {
-      const deviceId = validateDeviceId(request.headers['device-id']);
-      const ip = request.ip;
-      await this.redisService.saveSessionToRedis(request.user.id, deviceId, ip);
-    }
-    return loginResponse;
+    const deviceId = validateDeviceId(request.headers['device-id']);
+    const ip = request.ip;
+    return await this.authService.login(request.user, deviceId, ip);
   }
 
   @UseGuards(JwtAccessTokenGuard)
   @Get('logout')
   async logout(@Req() request) {
-    await this.redisService.deleteSession(request.user.userId, request.clientInfo);
-    return this.authService.logoutWithMessage(request.user.userId, 'Đăng xuất');
+    return this.authService.handleLogoutCurrentDevice(request.user.userId, request.clientInfo);
   }
 
   @UseGuards(JwtAccessTokenGuard)
   @Get('logout-all')
   async logoutAllDevices(@Req() request) {
-    await this.redisService.deleteAllSessions(request.user.userId);
-    return this.authService.logoutAllDevices(request.user.userId);
+    return this.authService.handleLogoutAllDevices(request.user.userId);
   }
 
   @UseGuards(JwtAccessTokenGuard)
   @Get('logout-others')
   async logoutOtherDevices(@Req() request) {
-    await this.redisService.deleteOtherSessions(request.user.userId, request.clientInfo);
-    return this.authService.logoutWithMessage(request.user.userId, 'Đăng xuất các thiết bị khác');
+    return this.authService.handleLogoutOtherDevices(request.user.userId, request.clientInfo);
   }
 
   @UseGuards(JwtRefreshTokenGuard)

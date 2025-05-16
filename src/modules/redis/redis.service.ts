@@ -200,7 +200,7 @@ export class RedisService implements OnModuleDestroy {
    * @param value - The value to store
    * @throws {Error} If Redis operation fails
    */
-  async setValue(key: string, value: string) {
+  private async setValue(key: string, value: string) {
     try {
       await this.redisClient.set(key, value);
     } catch (error) {

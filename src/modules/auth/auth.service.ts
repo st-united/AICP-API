@@ -14,6 +14,7 @@ import { UserResponseDto } from '@UsersModule/dto/response/user-response.dto';
 import { UsersService } from '@UsersModule/users.service';
 import * as jwt from 'jsonwebtoken';
 import { EmailService } from '../email/email.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +23,8 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly redisService: RedisService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
@@ -46,7 +48,7 @@ export class AuthService {
     };
   }
 
-  async login(userPayloadDto: UserPayloadDto): Promise<ResponseItem<TokenDto>> {
+  async login(userPayloadDto: UserPayloadDto, deviceId: string, ip: string): Promise<ResponseItem<TokenDto>> {
     let refreshToken: string;
     const payload: JwtPayload = { sub: userPayloadDto.id, email: userPayloadDto.email };
 
@@ -84,21 +86,41 @@ export class AuthService {
       refreshToken,
     };
 
+    await this.redisService.saveSessionToRedis(userPayloadDto.id, deviceId, ip);
+
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
 
-  async logoutWithMessage(userId: string, message: string): Promise<ResponseItem<string>> {
+  async handleLogoutCurrentDevice(userId: string, deviceId: string): Promise<ResponseItem<string>> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
 
     if (!user) {
-      throw new BadRequestException(message + ' không thành công');
+      throw new BadRequestException('Đăng xuất thiết bị không thành công');
     }
-    return new ResponseItem('', message + ' thành công');
+
+    await this.redisService.deleteSession(userId, deviceId);
+
+    return new ResponseItem('', 'Đăng xuất thiết bị thành công');
   }
 
-  async logoutAllDevices(userId: string): Promise<ResponseItem<string>> {
+  async handleLogoutOtherDevices(userId: string, deviceId: string): Promise<ResponseItem<string>> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Đăng xuất tất cả thiết bị khác không thành công');
+    }
+
+    await this.redisService.deleteOtherSessions(userId, deviceId);
+
+    return new ResponseItem('', 'Đăng xuất tất cả thiết bị khác thành công');
+  }
+
+  async handleLogoutAllDevices(userId: string): Promise<ResponseItem<string>> {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: null },
@@ -107,6 +129,8 @@ export class AuthService {
     if (!user) {
       throw new BadRequestException('Đăng xuất tất cả thiết bị không thành công');
     }
+
+    await this.redisService.deleteAllSessions(userId);
 
     return new ResponseItem('', 'Đăng xuất tất cả thiết bị thành công');
   }
