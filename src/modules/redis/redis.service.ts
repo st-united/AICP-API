@@ -3,6 +3,7 @@ import { REDIS_CLIENT } from '@Constant/redis';
 import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { SessionDto } from './dto/session.dto';
 
 /**
  * Service for managing Redis operations related to user sessions
@@ -16,12 +17,11 @@ export class RedisService implements OnModuleDestroy {
 
   /**
    * Saves a new session to Redis and sets it as online
-   * @param userId - The ID of the user
-   * @param userAgent - The user agent of the device
-   * @param ip - The IP address of the device
+   * @param sessionDto - The session data
    * @throws {Error} If Redis operation fails
    */
-  async saveSessionToRedis(userId: string, userAgent: string, ip: string) {
+  async saveSessionToRedis(sessionDto: SessionDto) {
+    const { userId, userAgent, ip } = sessionDto;
     try {
       const clientInfo = concatSanitizedStrings(ip, userAgent, '_');
       await this.redisClient.set(userId, clientInfo);
@@ -34,10 +34,11 @@ export class RedisService implements OnModuleDestroy {
 
   /**
    * Checks if a session exists in Redis
-   * @param userId - The ID of the user
+   * @param sessionDto - The session data
    * @returns {Promise<boolean>} True if session exists, false otherwise
    */
-  async isSessionExist(userId: string, ip: string, userAgent: string): Promise<boolean> {
+  async isSessionExist(sessionDto: SessionDto): Promise<boolean> {
+    const { userId, ip, userAgent } = sessionDto;
     try {
       const clientInfo = concatSanitizedStrings(ip, userAgent, '_');
       const session = await this.redisClient.get(userId);

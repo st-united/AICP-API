@@ -3,3 +3,9 @@ export class UserPayloadDto {
   email: string;
   name: string;
 }
+
+export class UserAndSessionPayloadDto {
+  userPayloadDto: UserPayloadDto;
+  userAgent: string;
+  ip: string;
+}
