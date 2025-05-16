@@ -24,10 +24,8 @@ export class RedisService implements OnModuleDestroy {
   async saveSessionToRedis(userId: string, userAgent: string, ip: string) {
     try {
       const clientInfo = concatSanitizedStrings(ip, userAgent, '_');
-      const sessionKey = `${userId}_${clientInfo}`;
-
-      await this.setOnlineSession(userId, sessionKey);
-      await this.redisClient.expire(sessionKey, this.configService.get<number>('REDIS_SESSION_EXPIRES_IN'));
+      await this.redisClient.set(userId, clientInfo);
+      await this.redisClient.expire(userId, this.configService.get<number>('REDIS_SESSION_EXPIRES_IN'));
     } catch (error) {
       Logger.error(`Error saving session to Redis: ${error.message}`, error.stack);
       throw error;
@@ -37,14 +35,14 @@ export class RedisService implements OnModuleDestroy {
   /**
    * Checks if a session exists in Redis
    * @param userId - The ID of the user
-   * @param clientInfo - The client information (IP and user agent)
    * @returns {Promise<boolean>} True if session exists, false otherwise
    */
-  async isSessionExist(userId: string, clientInfo: string): Promise<boolean> {
+  async isSessionExist(userId: string, ip: string, userAgent: string): Promise<boolean> {
     try {
-      const sessionKey = `${userId}_${clientInfo}`;
-      const exists = await this.redisClient.exists(sessionKey);
-      return !!exists;
+      const clientInfo = concatSanitizedStrings(ip, userAgent, '_');
+      const session = await this.redisClient.get(userId);
+
+      return session === clientInfo;
     } catch (error) {
       Logger.error(`Error checking session existence: ${error.message}`, error.stack);
       return false;
@@ -54,127 +52,13 @@ export class RedisService implements OnModuleDestroy {
   /**
    * Deletes a specific session from Redis
    * @param userId - The ID of the user
-   * @param clientInfo - The client information (IP and user agent)
    * @throws {Error} If Redis operation fails
    */
-  async deleteSession(userId: string, clientInfo: string): Promise<void> {
+  async deleteSession(userId: string): Promise<void> {
     try {
-      const sessionKey = `${userId}_${clientInfo}`;
-      await this.redisClient.del(sessionKey);
+      await this.redisClient.del(userId);
     } catch (error) {
       Logger.error(`Error deleting session: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  /**
-   * Scans Redis for keys matching a pattern
-   * @param pattern - The pattern to match keys against
-   * @returns {Promise<string[]>} Array of matching keys
-   */
-  private async scanKeys(pattern: string): Promise<string[]> {
-    let cursor = '0';
-    const keys: string[] = [];
-
-    do {
-      const [newCursor, foundKeys] = await this.redisClient.scan(
-        cursor,
-        'MATCH',
-        pattern,
-        'COUNT',
-        this.configService.get<number>('REDIS_SCAN_COUNT')
-      );
-      cursor = newCursor;
-      keys.push(...foundKeys);
-    } while (cursor !== '0');
-
-    return keys;
-  }
-
-  /**
-   * Updates multiple sessions with a given status
-   * @param keys - Array of session keys to update
-   * @param status - The status to set ('online' or 'offline')
-   */
-  private async updateMultipleSessions(keys: string[], status: 'online' | 'offline'): Promise<void> {
-    if (keys.length > 0) {
-      const updatePromises = keys.map((key) => this.setValue(key, status));
-      await Promise.all(updatePromises);
-    }
-  }
-
-  /**
-   * Gets all session keys containing a specific user ID
-   * @param userId - The ID of the user
-   * @returns {Promise<string[]>} Array of session keys
-   */
-  async getAllSessionKeysContainingUserId(userId: string): Promise<string[]> {
-    return this.scanKeys(`*${userId}*`);
-  }
-
-  /**
-   * Deletes all sessions for a specific user
-   * @param userId - The ID of the user
-   * @throws {Error} If Redis operation fails
-   */
-  async deleteAllSessions(userId: string): Promise<void> {
-    try {
-      const keys = await this.scanKeys(`${userId}_*`);
-      if (keys.length > 0) {
-        await this.redisClient.del(...keys);
-      }
-    } catch (error) {
-      Logger.error(`Error deleting all sessions: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  /**
-   * Deletes all sessions except the current one for a user
-   * @param userId - The ID of the user
-   * @param currentSessionKey - The key of the current session to keep
-   * @throws {Error} If Redis operation fails
-   */
-  async deleteOtherSessions(userId: string, currentSessionKey: string): Promise<void> {
-    try {
-      const keys = await this.scanKeys(`${userId}_*`);
-      const keysToDelete = keys.filter((key) => key !== currentSessionKey);
-      if (keysToDelete.length > 0) {
-        await this.redisClient.del(...keysToDelete);
-      }
-    } catch (error) {
-      Logger.error(`Error deleting other sessions: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  /**
-   * Sets a session as online and all other sessions as offline
-   * @param userId - The ID of the user
-   * @param sessionKey - The key of the session to set as online
-   * @throws {Error} If Redis operation fails
-   */
-  async setOnlineSession(userId: string, sessionKey: string): Promise<void> {
-    try {
-      await this.setValue(sessionKey, 'online');
-      const otherSessions = (await this.scanKeys(`${userId}_*`)).filter((key) => key !== sessionKey);
-      await this.updateMultipleSessions(otherSessions, 'offline');
-    } catch (error) {
-      Logger.error(`Error setting online session: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  /**
-   * Sets a session as offline
-   * @param sessionKey - The key of the session to set as offline
-   * @throws {Error} If Redis operation fails
-   */
-  async setOfflineSession(sessionKey: string): Promise<void> {
-    try {
-      await this.setValue(sessionKey, 'offline');
-    } catch (error) {
-      Logger.error(`Error setting offline session: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -200,7 +84,7 @@ export class RedisService implements OnModuleDestroy {
    * @param value - The value to store
    * @throws {Error} If Redis operation fails
    */
-  private async setValue(key: string, value: string) {
+  async setValue(key: string, value: string) {
     try {
       await this.redisClient.set(key, value);
     } catch (error) {
@@ -230,8 +114,6 @@ export class RedisService implements OnModuleDestroy {
    */
   async onModuleDestroy(): Promise<void> {
     try {
-      const allSessions = await this.scanKeys('*_*_*');
-      await this.updateMultipleSessions(allSessions, 'offline');
       await this.redisClient.quit();
     } catch (error) {
       Logger.error('Error during Redis shutdown:', error);

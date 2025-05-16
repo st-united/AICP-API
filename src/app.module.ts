@@ -10,7 +10,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { EmailModule } from './modules/email/email.module';
 import { RedisModule } from './modules/redis/redis.module';
-import { ClientInfoMiddleware } from './common/middleware/client-info.middleware';
 
 @Module({
   imports: [
@@ -56,6 +55,5 @@ export class AppModule implements NestModule {
       path: 'report-1/import',
       method: RequestMethod.POST,
     });
-    consumer.apply(ClientInfoMiddleware).forRoutes('*path');
   }
 }

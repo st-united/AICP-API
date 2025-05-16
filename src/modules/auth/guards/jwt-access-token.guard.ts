@@ -29,12 +29,12 @@ export class JwtAccessTokenGuard extends AuthGuard('jwt') {
     // Get request and authenticated user
     const req = context.switchToHttp().getRequest<RequestCustom>();
     const user = req.user;
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
 
-    const allowed = await this.redisService.isSessionExist(user.userId, req.clientInfo);
+    const allowed = await this.redisService.isSessionExist(user.userId, ip, userAgent);
     if (!allowed) {
-      throw new UnauthorizedException(
-        `Unauthorized device attempt - User: ${user.userId}, ip: ${req.ip}, deviceId: ${req.headers['device-id']}`
-      );
+      throw new UnauthorizedException('Tài khoản của bạn đang được đăng nhập ở nơi khác');
     }
     return true;
   }

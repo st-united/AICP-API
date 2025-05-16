@@ -75,7 +75,6 @@ export class AuthService {
     }
     // check if refresh token is expired
     const isRefreshTokenExpired = this.tokenService.checkExpiredToken(refreshToken, 'refresh');
-    console.log('isRefreshTokenExpired', isRefreshTokenExpired);
 
     if (isRefreshTokenExpired) {
       refreshToken = this.tokenService.generateRefreshToken(payload);
@@ -98,48 +97,19 @@ export class AuthService {
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
 
-  async handleLogoutCurrentDevice(userId: string, deviceId: string): Promise<ResponseItem<string>> {
-    const user = await this.prisma.user.findUnique({
+  async handleLogout(userId: string): Promise<ResponseItem<string>> {
+    const user = await this.prisma.user.update({
       where: { id: userId },
+      data: { refreshToken: null },
     });
 
     if (!user) {
       throw new BadRequestException('Đăng xuất thiết bị không thành công');
     }
 
-    await this.redisService.deleteSession(userId, deviceId);
+    await this.redisService.deleteSession(userId);
 
     return new ResponseItem('', 'Đăng xuất thiết bị thành công');
-  }
-
-  async handleLogoutOtherDevices(userId: string, deviceId: string): Promise<ResponseItem<string>> {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
-    });
-
-    if (!user) {
-      throw new BadRequestException('Đăng xuất tất cả thiết bị khác không thành công');
-    }
-
-    await this.redisService.deleteOtherSessions(userId, deviceId);
-
-    return new ResponseItem('', 'Đăng xuất tất cả thiết bị khác thành công');
-  }
-
-  async handleLogoutAllDevices(userId: string): Promise<ResponseItem<string>> {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
-    });
-
-    if (!user) {
-      throw new BadRequestException('Đăng xuất tất cả thiết bị không thành công');
-    }
-
-    await this.redisService.deleteAllSessions(userId);
-
-    return new ResponseItem('', 'Đăng xuất tất cả thiết bị thành công');
   }
 
   async refreshToken(token: string): Promise<ResponseItem<TokenDto>> {

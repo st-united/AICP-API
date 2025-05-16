@@ -28,21 +28,9 @@ export class AuthController {
   }
 
   @UseGuards(JwtAccessTokenGuard)
-  @Get('logout-current')
-  async logoutCurrentDevice(@Req() request) {
-    return this.authService.handleLogoutCurrentDevice(request.user.userId, request.clientInfo);
-  }
-
-  @UseGuards(JwtAccessTokenGuard)
-  @Get('logout-all')
-  async logoutAllDevices(@Req() request) {
-    return this.authService.handleLogoutAllDevices(request.user.userId);
-  }
-
-  @UseGuards(JwtAccessTokenGuard)
-  @Get('logout-others')
-  async logoutOtherDevices(@Req() request) {
-    return this.authService.handleLogoutOtherDevices(request.user.userId, request.clientInfo);
+  @Get('logout')
+  async logout(@Req() request) {
+    return this.authService.handleLogout(request.user.userId);
   }
 
   @UseGuards(JwtRefreshTokenGuard)
