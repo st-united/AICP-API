@@ -5,6 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from './decorator/public.decorator';
 import { RedisService } from '@app/modules/redis/redis.service';
 import { RequestCustom } from '@app/common/interfaces/request-custom';
+import { SessionDto } from '@app/modules/redis/dto/session.dto';
 
 @Injectable()
 export class JwtAccessTokenGuard extends AuthGuard('jwt') {
@@ -22,18 +23,16 @@ export class JwtAccessTokenGuard extends AuthGuard('jwt') {
     ]);
     if (isPublic) return true;
 
-    // Run default JWT guard (check token)
     const isJwtTokenValid = await super.canActivate(context);
     if (!isJwtTokenValid) return false;
 
-    // Get request and authenticated user
     const req = context.switchToHttp().getRequest<RequestCustom>();
     const user = req.user;
     const ip = req.ip;
     const userAgent = req.headers['user-agent'];
-
-    const allowed = await this.redisService.isSessionExist(user.userId, ip, userAgent);
-    if (!allowed) {
+    const sessionDto: SessionDto = { userId: user.userId, ip, userAgent };
+    const isSessionValid = await this.redisService.isSessionExist(sessionDto);
+    if (!isSessionValid) {
       throw new UnauthorizedException('Tài khoản của bạn đang được đăng nhập ở nơi khác');
     }
     return true;

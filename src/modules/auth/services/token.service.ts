@@ -4,7 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from '@Constant/types';
 
 /**
- * Service for handling JWT token operations
+ * Service for handling JWT token operations including generation, verification, and management of access tokens,
+ * refresh tokens, and activation tokens.
  * @class TokenService
  */
 @Injectable()
@@ -43,29 +44,6 @@ export class TokenService {
   }
 
   /**
-   * Verifies if a token is valid
-   * @param {string} token - The token to verify
-   * @param {string} secretKey - The secret key to use for verification
-   * @returns {JwtPayload} The decoded token payload
-   * @throws {UnauthorizedException} If the token is invalid or expired
-   * @example
-   * try {
-   *   const payload = verifyToken(token, 'JWT_ACCESS_SECRETKEY');
-   * } catch (error) {
-   *   // Handle invalid token
-   * }
-   */
-  verifyToken(token: string, secretKey: string): JwtPayload {
-    try {
-      return this.jwtService.verify(token, {
-        secret: this.configService.get<string>(secretKey),
-      });
-    } catch (error) {
-      throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
-    }
-  }
-
-  /**
    * Decodes a token without verification
    * @param {string} token - The token to decode
    * @returns {JwtPayload} The decoded token payload
@@ -91,6 +69,49 @@ export class TokenService {
         expiresIn: this.configService.get<string>('JWT_ACTIVATE_EXPIRES'),
       }
     );
+  }
+
+  /**
+   * Verifies if a token is valid
+   * @param {string} token - The token to verify
+   * @returns {JwtPayload} The decoded token payload
+   * @throws {UnauthorizedException} If the token is invalid or expired
+   * @example
+   * try {
+   *   const payload = verifyAccessToken(token);
+   * } catch (error) {
+   *   // Handle invalid token
+   * }
+   */
+  verifyAccessToken<T extends object = any>(token: string): T {
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
+      });
+    } catch (error) {
+      throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
+    }
+  }
+
+  /**
+   * Verifies if a token is valid
+   * @param {string} token - The token to verify
+   * @returns {JwtPayload} The decoded token payload
+   * @example
+   * try {
+   *   const payload = verifyRefreshToken(token);
+   * } catch (error) {
+   *   // Handle invalid token
+   * }
+   */
+  verifyRefreshToken<T extends object = any>(token: string): T {
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRETKEY'),
+      });
+    } catch (error) {
+      throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
+    }
   }
 
   /**
@@ -120,10 +141,10 @@ export class TokenService {
    * Checks if a token is expired
    * @param {string} token - The token to check
    * @param {'access' | 'refresh'} type - The type of token to check ('access' or 'refresh')
-   * @returns {boolean} True if token is expired, false otherwise
+   * @returns {boolean} True if token is valid and not expired, false otherwise
    * @example
-   * const isExpired = checkExpiredToken(accessToken, 'access');
-   * if (isExpired) {
+   * const isValid = checkExpiredToken(accessToken, 'access');
+   * if (!isValid) {
    *   // Handle expired token
    * }
    */
@@ -132,9 +153,9 @@ export class TokenService {
       this.jwtService.verify(token, {
         secret: this.configService.get<string>(type === 'access' ? 'JWT_ACCESS_SECRETKEY' : 'JWT_REFRESH_SECRETKEY'),
       });
-      return false;
-    } catch (error) {
       return true;
+    } catch (error) {
+      return false;
     }
   }
 }

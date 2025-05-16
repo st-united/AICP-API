@@ -1,13 +1,11 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { CredentialsDto } from './dto/credentials.dto';
-import { UserPayloadDto } from './dto/user-payload.dto';
+import { UserPayloadDto, UserAndSessionPayloadDto } from './dto/user-payload.dto';
 import { JwtPayload } from '@Constant/types';
 import { ResponseItem } from '@app/common/dtos';
 import { TokenDto } from './dto/token.dto';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UserResponseDto } from '@UsersModule/dto/response/user-response.dto';
@@ -15,13 +13,12 @@ import { UsersService } from '@UsersModule/users.service';
 import * as jwt from 'jsonwebtoken';
 import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
-import { TokenService } from './token.service';
+import { TokenService } from './services/token.service';
+import { SessionDto } from '../redis/dto/session.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
@@ -50,11 +47,11 @@ export class AuthService {
     };
   }
 
-  async login(userPayloadDto: UserPayloadDto, userAgent: string, ip: string): Promise<ResponseItem<TokenDto>> {
+  async login(UserAndSessionPayloadDto: UserAndSessionPayloadDto): Promise<ResponseItem<TokenDto>> {
+    const { userPayloadDto, userAgent, ip } = UserAndSessionPayloadDto;
     let refreshToken: string;
     const payload: JwtPayload = { sub: userPayloadDto.id, email: userPayloadDto.email };
 
-    // Check if user already has a refresh token
     const existingUser = await this.prisma.user.findUnique({
       where: { id: userPayloadDto.id },
       select: { refreshToken: true },
@@ -64,7 +61,6 @@ export class AuthService {
       refreshToken = existingUser.refreshToken;
     }
 
-    // Only generate new refresh token if one doesn't exist
     if (!refreshToken) {
       refreshToken = this.tokenService.generateRefreshToken(payload);
 
@@ -73,7 +69,6 @@ export class AuthService {
         data: { refreshToken },
       });
     }
-    // check if refresh token is expired
     const isRefreshTokenExpired = this.tokenService.checkExpiredToken(refreshToken, 'refresh');
 
     if (isRefreshTokenExpired) {
@@ -92,7 +87,8 @@ export class AuthService {
       refreshToken,
     };
 
-    await this.redisService.saveSessionToRedis(userPayloadDto.id, userAgent, ip);
+    const sessionDto: SessionDto = { userId: userPayloadDto.id, userAgent, ip };
+    await this.redisService.saveSessionToRedis(sessionDto);
 
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
