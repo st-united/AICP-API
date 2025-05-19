@@ -16,12 +16,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { UserProviderEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
+import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly configService: ConfigService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly googleCloudStorageService: GoogleCloudStorageService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -197,13 +199,16 @@ export class UsersService {
       throw new BadRequestException('Nhân viên không tồn tại');
     }
 
+    const avatarUrl = await this.googleCloudStorageService.uploadFile(file, avtPathName('avatars', file.filename));
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: { avatarUrl: avtPathName('users', file.filename) },
+      data: { avatarUrl },
     });
 
-    if (fs.existsSync(user.avatarUrl)) {
-      fs.unlinkSync(user.avatarUrl);
+    // Clean up local file if it exists
+    if (file.path && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
     }
 
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');

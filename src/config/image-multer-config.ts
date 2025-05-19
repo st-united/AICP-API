@@ -1,21 +1,17 @@
 import { diskStorage } from 'multer';
+import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 
-const ACCEPTED_FILE: string[] = ['jpeg', 'jp2', 'jpeg'];
+const ACCEPTED_FILE: string[] = ['jpeg', 'jp2', 'jpeg', 'webp', 'png'];
 const MAX_SIZE_FILE = 524288;
 
-export const fileOption = (module) => {
+export const fileOption = () => {
   return process.env.STORAGE_LOCATED === 'LOCAL'
     ? {
         storage: diskStorage({
-          destination: async function (req, file, cb) {
-            const destination = `uploads/${module}/`;
-            !fs.existsSync(`${destination}`) && fs.mkdirSync(`${destination}`, { recursive: true });
-            cb(null, `${destination}`);
-          },
           filename: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 100);
-            cb(null, file.originalname.split('.')[0] + '-' + uniqueSuffix + `.${file.mimetype.split('/').at(-1)}`);
+            const fileExtension = file.mimetype.split('/').at(-1);
+            cb(null, `${uuidv4()}.${fileExtension}`);
           },
         }),
         fileFilter: (req, file, cb) => {
