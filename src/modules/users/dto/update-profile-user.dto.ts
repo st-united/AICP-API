@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateProfileUserDto {
   @ApiProperty({ description: 'fullName', example: 'Nguyen Van A' })
@@ -20,28 +20,4 @@ export class UpdateProfileUserDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
-
-  @ApiProperty({ description: 'Date of birth in ISO format', example: '2021-01-01T00:00:00.000Z' })
-  @Expose()
-  @IsOptional()
-  @IsDateString({}, { message: 'Date of birth must be a valid ISO date string' })
-  dob?: string;
-
-  @ApiProperty({ description: 'country', example: 'Vietnam' })
-  @Expose()
-  @IsOptional()
-  @IsString()
-  country?: string;
-
-  @ApiProperty({ description: 'province', example: 'Hanoi' })
-  @Expose()
-  @IsOptional()
-  @IsString()
-  province?: string;
-
-  @ApiProperty({ description: 'job', example: 'Developer' })
-  @Expose()
-  @IsOptional()
-  @IsString()
-  job?: string;
 }

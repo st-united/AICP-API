@@ -22,12 +22,6 @@ model User {
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken String?   @unique @map("refresh_token") @db.VarChar
 
-  dob          DateTime? @map("dob") @db.Timestamptz(6) 
-  country      String?   @db.VarChar                     
-  province     String?   @db.VarChar                      
-  job          String?   @db.VarChar                      
-  referralCode String?   @unique @map("referral_code") @db.VarChar
-
   roles          UserRole[]
   userAnswer     UserAnswer[]
   exam           Exam[]
