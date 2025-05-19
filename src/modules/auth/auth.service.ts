@@ -156,7 +156,7 @@ export class AuthService {
 
       await this.userService.updateUserStatus(user.id, true);
 
-      return new ResponseItem(null, 'Account activation successful');
+      return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {
       throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn');
     }
