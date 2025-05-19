@@ -142,6 +142,22 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
+      select: {
+        email: true,
+        fullName: true,
+        avatarUrl: true,
+        provider: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+        phoneNumber: true,
+        dob: true,
+        country: true,
+        province: true,
+        job: true,
+        referralCode: true,
+      },
     });
 
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công');
