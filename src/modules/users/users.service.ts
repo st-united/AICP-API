@@ -20,6 +20,7 @@ import { EmailService } from '@app/modules/email/email.service';
 import { UserProviderEnum } from '@Constant/enums';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
+import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 
 @Injectable()
 export class UsersService {
@@ -27,7 +28,8 @@ export class UsersService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly googleCloudStorageService: GoogleCloudStorageService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -211,13 +213,16 @@ export class UsersService {
       throw new BadRequestException('Nhân viên không tồn tại');
     }
 
+    const avatarUrl = await this.googleCloudStorageService.uploadFile(file, avtPathName('avatars', file.filename));
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: { avatarUrl: avtPathName('users', file.filename) },
+      data: { avatarUrl },
     });
 
-    if (fs.existsSync(user.avatarUrl)) {
-      fs.unlinkSync(user.avatarUrl);
+    // Clean up local file if it exists
+    if (file.path && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
     }
 
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
