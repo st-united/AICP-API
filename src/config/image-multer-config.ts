@@ -1,6 +1,5 @@
 import { diskStorage } from 'multer';
 import { v4 as uuidv4 } from 'uuid';
-import * as fs from 'fs';
 
 const ACCEPTED_FILE: string[] = ['jpeg', 'jp2', 'jpeg', 'webp', 'png'];
 const MAX_SIZE_FILE = 524288;
