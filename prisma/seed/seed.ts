@@ -1,4 +1,4 @@
-import { PrismaClient, QuestionType, DifficultyLevel, MentorBookingStatus } from '@prisma/client';
+import { PrismaClient, QuestionType, MentorBookingStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 // If you want to run seed. Follow steps below:
@@ -251,8 +251,8 @@ async function main() {
       description: 'AI applications in education and learning',
     },
     {
-      name: 'Manufacturing',
-      description: 'AI applications in manufacturing and production',
+      name: 'Information Technology',
+      description: 'AI applications in Information Technology and production',
     },
     {
       name: 'General',
@@ -278,7 +278,9 @@ async function main() {
     { category: 'mindset', domain: 'Healthcare' },
     { category: 'mindset', domain: 'Finance' },
     { category: 'toolset', domain: 'General' },
-    { category: 'toolset', domain: 'Manufacturing' },
+    { category: 'toolset', domain: 'Information Technology' },
+    { category: 'skillset', domain: 'Information Technology' },
+    { category: 'mindset', domain: 'Information Technology' },
     { category: 'toolset', domain: 'Education' },
     { category: 'skillset', domain: 'General' },
     { category: 'skillset', domain: 'Finance' },
@@ -304,29 +306,34 @@ async function main() {
   // 8. Create Criteria with specified weights
   const criteriaData = [
     {
-      name: 'Kiến thức nền tảng về AI',
+      name: 'Kiến thức nền tảng về AI và Machine Learning',
       description: 'Nắm chắc nền tảng, tránh dùng sai AI',
       scoreWeight: 0.2, // 20%
+      categoryId: 'mindset',
     },
     {
-      name: 'Ứng dụng công cụ/mô hình AI',
+      name: 'Prompt Engineering và AI Tools',
       description: 'Cốt lõi để dùng AI đúng cách và an toàn',
       scoreWeight: 0.25, // 25%
+      categoryId: 'toolset',
     },
     {
-      name: 'Thiết kế hệ thống hoặc giải pháp AI',
+      name: 'Phát triển phần mềm và SDLC',
       description: 'Thực hành quan trọng, liên quan trực tiếp đến năng suất',
       scoreWeight: 0.2, // 20%
+      categoryId: 'skillset',
     },
     {
-      name: 'Đạo đức và tác động xã hội của AI',
+      name: 'AI trong quy trình phát triển phần mềm',
       description: 'Tư duy chủ động, cần thiết để tránh sai lệch',
       scoreWeight: 0.2, // 20%
+      categoryId: 'skillset',
     },
     {
-      name: 'Kỹ năng tư duy phản biện và trình bày',
+      name: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       description: 'Đảm bảo tính trung thực, học thuật, rõ ràng',
       scoreWeight: 0.15, // 15%
+      categoryId: 'mindset',
     },
   ];
 
@@ -335,159 +342,721 @@ async function main() {
     const criterion = await prisma.criteria.upsert({
       where: { name: critData.name },
       update: {},
-      create: critData,
+      create: {
+        name: critData.name,
+        description: critData.description,
+        scoreWeight: critData.scoreWeight,
+        categoryId: categoryMap[critData.categoryId].id,
+      },
     });
     criteria.push(criterion);
   }
 
   const criteriaMap = Object.fromEntries(criteria.map((c) => [c.name, c]));
 
-  // 9. Link Criteria to Categories
-  const criteriaCategoryLinks = [
-    { criteria: 'Kiến thức nền tảng về AI', categories: ['mindset', 'skillset'] },
-    { criteria: 'Ứng dụng công cụ/mô hình AI', categories: ['toolset', 'skillset'] },
-    { criteria: 'Thiết kế hệ thống hoặc giải pháp AI', categories: ['skillset', 'toolset'] },
-    { criteria: 'Đạo đức và tác động xã hội của AI', categories: ['mindset'] },
-    { criteria: 'Kỹ năng tư duy phản biện và trình bày', categories: ['mindset', 'skillset'] },
+  // 9. Levels
+  const levelsData = [
+    {
+      name: 'LEVEL_1 - Follow',
+      description: 'Làm việc dưới sự hướng dẫn chặt chẽ, thực hiện các nhiệm vụ đơn giản, hỗ trợ các hoạt động cơ bản',
+    },
+    {
+      name: 'LEVEL_2 - Assist',
+      description:
+        'Thực hiện các nhiệm vụ được giao với một số tự chủ, hỗ trợ đồng nghiệp, làm việc trong quy trình đã định sẵn',
+    },
+    {
+      name: 'LEVEL_3 - Apply',
+      description:
+        'Xử lý các nhiệm vụ phức tạp hơn, áp dụng kiến thức chuyên môn, chịu trách nhiệm cho công việc cá nhân hoặc nhóm nhỏ',
+    },
+    {
+      name: 'LEVEL_4 - Enable',
+      description:
+        'Quản lý và dẫn dắt các hoạt động, chịu trách nhiệm về kết quả, hỗ trợ người khác trong công việc chuyên môn',
+    },
+    {
+      name: 'LEVEL_5 - Ensure/Advise',
+      description: 'Lãnh đạo dự án hoặc nhóm, cung cấp tư vấn chuyên môn, đảm bảo chất lượng và hiệu quả công việc',
+    },
+    {
+      name: 'LEVEL_6 - Initiate/Influence',
+      description: 'Định hình chiến lược, lãnh đạo các sáng kiến lớn, tạo tác động rộng trong tổ chức hoặc ngành',
+    },
+    {
+      name: 'LEVEL_7 - Set Strategy/Inspire',
+      description:
+        'Thiết lập chiến lược cấp cao, lãnh đạo tổ chức, truyền cảm hứng và thúc đẩy thay đổi ở cấp độ ngành hoặc toàn cầu',
+    },
   ];
-
-  for (const link of criteriaCategoryLinks) {
-    for (const category of link.categories) {
-      await prisma.criteriaCategory.upsert({
-        where: {
-          categoryId_criteriaId: {
-            categoryId: categoryMap[category].id,
-            criteriaId: criteriaMap[link.criteria].id,
-          },
-        },
-        update: {},
-        create: {
-          categoryId: categoryMap[category].id,
-          criteriaId: criteriaMap[link.criteria].id,
-        },
-      });
-    }
+  const levels = [];
+  for (const catData of levelsData) {
+    const level = await prisma.level.upsert({
+      where: { name: catData.name },
+      update: {},
+      create: catData,
+    });
+    levels.push(level);
   }
+
+  const levelsMap = Object.fromEntries(levels.map((c) => [c.name, c]));
 
   // 10. Create Questions
   const questionsData = [
+    // Part 1
     {
       type: QuestionType.SINGLE_CHOICE,
-      content: 'Phương pháp nào sau đây KHÔNG thuộc về học máy (machine learning)?',
-      difficultyLevel: DifficultyLevel.L2,
-      criteria: 'Kiến thức nền tảng về AI',
-      categories: ['mindset', 'skillset'],
+      content: 'AI Generative là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
       answerOptions: [
-        { content: 'Học giám sát (Supervised Learning)', isCorrect: false },
-        { content: 'Học không giám sát (Unsupervised Learning)', isCorrect: false },
-        { content: 'Học đối kháng (Adversarial Learning)', isCorrect: false },
-        { content: 'Học qua internet (Internet Learning)', isCorrect: true },
+        { content: 'Các thuật toán AI chỉ phân loại dữ liệu sẵn có', isCorrect: false },
+        { content: 'Các hệ thống AI có khả năng tạo ra nội dung mới như văn bản, hình ảnh, âm thanh', isCorrect: true },
+        { content: 'Hệ thống AI chỉ hoạt động trên dữ liệu cố định', isCorrect: false },
+        { content: 'Công nghệ để robot có thể tự di chuyển', isCorrect: false },
       ],
     },
     {
-      type: QuestionType.MULTIPLE_CHOICE,
-      content: 'Những công cụ nào dưới đây là những mô hình ngôn ngữ lớn (LLMs)?',
-      difficultyLevel: DifficultyLevel.L1,
-      criteria: 'Ứng dụng công cụ/mô hình AI',
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Large Language Models (LLMs) sử dụng kiến trúc cơ bản nào?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Convolutional Neural Networks', isCorrect: false },
+        { content: 'Recurrent Neural Networks', isCorrect: false },
+        { content: 'Transformer Architecture', isCorrect: true },
+        { content: 'Reinforcement Learning Networks', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Context Window trong LLMs là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Kích thước màn hình hiển thị kết quả', isCorrect: false },
+        { content: 'Số lượng token (từ/ký tự) mà mô hình có thể xử lý cùng một lúc', isCorrect: true },
+        { content: 'Thời gian mô hình cần để đưa ra kết quả', isCorrect: false },
+        { content: 'Số lượng người dùng có thể truy cập cùng lúc', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Khái niệm "token" trong LLMs đề cập đến:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Đơn vị tiền tệ để sử dụng dịch vụ AI', isCorrect: false },
+        { content: 'Các đơn vị xử lý cơ bản (thường là từ hoặc phần của từ)', isCorrect: true },
+        { content: 'Mã bảo mật để truy cập API', isCorrect: false },
+        { content: 'Số lượng queries người dùng được phép thực hiện', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Đâu KHÔNG phải là một ứng dụng phổ biến của AI trong phát triển phần mềm?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Tự động sinh mã nguồn', isCorrect: false },
+        { content: 'Tạo và thực thi test cases', isCorrect: false },
+        { content: 'Phân tích yêu cầu và tạo user stories', isCorrect: false },
+        { content: 'Thay thế hoàn toàn các developer', isCorrect: true },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Khái niệm "hallucination" trong LLMs đề cập đến hiện tượng gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Mô hình tạo hình ảnh không có thật', isCorrect: false },
+        { content: 'Mô hình tạo ra thông tin không chính xác hoặc không tồn tại', isCorrect: true },
+        { content: 'Mô hình không thể đưa ra kết quả', isCorrect: false },
+        { content: 'Mô hình bị quá tải khi xử lý quá nhiều dữ liệu', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'AI Coding Assistants như GitHub Copilot được xây dựng chủ yếu dựa trên:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['toolset'],
       answerOptions: [
-        { content: 'GPT-4', isCorrect: true },
-        { content: 'Claude', isCorrect: true },
-        { content: 'Microsoft Excel', isCorrect: false },
-        { content: 'Llama 2', isCorrect: true },
-        { content: 'Adobe Photoshop', isCorrect: false },
+        { content: 'Expert Systems', isCorrect: false },
+        { content: 'Large Language Models', isCorrect: true },
+        { content: 'Trí tuệ tập thể của các developer', isCorrect: false },
+        { content: 'Thuật toán di truyền', isCorrect: false },
       ],
     },
     {
-      type: QuestionType.TRUE_FALSE,
-      content:
-        'Transfer learning là kỹ thuật sử dụng lại kiến thức từ mô hình đã được huấn luyện trước đó để áp dụng cho bài toán mới.',
-      difficultyLevel: DifficultyLevel.L1,
-      criteria: 'Kiến thức nền tảng về AI',
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Kỹ thuật "fine-tuning" trong ngữ cảnh LLMs là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Điều chỉnh giao diện người dùng', isCorrect: false },
+        { content: 'Điều chỉnh mô hình đã được pre-train để phù hợp với nhiệm vụ cụ thể', isCorrect: true },
+        { content: 'Tối ưu hóa tốc độ phản hồi', isCorrect: false },
+        { content: 'Cải thiện khả năng đọc hiểu của người dùng', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Sự khác biệt chính giữa AI và Machine Learning là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'AI là khái niệm rộng hơn, trong khi Machine Learning là một tập con của AI', isCorrect: true },
+        { content: 'Machine Learning rộng hơn, AI là một ứng dụng cụ thể', isCorrect: false },
+        { content: 'Chúng là hai lĩnh vực hoàn toàn khác nhau', isCorrect: false },
+        { content: 'Machine Learning chỉ sử dụng trong nghiên cứu, AI trong thực tế', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Transfer Learning trong ngữ cảnh AI là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Chuyển dữ liệu giữa các thiết bị', isCorrect: false },
+        { content: 'Áp dụng kiến thức đã học từ một nhiệm vụ để giải quyết nhiệm vụ khác', isCorrect: true },
+        { content: 'Dịch văn bản giữa các ngôn ngữ', isCorrect: false },
+        { content: 'Chuyển đổi giữa các framework AI khác nhau', isCorrect: false },
+      ],
+    },
+    //Part 2
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Prompt Engineering là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Kỹ thuật thiết kế phần cứng cho AI', isCorrect: false },
+        { content: 'Nghệ thuật viết câu lệnh để điều khiển đầu ra của mô hình AI', isCorrect: true },
+        { content: 'Phương pháp lập trình các thuật toán AI', isCorrect: false },
+        { content: 'Quy trình kiểm thử hệ thống AI', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Chain of Thought Prompting là kỹ thuật:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Tạo một chuỗi các prompts liên tiếp', isCorrect: false },
+        { content: 'Hướng dẫn mô hình giải quyết vấn đề theo từng bước', isCorrect: true },
+        { content: 'Liên kết nhiều mô hình AI với nhau', isCorrect: false },
+        { content: 'Tạo mạng lưới các máy tính để tính toán song song', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Few-shot Learning trong Prompt Engineering là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Học với rất ít dữ liệu huấn luyện', isCorrect: false },
+        { content: 'Cung cấp một số ví dụ trong prompt để hướng dẫn mô hình', isCorrect: true },
+        { content: 'Sử dụng nhiều prompts ngắn', isCorrect: false },
+        { content: 'Kỹ thuật học nhanh của AI', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Đâu là một nguyên tắc tốt khi viết prompt cho coding tasks?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Luôn yêu cầu AI viết càng nhiều code càng tốt', isCorrect: false },
+        { content: 'Chỉ định rõ ngôn ngữ lập trình, format và các yêu cầu cụ thể', isCorrect: true },
+        { content: 'Sử dụng các từ ngữ mơ hồ để AI có thể sáng tạo', isCorrect: false },
+        { content: 'Tránh cung cấp context cụ thể để AI không bị ràng buộc', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'GitHub Copilot khác biệt với ChatGPT ở điểm nào?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Copilot không sử dụng AI', isCorrect: false },
+        { content: 'Copilot được tối ưu hóa cho việc viết code và tích hợp với IDE', isCorrect: true },
+        { content: 'ChatGPT không thể sinh mã', isCorrect: false },
+        { content: 'Copilot không cần kết nối internet', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Khi sử dụng AI để generate code, việc nào sau đây là quan trọng nhất?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Chấp nhận mọi đề xuất từ AI mà không kiểm tra', isCorrect: false },
+        { content: 'Tạo càng nhiều code càng tốt trong thời gian ngắn', isCorrect: false },
+        { content: 'Review, hiểu và test code do AI sinh ra', isCorrect: true },
+        { content: 'Tránh mọi sửa đổi để không làm hỏng logic của AI', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'API của một LLM thường yêu cầu những thông tin gì trong một request cơ bản?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'User ID, password, và IP address', isCorrect: false },
+        { content: 'Model, prompt (messages), và temperature', isCorrect: true },
+        { content: 'Developer credentials và payment information', isCorrect: false },
+        { content: 'Hardware specifications và memory requirements', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Temperature parameter trong API của LLMs ảnh hưởng đến:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Thời gian xử lý của mô hình', isCorrect: false },
+        { content: 'Độ sáng tạo/ngẫu nhiên trong đầu ra', isCorrect: true },
+        { content: 'Nhiệt độ của GPU khi xử lý', isCorrect: false },
+        { content: 'Số lượng token mà mô hình có thể xử lý', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Role prompting là kỹ thuật:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Phân công vai trò cho các thành viên trong team', isCorrect: false },
+        { content: 'Yêu cầu AI đóng vai một chuyên gia cụ thể khi trả lời', isCorrect: true },
+        { content: 'Đánh giá hiệu suất của các vai trò khác nhau', isCorrect: false },
+        { content: 'Phân quyền truy cập vào hệ thống AI', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Đâu KHÔNG phải là một AI coding assistant phổ biến?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Prompt Engineering và AI Tools',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'GitHub Copilot', isCorrect: false },
+        { content: 'Claude Code', isCorrect: false },
+        { content: 'AWS CodeGuru', isCorrect: false },
+        { content: 'Microsoft Excel AI', isCorrect: true },
+      ],
+    },
+    //Part 3
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Agile là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Một ngôn ngữ lập trình mới', isCorrect: false },
+        { content: 'Một framework quản lý dự án linh hoạt, thích ứng với thay đổi', isCorrect: true },
+        { content: 'Một công cụ tự động hóa quy trình phát triển', isCorrect: false },
+        { content: 'Một loại AI chuyên dụng cho phát triển phần mềm', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: '"Sprint" trong mô hình Scrum là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Một cuộc họp hàng ngày', isCorrect: false },
+        { content: 'Một khoảng thời gian cố định để hoàn thành một tập hợp công việc', isCorrect: true },
+        { content: 'Một tool để quản lý code', isCorrect: false },
+        { content: 'Một phương pháp để tăng tốc máy tính', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'User story trong phát triển phần mềm là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Một câu chuyện giải trí cho người dùng', isCorrect: false },
+        { content: 'Mô tả không chính thức về một tính năng từ góc nhìn người dùng', isCorrect: true },
+        { content: 'Hướng dẫn sử dụng phần mềm', isCorrect: false },
+        { content: 'Báo cáo lỗi từ người dùng', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'CI/CD đề cập đến:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Control Interface/Command Display', isCorrect: false },
+        { content: 'Continuous Integration/Continuous Deployment', isCorrect: true },
+        { content: 'Computer Intelligence/Code Debugging', isCorrect: false },
+        { content: 'Compiled Input/Cached Data', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Đâu là một design pattern phổ biến trong phát triển phần mềm?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Agile Pattern', isCorrect: false },
+        { content: 'Singleton Pattern', isCorrect: true },
+        { content: 'Testing Pattern', isCorrect: false },
+        { content: 'Program Pattern', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Technical debt trong phát triển phần mềm là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Chi phí mua thiết bị kỹ thuật', isCorrect: false },
+        { content: 'Số tiền công ty nợ các developer', isCorrect: false },
+        { content: 'Những giải pháp nhanh chóng, không tối ưu có thể gây vấn đề trong tương lai', isCorrect: true },
+        { content: 'Phí bản quyền phần mềm', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Refactoring là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Viết lại toàn bộ code từ đầu', isCorrect: false },
+        { content: 'Cải thiện cấu trúc code mà không thay đổi chức năng bên ngoài', isCorrect: true },
+        { content: 'Thay đổi tên biến trong code', isCorrect: false },
+        { content: 'Tối ưu hóa hiệu suất bằng cách thay đổi thuật toán', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Test-driven development (TDD) là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Phương pháp kiểm thử sau khi phát triển', isCorrect: false },
+        { content: 'Viết test case trước khi viết code', isCorrect: true },
+        { content: 'Để người dùng kiểm thử phần mềm', isCorrect: false },
+        { content: 'Sử dụng AI để tự động kiểm thử', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'API là viết tắt của:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Advanced Programming Interface', isCorrect: false },
+        { content: 'Application Programming Interface', isCorrect: true },
+        { content: 'Automatic Program Installation', isCorrect: false },
+        { content: 'Advanced Protocol Integration', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Version control system như Git có chức năng chính là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Phát triển phần mềm và SDLC',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Kiểm soát phiên bản và quản lý thay đổi trong mã nguồn', isCorrect: true },
+        { content: 'Tạo phiên bản mới của phần mềm', isCorrect: false },
+        { content: 'Kiểm soát quyền truy cập vào database', isCorrect: false },
+        { content: 'Tự động update phần mềm cho người dùng', isCorrect: false },
+      ],
+    },
+    // Part 4
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'AI có thể hỗ trợ giai đoạn nào trong SDLC?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Chỉ giai đoạn coding', isCorrect: false },
+        { content: 'Chỉ giai đoạn testing', isCorrect: false },
+        { content: 'Tất cả các giai đoạn từ planning đến maintenance', isCorrect: true },
+        { content: 'Chỉ giai đoạn deployment', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'AI có thể hỗ trợ hoạt động nào sau đây trong giai đoạn Requirements Engineering?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Không thể hỗ trợ giai đoạn này', isCorrect: false },
+        { content: 'Phân tích yêu cầu, tạo user stories và phát hiện mâu thuẫn', isCorrect: true },
+        { content: 'Chỉ hỗ trợ việc gõ nhanh hơn', isCorrect: false },
+        { content: 'Thay thế hoàn toàn product owner', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Trong giai đoạn design, AI có thể hỗ trợ:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Chỉ tạo logo và giao diện', isCorrect: false },
+        { content: 'Đề xuất kiến trúc hệ thống, schema database, và thiết kế API', isCorrect: true },
+        { content: 'Không thể hỗ trợ giai đoạn này do tính sáng tạo cao', isCorrect: false },
+        { content: 'Chỉ có thể vẽ sơ đồ nhưng không thể tạo nội dung', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'AI pair programming là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Hai AI làm việc cùng nhau', isCorrect: false },
+        { content: 'Quá trình làm việc cùng AI như một partner trong lập trình', isCorrect: true },
+        { content: 'Sao chép code từ nhiều nguồn AI', isCorrect: false },
+        { content: 'Hai developers cùng sử dụng một AI', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Trong testing, AI có thể:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Chỉ kiểm tra lỗi cú pháp', isCorrect: false },
+        { content: 'Tạo test cases, tự động hóa việc testing và phát hiện lỗi', isCorrect: true },
+        { content: 'Không thể hỗ trợ testing do độ phức tạp', isCorrect: false },
+        { content: 'Chỉ kiểm tra UI, không kiểm tra logic', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Khi sử dụng AI để phát triển phần mềm, vấn đề đạo đức quan trọng nhất là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Tốc độ của AI', isCorrect: false },
+        { content: 'Chi phí sử dụng AI', isCorrect: false },
+        { content: 'Bản quyền, sở hữu trí tuệ và trách nhiệm với code do AI tạo ra', isCorrect: true },
+        { content: 'Tính thẩm mỹ của code', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Trong documentation, AI có thể hỗ trợ:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Chỉ tạo hình ảnh minh họa', isCorrect: false },
+        { content: 'Tự động tạo và cập nhật tài liệu kỹ thuật, API docs, và hướng dẫn người dùng', isCorrect: true },
+        { content: 'Không thể hỗ trợ do cần hiểu sâu về ngữ cảnh', isCorrect: false },
+        { content: 'Chỉ dịch tài liệu sang ngôn ngữ khác', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Benchmarking cho AI-assisted development nên tập trung vào:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Chỉ tốc độ phát triển', isCorrect: false },
+        { content: 'Số lượng code được tạo ra', isCorrect: false },
+        { content: 'Nhiều yếu tố: tốc độ, chất lượng, khả năng bảo trì, tỷ lệ lỗi', isCorrect: true },
+        { content: 'Chỉ số lượng developer cần thiết', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Khi sử dụng AI trong code review, best practice là:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'Luôn chấp nhận mọi đề xuất của AI', isCorrect: false },
+        { content: 'Sử dụng AI như một reviewer bổ sung, không thay thế human review', isCorrect: true },
+        { content: 'Chỉ sử dụng AI cho reviews nội bộ, không cho production code', isCorrect: false },
+        { content: 'Tránh sử dụng AI vì không đáng tin cậy', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Tương lai của phát triển phần mềm với AI có khả năng:',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'AI trong quy trình phát triển phần mềm',
+      categories: ['toolset'],
+      answerOptions: [
+        { content: 'AI sẽ thay thế hoàn toàn developers trong 2-3 năm tới', isCorrect: false },
+        { content: 'AI sẽ làm chậm phát triển phần mềm do phức tạp hóa quy trình', isCorrect: false },
+        { content: 'AI sẽ trở thành một tool hỗ trợ quan trọng, nâng cao năng suất và chất lượng', isCorrect: true },
+        { content: 'AI sẽ chỉ giới hạn trong các công ty lớn, không phổ biến trong công nghiệp', isCorrect: false },
+      ],
+    },
+    // Part 5
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Theo bạn, vai trò chính của AI trong quy trình phát triển phần mềm là gì?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Thay thế hoàn toàn developer để giảm chi phí nhân sự', isCorrect: false },
+        { content: 'Là công cụ hỗ trợ, tăng cường năng suất và sáng tạo của developer', isCorrect: true },
+        { content: 'Chỉ để thực hiện các tác vụ đơn giản, lặp đi lặp lại', isCorrect: false },
+        { content: 'Chủ yếu để marketing, không có giá trị thực sự trong phát triển', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Khi AI tạo ra code có lỗi hoặc không hoạt động như mong đợi, trách nhiệm thuộc về ai?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Nhà phát triển AI vì đã tạo ra một sản phẩm không hoàn hảo', isCorrect: false },
+        { content: 'Developer đã sử dụng code đó, vì đã không kiểm tra kỹ lưỡng', isCorrect: true },
+        { content: 'Không ai cả, đó là rủi ro khi sử dụng công nghệ mới', isCorrect: false },
+        { content: 'Tổ chức quản lý dự án vì đã cho phép sử dụng AI', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Theo bạn, khi làm việc với AI, developers cần phát triển kỹ năng nào nhất?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['skillset'],
       answerOptions: [
-        { content: 'Đúng', isCorrect: true },
-        { content: 'Sai', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.ESSAY,
-      content:
-        'Hãy mô tả cách bạn sẽ thiết kế một hệ thống AI để hỗ trợ chẩn đoán y tế. Nêu rõ các thành phần, dữ liệu cần thiết và các thách thức tiềm ẩn.',
-      difficultyLevel: DifficultyLevel.L4,
-      criteria: 'Thiết kế hệ thống hoặc giải pháp AI',
-      categories: ['skillset', 'toolset'],
-      answerOptions: [],
-    },
-    {
-      type: QuestionType.ESSAY,
-      content:
-        'Phân tích các tác động xã hội và đạo đức của việc sử dụng hệ thống AI trong quy trình tuyển dụng. Nêu các biện pháp giảm thiểu rủi ro.',
-      difficultyLevel: DifficultyLevel.L3,
-      criteria: 'Đạo đức và tác động xã hội của AI',
-      categories: ['mindset'],
-      answerOptions: [],
-    },
-    {
-      type: QuestionType.MULTIPLE_CHOICE,
-      content: 'Công nghệ nào sau đây thường được sử dụng trong các mô hình xử lý ngôn ngữ tự nhiên (NLP)?',
-      difficultyLevel: DifficultyLevel.L2,
-      criteria: 'Kiến thức nền tảng về AI',
-      categories: ['toolset', 'skillset'],
-      answerOptions: [
-        { content: 'Transformer', isCorrect: true },
-        { content: 'Convolutional Neural Networks (CNN)', isCorrect: false },
-        { content: 'Attention Mechanism', isCorrect: true },
-        { content: 'Random Forest', isCorrect: false },
-        { content: 'BERT', isCorrect: true },
+        { content: 'Tối ưu hóa prompt để AI tạo ra kết quả tốt hơn', isCorrect: false },
+        { content: 'Đánh giá, kiểm tra và tích hợp đầu ra của AI một cách phù hợp', isCorrect: true },
+        { content: 'Học cách phụ thuộc hoàn toàn vào AI để tăng tốc độ', isCorrect: false },
+        { content: 'Tránh sử dụng AI càng nhiều càng tốt để giữ kỹ năng coding', isCorrect: false },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Khi triển khai một mô hình AI vào thực tế, phương pháp nào sau đây là quan trọng nhất để đảm bảo hiệu năng?',
-      difficultyLevel: DifficultyLevel.L3,
-      criteria: 'Ứng dụng công cụ/mô hình AI',
-      categories: ['toolset'],
-      answerOptions: [
-        { content: 'Tối ưu hóa hyperparameter', isCorrect: false },
-        { content: 'Monitoring và cập nhật liên tục', isCorrect: true },
-        { content: 'Sử dụng GPU mạnh hơn', isCorrect: false },
-        { content: 'Tăng kích thước mô hình', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.ESSAY,
-      content:
-        'Trình bày quan điểm của bạn về tương lai của lao động trong thời đại AI. Những nghề nghiệp nào sẽ bị ảnh hưởng nhiều nhất và con người nên thích nghi như thế nào?',
-      difficultyLevel: DifficultyLevel.L4,
-      criteria: 'Kỹ năng tư duy phản biện và trình bày',
+      content: 'Đâu là thách thức lớn nhất khi áp dụng AI vào quy trình phát triển phần mềm?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
-      answerOptions: [],
-    },
-    {
-      type: QuestionType.TRUE_FALSE,
-      content: 'Fine-tuning và prompt engineering là hai phương pháp hoàn toàn khác nhau và không thể kết hợp.',
-      difficultyLevel: DifficultyLevel.L2,
-      criteria: 'Ứng dụng công cụ/mô hình AI',
-      categories: ['toolset', 'skillset'],
       answerOptions: [
-        { content: 'Đúng', isCorrect: false },
-        { content: 'Sai', isCorrect: true },
+        { content: 'Khó khăn kỹ thuật khi tích hợp công cụ AI', isCorrect: false },
+        { content: 'Chi phí sử dụng các công cụ AI cao', isCorrect: false },
+        { content: 'Thay đổi mindset và văn hóa làm việc để khai thác tối đa tiềm năng AI', isCorrect: true },
+        { content: 'Đào tạo nhân viên sử dụng thành thạo công cụ AI', isCorrect: false },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Phương pháp nào sau đây KHÔNG phải là một chiến lược để giải quyết vấn đề thiên kiến (bias) trong hệ thống AI?',
-      difficultyLevel: DifficultyLevel.L3,
-      criteria: 'Đạo đức và tác động xã hội của AI',
+      content: 'Khi sử dụng AI để phát triển phần mềm, đâu là cách tiếp cận tốt nhất?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
+      categories: ['skillset'],
+      answerOptions: [
+        { content: 'Áp dụng AI vào mọi khía cạnh của dự án ngay lập tức', isCorrect: false },
+        { content: 'Thử nghiệm dần dần, đánh giá hiệu quả và mở rộng áp dụng khi phù hợp', isCorrect: true },
+        { content: 'Chỉ sử dụng AI cho các dự án nhỏ, không quan trọng', isCorrect: false },
+        { content: 'Chờ đợi công nghệ AI trưởng thành hơn rồi mới áp dụng', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Trong bối cảnh AI phát triển nhanh chóng, đâu là thái độ phù hợp nhất của một developer?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
       answerOptions: [
-        { content: 'Đa dạng hóa dữ liệu huấn luyện', isCorrect: false },
-        { content: 'Tăng kích thước mô hình', isCorrect: true },
-        { content: 'Kiểm tra và đánh giá công bằng', isCorrect: false },
-        { content: 'Thiết kế hệ thống có trách nhiệm', isCorrect: false },
+        { content: 'Lo lắng vì AI sẽ thay thế công việc của mình', isCorrect: false },
+        { content: 'Lạc quan thái quá, tin rằng AI sẽ giải quyết mọi vấn đề', isCorrect: false },
+        { content: 'Tò mò, học hỏi liên tục và thích nghi với công nghệ mới', isCorrect: true },
+        { content: 'Thờ ơ vì cho rằng AI chỉ là xu hướng tạm thời', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      level: 'LEVEL_1 - Follow',
+      content:
+        'Với việc AI có thể tạo ra code nhanh chóng, điều quan trọng nhất developer cần tập trung phát triển là:',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
+      categories: ['skillset'],
+      answerOptions: [
+        { content: 'Tốc độ coding để cạnh tranh với AI', isCorrect: false },
+        { content: 'Kỹ năng giải quyết vấn đề, tư duy hệ thống và hiểu biết về business domain', isCorrect: true },
+        { content: 'Khả năng làm việc không cần AI để không phụ thuộc', isCorrect: false },
+        { content: 'Tập trung vào debugging vì AI sẽ tạo ra nhiều lỗi', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Cách nào sau đây KHÔNG phù hợp khi gặp khó khăn với AI trong phát triển phần mềm?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
+      categories: ['skillset'],
+      answerOptions: [
+        { content: 'Phân tích nguyên nhân và điều chỉnh cách sử dụng', isCorrect: false },
+        { content: 'Từ bỏ AI hoàn toàn và quay lại phương pháp truyền thống', isCorrect: true },
+        { content: 'Tham khảo cộng đồng và học hỏi best practices', isCorrect: false },
+        { content: 'Kết hợp nhiều phương pháp và công cụ AI khác nhau', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Theo bạn, đâu là khía cạnh quan trọng nhất khi xây dựng văn hóa AI-assisted development trong team?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'Áp đặt việc sử dụng AI cho mọi thành viên', isCorrect: false },
+        { content: 'Tạo không gian an toàn để thử nghiệm, chia sẻ kinh nghiệm và học hỏi lẫn nhau', isCorrect: true },
+        { content: 'Đánh giá hiệu suất dựa trên mức độ sử dụng AI', isCorrect: false },
+        { content: 'Tách biệt team thành nhóm sử dụng AI và nhóm không sử dụng', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Đâu là mindset lành mạnh nhất về vai trò của AI trong tương lai ngành phát triển phần mềm?',
+      level: 'LEVEL_1 - Follow',
+      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
+      categories: ['mindset'],
+      answerOptions: [
+        { content: 'AI sẽ thay thế phần lớn developers, nên cần chuyển ngành sớm', isCorrect: false },
+        { content: 'AI chỉ là công cụ tạm thời, sẽ sớm bị thay thế bởi công nghệ khác', isCorrect: false },
+        { content: 'AI và con người sẽ cùng tiến hóa, bổ sung cho nhau với vai trò khác nhau', isCorrect: true },
+        { content: 'AI sẽ chỉ phù hợp với các công ty lớn, không ảnh hưởng đến phần lớn developers', isCorrect: false },
       ],
     },
   ];
@@ -499,22 +1068,12 @@ async function main() {
       data: {
         type: qData.type,
         content: qData.content,
-        difficultyLevel: qData.difficultyLevel,
+        levelId: levelsMap[qData.level].id,
         criteriaId: criteriaMap[qData.criteria].id,
       },
     });
 
     questions.push(question);
-
-    // Link to categories
-    for (const catName of qData.categories) {
-      await prisma.questionCategory.create({
-        data: {
-          questionId: question.id,
-          categoryId: categoryMap[catName].id,
-        },
-      });
-    }
 
     // Create answer options
     for (const optionData of qData.answerOptions) {
@@ -571,12 +1130,12 @@ async function main() {
       domain: 'General',
     },
     {
-      title: 'AI in Manufacturing',
-      description: 'Practical applications of AI in manufacturing processes',
+      title: 'AI in Information Technology',
+      description: 'Practical applications of AI in Information Technology processes',
       provider: 'Coursera',
-      url: 'https://www.coursera.org/learn/ai-manufacturing',
+      url: 'https://www.coursera.org/learn/ai-Information Technology',
       category: 'toolset',
-      domain: 'Manufacturing',
+      domain: 'Information Technology',
     },
   ];
 
@@ -611,9 +1170,13 @@ async function main() {
       questions: [1, 3, 6], // Indices from the questions array
     },
     {
-      name: 'Comprehensive AI Assessment',
-      description: 'Full assessment covering all aspects of AI competency',
-      questions: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], // All questions
+      name: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
+      description:
+        'Bài kiểm tra đánh giá đầu vào cho các bạn đã có kiến thức về AI, là developer và muốn nâng cao kiến thức về AI',
+      questions: [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+        30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+      ], // All questions
     },
   ];
 
@@ -656,7 +1219,7 @@ async function main() {
     },
     {
       email: 'user@example.com',
-      examSetName: 'Comprehensive AI Assessment',
+      examSetName: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // 90 minutes after start
       totalScore: 68.5,
