@@ -138,7 +138,11 @@ export class AuthService {
     const activationToken = this.tokenService.generateActivationToken(user.id);
     await this.emailService.sendActivationEmail(user.fullName, user.email, activationToken);
 
-    return new ResponseItem(user, 'Đăng ký thành công', UserResponseDto);
+    return new ResponseItem(
+      user,
+      'Đăng ký tài khoản thành công. Vui lòng kiểm tra email để kích hoạt tài khoản.',
+      UserResponseDto
+    );
   }
 
   async activateAccount(token: string): Promise<ResponseItem<null>> {
