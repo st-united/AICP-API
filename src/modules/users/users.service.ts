@@ -126,13 +126,7 @@ export class UsersService {
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
-    const result = plainToClass(
-      ProfileDto,
-      { ...user, avatarUrl: user.avatarUrl ? baseImageUrl + convertPath(user.avatarUrl) : null },
-      { excludeExtraneousValues: true }
-    );
-
-    return new ResponseItem(result, 'Thành công');
+    return new ResponseItem(user, 'Thành công', ProfileDto);
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
@@ -144,25 +138,9 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
-      select: {
-        email: true,
-        fullName: true,
-        avatarUrl: true,
-        provider: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-        phoneNumber: true,
-        dob: true,
-        country: true,
-        province: true,
-        job: true,
-        referralCode: true,
-      },
     });
 
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công');
+    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
@@ -192,11 +170,11 @@ export class UsersService {
     return new ResponseItem(null, 'Xóa nhân viên thành công');
   }
 
-  async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<any>> {
+  async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<UserDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
+      throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
     const avatarUrl = await this.googleCloudStorageService.uploadFile(file, avtPathName('avatars', file.filename));
@@ -206,12 +184,11 @@ export class UsersService {
       data: { avatarUrl },
     });
 
-    // Clean up local file if it exists
     if (file.path && fs.existsSync(file.path)) {
       fs.unlinkSync(file.path);
     }
 
-    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
+    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công', UserDto);
   }
 
   async removeAvatar(id: string): Promise<ResponseItem<any>> {

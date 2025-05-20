@@ -95,15 +95,15 @@ export class UsersController {
     return await this.usersService.update(id, updateUserDto);
   }
 
-  @Post('avatar/:id')
+  @Post('avatar')
   @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async uploadAvatar(
-    @Param('id') id: string,
+    @Req() req,
     @UploadedFile()
     avatar: Express.Multer.File
   ): Promise<any> {
     if (avatar) {
-      return await this.usersService.uploadAvatar(id, avatar);
+      return await this.usersService.uploadAvatar(req.user.userId, avatar);
     }
     throw new BadRequestException('Hình ảnh không hợp lệ');
   }
