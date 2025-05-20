@@ -210,7 +210,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new BadRequestException('Thông tin cá nhân không tồn tại');
+      throw new BadRequestException('Nhân viên không tồn tại');
     }
 
     const avatarUrl = await this.googleCloudStorageService.uploadFile(file, avtPathName('avatars', file.filename));
@@ -218,24 +218,9 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl },
-      select: {
-        email: true,
-        fullName: true,
-        avatarUrl: true,
-        provider: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-        phoneNumber: true,
-        dob: true,
-        country: true,
-        province: true,
-        job: true,
-        referralCode: true,
-      },
     });
 
+    // Clean up local file if it exists
     if (file.path && fs.existsSync(file.path)) {
       fs.unlinkSync(file.path);
     }
