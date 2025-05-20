@@ -82,23 +82,32 @@ model RolePermission {
 }
 
 model Question {
-  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type            QuestionType    @default(SINGLE_CHOICE)
-  content         String          @db.Text
-  subcontent      String?         @db.Text
-  image           String?         @db.Text
-  sequence        Int?            @db.SmallInt
-  parentId        String?         @map("parent_id") @db.Uuid
-  criteriaId      String?         @db.Uuid
-  difficultyLevel DifficultyLevel @default(L1) @map("difficulty_level")
-  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type       QuestionType @default(SINGLE_CHOICE)
+  content    String       @db.Text
+  subcontent String?      @db.Text
+  image      String?      @db.Text
+  sequence   Int?         @db.SmallInt
+  parentId   String?      @map("parent_id") @db.Uuid
+  criteriaId String       @map("criteria_id") @db.Uuid
+  levelId    String       @map("level_id") @db.Uuid
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  category        QuestionCategory[]
   answerOptions   AnswerOption[]
   userAnswers     UserAnswer[]
-  criteria        Criteria?          @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+  criteria        Criteria          @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+  level           Level             @relation(fields: [levelId], references: [id], onDelete: Cascade)
   examSetQuestion ExamSetQuestion[]
+}
+
+model Level {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String     @unique @db.VarChar
+  description String     @db.Text
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Question    Question[]
 }
 
 model Category {
@@ -108,22 +117,9 @@ model Category {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  questions        QuestionCategory[]
-  courses          Course[]
-  criteriaCategory CriteriaCategory[]
-  categoryDomain   CategoryDomain[]
-}
-
-model QuestionCategory {
-  questionId String   @map("question_id") @db.Uuid
-  categoryId String   @map("category_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([questionId, categoryId])
+  courses        Course[]
+  categoryDomain CategoryDomain[]
+  Criteria       Criteria[]
 }
 
 model Course {
@@ -185,23 +181,12 @@ model Criteria {
   name        String   @unique @db.VarChar
   description String?  @db.Text
   scoreWeight Float    @map("score_weight") @db.Real
+  categoryId  String   @map("category_id") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  questions  Question[]
-  categories CriteriaCategory[]
-}
-
-model CriteriaCategory {
-  criteriaId String   @map("criteria_id") @db.Uuid
-  categoryId String   @map("category_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  criteria Criteria @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([categoryId, criteriaId])
+  questions Question[]
+  category  Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 model Domain {
@@ -295,16 +280,6 @@ enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
   ESSAY
-}
-
-enum DifficultyLevel {
-  L1
-  L2
-  L3
-  L4
-  L5
-  L6
-  L7
 }
 
 enum MentorBookingStatus {
