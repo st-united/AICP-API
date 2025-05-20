@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { EmailModule } from './modules/email/email.module';
 import { RedisModule } from './modules/redis/redis.module';
+import { MentorsModule } from './modules/mentors/mentors.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { RedisModule } from './modules/redis/redis.module';
     PrismaModule,
     EmailModule,
     RedisModule,
+    MentorsModule,
   ],
   providers: [
     {
