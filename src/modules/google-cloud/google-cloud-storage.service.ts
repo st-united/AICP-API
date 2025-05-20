@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { Storage, StorageOptions } from '@google-cloud/storage';
 import * as fs from 'fs';
 import { GOOGLE_CLOUD_STORAGE } from '@Constant/google-cloud';
@@ -19,32 +19,37 @@ export class GoogleCloudStorageService {
   }
 
   async uploadFile(file: Express.Multer.File, destFileName?: string): Promise<string> {
-    const bucket = this.storage.bucket(this.bucketName);
-    const destination = destFileName || file.originalname;
+    try {
+      const bucket = this.storage.bucket(this.bucketName);
+      const destination = destFileName || file.originalname;
 
-    const blob = bucket.file(destination);
-    const blobStream = blob.createWriteStream({
-      resumable: false,
-      contentType: file.mimetype,
-      metadata: {
-        cacheControl: `public, max-age=${this.googleCacheMaxAge}`,
-      },
-    });
-
-    return new Promise((resolve, reject) => {
-      blobStream.on('error', (err) => reject(err));
-
-      blobStream.on('finish', async () => {
-        const publicUrl = `${this.googlePublicUrl}/${this.bucketName}/${destination}`;
-        resolve(publicUrl);
+      const blob = bucket.file(destination);
+      const blobStream = blob.createWriteStream({
+        resumable: false,
+        contentType: file.mimetype,
+        metadata: {
+          cacheControl: `public, max-age=${this.googleCacheMaxAge}`,
+        },
       });
 
-      if (file.buffer) {
-        blobStream.end(file.buffer);
-      } else {
-        const fileStream = fs.createReadStream(file.path);
-        fileStream.pipe(blobStream);
-      }
-    });
+      return await new Promise((resolve, reject) => {
+        blobStream.on('error', (err) => reject(err));
+
+        blobStream.on('finish', async () => {
+          const publicUrl = `${this.googlePublicUrl}/${this.bucketName}/${destination}`;
+          resolve(publicUrl);
+        });
+
+        if (file.buffer) {
+          blobStream.end(file.buffer);
+        } else {
+          const fileStream = fs.createReadStream(file.path);
+          fileStream.pipe(blobStream);
+        }
+      });
+    } catch (error) {
+      Logger.error(`Failed to upload file: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Lỗi khi upload ảnh');
+    }
   }
 }

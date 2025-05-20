@@ -15,7 +15,7 @@ export class UserDto {
   fullName: string;
 
   @Expose()
-  @ApiProperty({ required: false })
+  @ApiProperty()
   avatarUrl?: string;
 
   @Expose()
@@ -39,7 +39,7 @@ export class UserDto {
   province: string;
 
   @Expose()
-  @ApiProperty({ required: false })
+  @ApiProperty()
   job: string;
 
   @Expose()
