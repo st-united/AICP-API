@@ -9,6 +9,7 @@ import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { UserAndSessionPayloadDto, UserPayloadDto } from './dto/user-payload.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,7 +25,9 @@ export class AuthController {
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
     const userAgent = request.headers['user-agent'];
     const ip = request.ip;
-    return await this.authService.login(request.user, userAgent, ip);
+    const userPayloadDto: UserPayloadDto = request.user;
+    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
+    return await this.authService.login(userAndSessionPayloadDto);
   }
 
   @UseGuards(JwtAccessTokenGuard)

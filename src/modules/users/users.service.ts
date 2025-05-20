@@ -15,19 +15,18 @@ import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
-import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '@app/modules/email/email.service';
 import { UserProviderEnum } from '@Constant/enums';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
-
+import { TokenService } from '@app/modules/auth/services/token.service';
 @Injectable()
 export class UsersService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly tokenService: TokenService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -269,10 +268,7 @@ export class UsersService {
 
       const payload: JwtPayload = { sub: user.id, email: user.email };
 
-      const token: string = this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-        expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
-      });
+      const token: string = this.tokenService.generateAccessToken(payload);
 
       await this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
 
@@ -284,9 +280,7 @@ export class UsersService {
 
   async updateNewPassword(updateForgotPasswordUserDto: UpdateForgotPasswordUserDto): Promise<ResponseItem<boolean>> {
     try {
-      const verifiedToken = this.jwtService.verify(updateForgotPasswordUserDto.token, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-      });
+      const verifiedToken = this.tokenService.verifyAccessToken(updateForgotPasswordUserDto.token);
 
       const userId = verifiedToken.sub;
 
