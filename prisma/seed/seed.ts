@@ -1,4 +1,4 @@
-import { PrismaClient, QuestionType, DifficultyLevel, MentorBookingStatus } from '@prisma/client';
+import { PrismaClient, QuestionType, MentorBookingStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 // If you want to run seed. Follow steps below:
@@ -309,26 +309,31 @@ async function main() {
       name: 'Kiến thức nền tảng về AI và Machine Learning',
       description: 'Nắm chắc nền tảng, tránh dùng sai AI',
       scoreWeight: 0.2, // 20%
+      categoryId: 'mindset',
     },
     {
       name: 'Prompt Engineering và AI Tools',
       description: 'Cốt lõi để dùng AI đúng cách và an toàn',
       scoreWeight: 0.25, // 25%
+      categoryId: 'toolset',
     },
     {
       name: 'Phát triển phần mềm và SDLC',
       description: 'Thực hành quan trọng, liên quan trực tiếp đến năng suất',
       scoreWeight: 0.2, // 20%
+      categoryId: 'skillset',
     },
     {
       name: 'AI trong quy trình phát triển phần mềm',
       description: 'Tư duy chủ động, cần thiết để tránh sai lệch',
       scoreWeight: 0.2, // 20%
+      categoryId: 'skillset',
     },
     {
       name: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       description: 'Đảm bảo tính trung thực, học thuật, rõ ràng',
       scoreWeight: 0.15, // 15%
+      categoryId: 'mindset',
     },
   ];
 
@@ -337,39 +342,64 @@ async function main() {
     const criterion = await prisma.criteria.upsert({
       where: { name: critData.name },
       update: {},
-      create: critData,
+      create: {
+        name: critData.name,
+        description: critData.description,
+        scoreWeight: critData.scoreWeight,
+        categoryId: categoryMap[critData.categoryId].id,
+      },
     });
     criteria.push(criterion);
   }
 
   const criteriaMap = Object.fromEntries(criteria.map((c) => [c.name, c]));
 
-  // 9. Link Criteria to Categories
-  const criteriaCategoryLinks = [
-    { criteria: 'Kiến thức nền tảng về AI và Machine Learning', categories: ['mindset'] },
-    { criteria: 'Prompt Engineering và AI Tools', categories: ['toolset', 'skillset', 'mindset'] },
-    { criteria: 'Phát triển phần mềm và SDLC', categories: ['skillset', 'toolset', 'mindset'] },
-    { criteria: 'AI trong quy trình phát triển phần mềm', categories: ['mindset', 'skillset', 'toolset'] },
-    { criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm', categories: ['mindset', 'skillset', 'toolset'] },
+  // 9. Levels
+  const levelsData = [
+    {
+      name: 'LEVEL_1 - Follow',
+      description: 'Làm việc dưới sự hướng dẫn chặt chẽ, thực hiện các nhiệm vụ đơn giản, hỗ trợ các hoạt động cơ bản',
+    },
+    {
+      name: 'LEVEL_2 - Assist',
+      description:
+        'Thực hiện các nhiệm vụ được giao với một số tự chủ, hỗ trợ đồng nghiệp, làm việc trong quy trình đã định sẵn',
+    },
+    {
+      name: 'LEVEL_3 - Apply',
+      description:
+        'Xử lý các nhiệm vụ phức tạp hơn, áp dụng kiến thức chuyên môn, chịu trách nhiệm cho công việc cá nhân hoặc nhóm nhỏ',
+    },
+    {
+      name: 'LEVEL_4 - Enable',
+      description:
+        'Quản lý và dẫn dắt các hoạt động, chịu trách nhiệm về kết quả, hỗ trợ người khác trong công việc chuyên môn',
+    },
+    {
+      name: 'LEVEL_5 - Ensure/Advise',
+      description: 'Lãnh đạo dự án hoặc nhóm, cung cấp tư vấn chuyên môn, đảm bảo chất lượng và hiệu quả công việc',
+    },
+    {
+      name: 'LEVEL_6 - Initiate/Influence',
+      description: 'Định hình chiến lược, lãnh đạo các sáng kiến lớn, tạo tác động rộng trong tổ chức hoặc ngành',
+    },
+    {
+      name: 'LEVEL_7 - Set Strategy/Inspire',
+      description:
+        'Thiết lập chiến lược cấp cao, lãnh đạo tổ chức, truyền cảm hứng và thúc đẩy thay đổi ở cấp độ ngành hoặc toàn cầu',
+    },
   ];
-
-  for (const link of criteriaCategoryLinks) {
-    for (const category of link.categories) {
-      await prisma.criteriaCategory.upsert({
-        where: {
-          categoryId_criteriaId: {
-            categoryId: categoryMap[category].id,
-            criteriaId: criteriaMap[link.criteria].id,
-          },
-        },
-        update: {},
-        create: {
-          categoryId: categoryMap[category].id,
-          criteriaId: criteriaMap[link.criteria].id,
-        },
-      });
-    }
+  const levels = [];
+  for (const catData of levelsData) {
+    const level = await prisma.level.upsert({
+      where: { name: catData.name },
+      update: {},
+      create: catData,
+    });
+    levels.push(level);
   }
+
+  const levelsMap = Object.fromEntries(levels.map((c) => [c.name, c]));
 
   // 10. Create Questions
   const questionsData = [
@@ -377,7 +407,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI Generative là gì?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -390,7 +420,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Large Language Models (LLMs) sử dụng kiến trúc cơ bản nào?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -403,7 +433,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Context Window trong LLMs là gì?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -416,7 +446,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khái niệm "token" trong LLMs đề cập đến:',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -429,7 +459,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu KHÔNG phải là một ứng dụng phổ biến của AI trong phát triển phần mềm?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -442,7 +472,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khái niệm "hallucination" trong LLMs đề cập đến hiện tượng gì?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -455,7 +485,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI Coding Assistants như GitHub Copilot được xây dựng chủ yếu dựa trên:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['toolset'],
       answerOptions: [
@@ -468,7 +498,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Kỹ thuật "fine-tuning" trong ngữ cảnh LLMs là gì?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -481,7 +511,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Sự khác biệt chính giữa AI và Machine Learning là:',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -494,7 +524,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Transfer Learning trong ngữ cảnh AI là gì?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Kiến thức nền tảng về AI và Machine Learning',
       categories: ['mindset'],
       answerOptions: [
@@ -508,7 +538,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Prompt Engineering là gì?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -521,7 +551,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Chain of Thought Prompting là kỹ thuật:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -534,7 +564,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Few-shot Learning trong Prompt Engineering là:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -547,7 +577,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là một nguyên tắc tốt khi viết prompt cho coding tasks?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -560,7 +590,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'GitHub Copilot khác biệt với ChatGPT ở điểm nào?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -573,7 +603,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI để generate code, việc nào sau đây là quan trọng nhất?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -586,7 +616,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'API của một LLM thường yêu cầu những thông tin gì trong một request cơ bản?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -599,7 +629,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Temperature parameter trong API của LLMs ảnh hưởng đến:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -612,7 +642,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Role prompting là kỹ thuật:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -625,7 +655,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu KHÔNG phải là một AI coding assistant phổ biến?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Prompt Engineering và AI Tools',
       categories: ['toolset'],
       answerOptions: [
@@ -639,7 +669,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Agile là gì?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -652,7 +682,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: '"Sprint" trong mô hình Scrum là gì?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -665,7 +695,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'User story trong phát triển phần mềm là gì?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -678,7 +708,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'CI/CD đề cập đến:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -691,7 +721,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là một design pattern phổ biến trong phát triển phần mềm?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -704,7 +734,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Technical debt trong phát triển phần mềm là:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -717,7 +747,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Refactoring là gì?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -730,7 +760,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Test-driven development (TDD) là:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['mindset'],
       answerOptions: [
@@ -743,7 +773,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'API là viết tắt của:',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['toolset'],
       answerOptions: [
@@ -756,7 +786,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Version control system như Git có chức năng chính là:',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Phát triển phần mềm và SDLC',
       categories: ['toolset'],
       answerOptions: [
@@ -770,7 +800,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI có thể hỗ trợ giai đoạn nào trong SDLC?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -783,7 +813,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI có thể hỗ trợ hoạt động nào sau đây trong giai đoạn Requirements Engineering?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -796,7 +826,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong giai đoạn design, AI có thể hỗ trợ:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -809,7 +839,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI pair programming là:',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -822,7 +852,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong testing, AI có thể:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -835,7 +865,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI để phát triển phần mềm, vấn đề đạo đức quan trọng nhất là:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -848,7 +878,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong documentation, AI có thể hỗ trợ:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -861,7 +891,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Benchmarking cho AI-assisted development nên tập trung vào:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -874,7 +904,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI trong code review, best practice là:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -887,7 +917,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Tương lai của phát triển phần mềm với AI có khả năng:',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'AI trong quy trình phát triển phần mềm',
       categories: ['toolset'],
       answerOptions: [
@@ -901,7 +931,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Theo bạn, vai trò chính của AI trong quy trình phát triển phần mềm là gì?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
       answerOptions: [
@@ -914,7 +944,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi AI tạo ra code có lỗi hoặc không hoạt động như mong đợi, trách nhiệm thuộc về ai?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
       answerOptions: [
@@ -927,7 +957,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Theo bạn, khi làm việc với AI, developers cần phát triển kỹ năng nào nhất?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['skillset'],
       answerOptions: [
@@ -940,7 +970,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là thách thức lớn nhất khi áp dụng AI vào quy trình phát triển phần mềm?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
       answerOptions: [
@@ -953,7 +983,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI để phát triển phần mềm, đâu là cách tiếp cận tốt nhất?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['skillset'],
       answerOptions: [
@@ -966,7 +996,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong bối cảnh AI phát triển nhanh chóng, đâu là thái độ phù hợp nhất của một developer?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
       answerOptions: [
@@ -978,9 +1008,9 @@ async function main() {
     },
     {
       type: QuestionType.SINGLE_CHOICE,
+      level: 'LEVEL_1 - Follow',
       content:
         'Với việc AI có thể tạo ra code nhanh chóng, điều quan trọng nhất developer cần tập trung phát triển là:',
-      difficultyLevel: DifficultyLevel.L2,
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['skillset'],
       answerOptions: [
@@ -993,7 +1023,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Cách nào sau đây KHÔNG phù hợp khi gặp khó khăn với AI trong phát triển phần mềm?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['skillset'],
       answerOptions: [
@@ -1006,7 +1036,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Theo bạn, đâu là khía cạnh quan trọng nhất khi xây dựng văn hóa AI-assisted development trong team?',
-      difficultyLevel: DifficultyLevel.L2,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
       answerOptions: [
@@ -1019,7 +1049,7 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là mindset lành mạnh nhất về vai trò của AI trong tương lai ngành phát triển phần mềm?',
-      difficultyLevel: DifficultyLevel.L1,
+      level: 'LEVEL_1 - Follow',
       criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
       categories: ['mindset'],
       answerOptions: [
@@ -1038,22 +1068,12 @@ async function main() {
       data: {
         type: qData.type,
         content: qData.content,
-        difficultyLevel: qData.difficultyLevel,
+        levelId: levelsMap[qData.level].id,
         criteriaId: criteriaMap[qData.criteria].id,
       },
     });
 
     questions.push(question);
-
-    // Link to categories
-    for (const catName of qData.categories) {
-      await prisma.questionCategory.create({
-        data: {
-          questionId: question.id,
-          categoryId: categoryMap[catName].id,
-        },
-      });
-    }
 
     // Create answer options
     for (const optionData of qData.answerOptions) {
