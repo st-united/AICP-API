@@ -20,13 +20,16 @@ import { UserProviderEnum } from '@Constant/enums';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
+import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
+
 @Injectable()
 export class UsersService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly googleCloudStorageService: GoogleCloudStorageService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -137,13 +140,7 @@ export class UsersService {
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
-    const result = plainToClass(
-      ProfileDto,
-      { ...user, avatarUrl: user.avatarUrl ? baseImageUrl + convertPath(user.avatarUrl) : null },
-      { excludeExtraneousValues: true }
-    );
-
-    return new ResponseItem(result, 'Thành công');
+    return new ResponseItem(user, 'Thành công', ProfileDto);
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
@@ -155,25 +152,9 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
-      select: {
-        email: true,
-        fullName: true,
-        avatarUrl: true,
-        provider: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-        phoneNumber: true,
-        dob: true,
-        country: true,
-        province: true,
-        job: true,
-        referralCode: true,
-      },
     });
 
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công');
+    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
@@ -203,23 +184,25 @@ export class UsersService {
     return new ResponseItem(null, 'Xóa nhân viên thành công');
   }
 
-  async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<any>> {
+  async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<UserDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
+      throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+
+    const avatarUrl = await this.googleCloudStorageService.uploadFile(file, avtPathName('avatars', file.filename));
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: { avatarUrl: avtPathName('users', file.filename) },
+      data: { avatarUrl },
     });
 
-    if (fs.existsSync(user.avatarUrl)) {
-      fs.unlinkSync(user.avatarUrl);
+    if (file.path && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
     }
 
-    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
+    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công', UserDto);
   }
 
   async removeAvatar(id: string): Promise<ResponseItem<any>> {

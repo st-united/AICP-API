@@ -7,6 +7,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '@app/modules/email/email.service';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { JwtModule } from '@nestjs/jwt';
+import { GoogleCloudModule } from '../google-cloud/google-cloud.module';
+
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -17,6 +19,7 @@ import { JwtModule } from '@nestjs/jwt';
         signOptions: { expiresIn: `${configService.get<number>('JWT_ACCESS_EXPIRES')}` },
       }),
     }),
+    GoogleCloudModule,
   ],
   controllers: [UsersController],
   providers: [UsersService, ConfigService, PrismaService, EmailService, TokenService],

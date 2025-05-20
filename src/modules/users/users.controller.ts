@@ -40,7 +40,7 @@ export class UsersController {
   @Public()
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
-  @UseInterceptors(FileInterceptor('avatar', fileOption('users')))
+  @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async create(
     @UploadedFile()
     // avatar: Express.Multer.File,
@@ -96,15 +96,15 @@ export class UsersController {
     return await this.usersService.update(id, updateUserDto);
   }
 
-  @Post('avatar/:id')
-  @UseInterceptors(FileInterceptor('avatar', fileOption('users')))
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async uploadAvatar(
-    @Param('id') id: string,
+    @Req() req,
     @UploadedFile()
     avatar: Express.Multer.File
   ): Promise<any> {
     if (avatar) {
-      return await this.usersService.uploadAvatar(id, avatar);
+      return await this.usersService.uploadAvatar(req.user.userId, avatar);
     }
     throw new BadRequestException('Hình ảnh không hợp lệ');
   }
