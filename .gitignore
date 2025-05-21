@@ -38,5 +38,5 @@ lerna-debug.log*
 /.env
 /.env.production
 
-./google-service-key.json
-google-service-key.json
+/etc
+/etc/secrets

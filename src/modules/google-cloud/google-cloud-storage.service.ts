@@ -10,10 +10,10 @@ import { v4 as uuidv4 } from 'uuid';
  */
 @Injectable()
 export class GoogleCloudStorageService {
-  private storage: Storage;
-  private bucketName = this.configService.get<string>('GOOGLE_CLOUD_STORAGE_BUCKET_NAME');
-  private googlePublicUrl = this.configService.get<string>('GOOGLE_CLOUD_STORAGE_PUBLIC_URL');
-  private googleCacheMaxAge = this.configService.get<number>('GOOGLE_CLOUD_STORAGE_CACHE_MAX_AGE');
+  private readonly storage: Storage;
+  private readonly bucketName = this.configService.get<string>('GOOGLE_CLOUD_STORAGE_BUCKET_NAME');
+  private readonly googlePublicUrl = this.configService.get<string>('GOOGLE_CLOUD_STORAGE_PUBLIC_URL');
+  private readonly googleCacheMaxAge = this.configService.get<number>('GOOGLE_CLOUD_STORAGE_CACHE_MAX_AGE');
 
   /**
    * Creates an instance of GoogleCloudStorageService.
