@@ -90,11 +90,6 @@ export class UsersController {
     return await this.usersService.getUser(id);
   }
 
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.update(id, updateUserDto);
-  }
-
   @Post('avatar')
   @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async uploadAvatar(

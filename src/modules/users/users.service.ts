@@ -143,20 +143,6 @@ export class UsersService {
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: updateUserDto,
-    });
-
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công');
-  }
-
   async deleteUser(id: string): Promise<ResponseItem<null>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Người dùng không tồn tại');
@@ -195,7 +181,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
+      throw new BadRequestException('Người dùng không tồn tại');
     }
 
     const updatedUser = await this.prisma.user.update({
