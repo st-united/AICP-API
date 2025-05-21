@@ -20,6 +20,7 @@ import { fileOption } from '@app/config/image-multer-config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GetUsersDto } from '@UsersModule/dto/get-users.dto';
 import { UpdateUserDto } from '@UsersModule/dto/update-user.dto';
+import { UpdateForgotPasswordUserDto } from '@UsersModule/dto/update-forgot-password';
 import { UsersService } from '@UsersModule/users.service';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -111,5 +112,21 @@ export class UsersController {
   @Patch('avatar/:id')
   async removeAvatar(@Param('id') id: string): Promise<ResponseItem<UserDto>> {
     return await this.usersService.removeAvatar(id);
+  }
+
+  @ApiTags('users')
+  @Public()
+  @Post('/forgot-password')
+  async forgotPassword(@Body('email') email: string): Promise<ResponseItem<boolean>> {
+    return await this.usersService.sendForgotPassword(email);
+  }
+
+  @ApiTags('users')
+  @Public()
+  @Post('/update-forgot-password')
+  async updateForgotPassword(
+    @Body() updateForgotPasswordUserDto: UpdateForgotPasswordUserDto
+  ): Promise<ResponseItem<boolean>> {
+    return await this.usersService.updateNewPassword(updateForgotPasswordUserDto);
   }
 }
