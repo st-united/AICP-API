@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { SendEmailNewMentorDto } from './dto/sent-email-mentor.dto';
 
 @Injectable()
 export class EmailService {
@@ -25,11 +26,11 @@ export class EmailService {
     await this.sendEmail(email, 'Kích hoạt tài khoản DevPlus', template);
   }
 
-  async sendIEmailNewMentor(fullName: string, email: string, password: string): Promise<void> {
+  async sendEmailNewMentor(emailContent: SendEmailNewMentorDto): Promise<void> {
     const loginLink = `${this.configService.get('FE_APP_URL')}/login`;
 
-    const template = this.generateMentorAccountEmailTemplate(fullName, loginLink, password);
-    await this.sendEmail(email, 'Kích hoạt tài khoản Mentor DevPlus', template);
+    const template = this.generateMentorAccountEmailTemplate(emailContent.fullName, loginLink, emailContent.password);
+    await this.sendEmail(emailContent.email, 'Kích hoạt tài khoản Mentor DevPlus', template);
   }
 
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {

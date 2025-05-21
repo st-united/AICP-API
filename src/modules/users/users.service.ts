@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { UserProviderEnum, UserRoleEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -32,14 +33,19 @@ export class UsersService {
     if (emailExisted) throw new BadRequestException('Email đã tồn tại');
 
     const hashedPassword = await bcrypt.hash(params.password, 10);
-    params = { ...params, password: hashedPassword, status: true };
 
     const defaultRole = await this.prisma.role.findUnique({
       where: { name: params.role },
     });
 
-    if (!defaultRole) throw new Error(`Role mặc định ${params.role} chưa được tạo trong bảng Role`);
-    const { role, ...userData } = params;
+    if (!defaultRole) throw new BadRequestException(`Role mặc định ${params.role} chưa được tạo trong bảng Role`);
+
+    const userData: Omit<Prisma.UserCreateInput, 'id' | 'roles'> = {
+      email: params.email,
+      fullName: params.fullName,
+      phoneNumber: params.phoneNumber,
+      password: hashedPassword,
+    };
 
     const user = await this.prisma.user.create({
       data: {

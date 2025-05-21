@@ -12,4 +12,10 @@ export class UpdateMentorDto extends PartialType(OmitType(CreateMentorDto, ['rol
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiProperty({ description: 'avatarUrl', example: 'https://example.com/avatar.png' })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
 }
