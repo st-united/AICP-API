@@ -15,7 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseItem } from '@app/common/dtos';
 import { fileOption } from '@app/config/image-multer-config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GetUsersDto } from '@UsersModule/dto/get-users.dto';
@@ -60,11 +60,6 @@ export class UsersController {
     return await this.usersService.changePassword(req.user.userId, changePasswordDto);
   }
 
-  @Get()
-  async getUsers(@Query() getUsersDto: GetUsersDto): Promise<ResponsePaginate<UserDto>> {
-    return await this.usersService.getUsers(getUsersDto);
-  }
-
   @Get('me')
   @ApiOperation({ summary: 'Get profile' })
   @ApiResponse({ status: 201, description: 'Get profile success' })
@@ -81,37 +76,22 @@ export class UsersController {
     return await this.usersService.updateProfile(req.user.userId, updateUserDto);
   }
 
-  @Delete(':id')
-  async deleteUser(@Param('id', ParseIntPipe) id: string): Promise<ResponseItem<null>> {
-    return await this.usersService.deleteUser(id);
-  }
-
-  @Get(':id')
-  async getUser(@Param('id', ParseIntPipe) id: string): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.getUser(id);
-  }
-
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.update(id, updateUserDto);
-  }
-
   @Post('avatar')
   @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async uploadAvatar(
     @Req() req,
     @UploadedFile()
     avatar: Express.Multer.File
-  ): Promise<any> {
+  ): Promise<ResponseItem<UserDto>> {
     if (avatar) {
       return await this.usersService.uploadAvatar(req.user.userId, avatar);
     }
     throw new BadRequestException('Hình ảnh không hợp lệ');
   }
 
-  @Patch('avatar/:id')
-  async removeAvatar(@Param('id') id: string): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.removeAvatar(id);
+  @Delete('avatar')
+  async removeAvatar(@Req() req): Promise<ResponseItem<UserDto>> {
+    return await this.usersService.removeAvatar(req.user.userId);
   }
 
   @ApiTags('users')

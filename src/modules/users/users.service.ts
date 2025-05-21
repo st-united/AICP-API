@@ -1,17 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { plainToClass } from 'class-transformer';
 import * as fs from 'fs';
-import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
-import { convertPath } from '@app/common/utils';
+import { ResponseItem } from '@app/common/dtos';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '@UsersModule/dto/request/create-user.dto';
-import { GetUsersDto } from '@UsersModule/dto/get-users.dto';
-import { UpdateUserDto } from '@UsersModule/dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { UserDto } from './dto/user.dto';
-import { avtPathName, baseImageUrl } from '@Constant/url';
+import { avtPathName } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
@@ -72,7 +68,7 @@ export class UsersService {
   async resetPassword(id: string): Promise<ResponseItem<UserDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
+      throw new BadRequestException('Người dùng không tồn tại');
     }
 
     const newPassword = await bcrypt.hash(this.configService.get<string>('RESET_PASSWORD'), 10);
@@ -103,40 +99,6 @@ export class UsersService {
     return new ResponseItem(user, 'Thay đổi mật khẩu thành công');
   }
 
-  async getUsers(params: GetUsersDto): Promise<ResponsePaginate<UserDto>> {
-    const where = {
-      status: params.status ? params.status : undefined,
-      deletedAt: null,
-    };
-
-    const [result, total] = await this.prisma.$transaction([
-      this.prisma.user.findMany({
-        where,
-        orderBy: { [params.orderBy]: params.order },
-        skip: params.skip,
-        take: params.take,
-      }),
-      this.prisma.user.count({ where }),
-    ]);
-
-    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
-
-    return new ResponsePaginate(result, pageMetaDto, 'Thành công');
-  }
-
-  async getUser(id: string): Promise<ResponseItem<UserDto>> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: { roles: true },
-    });
-    if (!user) throw new BadRequestException('Nhân viên không tồn tại');
-
-    return new ResponseItem(
-      { ...user, avatarUrl: user.avatarUrl ? baseImageUrl + convertPath(user.avatarUrl) : null },
-      'Thành công'
-    );
-  }
-
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
@@ -157,33 +119,6 @@ export class UsersService {
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id },
-      data: updateUserDto,
-    });
-
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công');
-  }
-
-  async deleteUser(id: string): Promise<ResponseItem<null>> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new BadRequestException('Người dùng không tồn tại');
-    if (user.status) throw new BadRequestException('Không được xóa nhân viên đang hoạt động');
-
-    await this.prisma.user.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
-
-    return new ResponseItem(null, 'Xóa nhân viên thành công');
-  }
-
   async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<UserDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
@@ -191,7 +126,13 @@ export class UsersService {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
-    const avatarUrl = await this.googleCloudStorageService.uploadFile(file, avtPathName('avatars', file.filename));
+    if (user.avatarUrl) {
+      const oldDest = this.googleCloudStorageService.getFileDestFromPublicUrl(user.avatarUrl);
+      await this.googleCloudStorageService.deleteFile(oldDest);
+    }
+
+    const destPath = avtPathName('avatars', file.filename);
+    const avatarUrl = await this.googleCloudStorageService.uploadFile(file, destPath);
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
@@ -205,11 +146,11 @@ export class UsersService {
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công', UserDto);
   }
 
-  async removeAvatar(id: string): Promise<ResponseItem<any>> {
+  async removeAvatar(id: string): Promise<ResponseItem<UserDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new BadRequestException('Nhân viên không tồn tại');
+      throw new BadRequestException('Người dùng không tồn tại');
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -221,7 +162,7 @@ export class UsersService {
       fs.unlinkSync(user.avatarUrl);
     }
 
-    return new ResponseItem(updatedUser, 'Xóa ảnh đại diện thành công');
+    return new ResponseItem(updatedUser, 'Xóa ảnh đại diện thành công', UserDto);
   }
 
   async findById(id: string): Promise<UserResponseDto> {
