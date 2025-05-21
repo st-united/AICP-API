@@ -125,10 +125,22 @@ export class MentorsService {
 
   async updateMentor(id: string, updateMentorDto: UpdateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
     const { expertise, isActive, ...userData } = updateMentorDto;
-    await this.userService.update(id, userData);
+
+    const existingMentor = await this.prisma.mentor.findUnique({
+      where: { id },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!existingMentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
+    await this.userService.updateProfile(existingMentor.userId, userData);
 
     const updatedMentor = await this.prisma.mentor.update({
-      where: { userId: id },
+      where: { id },
       data: {
         expertise,
         isActive,
