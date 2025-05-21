@@ -18,6 +18,8 @@ import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
+import { Prisma } from '@prisma/client';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -44,14 +46,19 @@ export class UsersService {
     }
 
     const hashedPassword = await bcrypt.hash(params.password, 10);
-    params = { ...params, password: hashedPassword, status: true };
 
     const defaultRole = await this.prisma.role.findUnique({
       where: { name: params.role },
     });
 
-    if (!defaultRole) throw new Error(`Role mặc định ${params.role} chưa được tạo trong bảng Role`);
-    const { role, ...userData } = params;
+    if (!defaultRole) throw new BadRequestException(`Role mặc định ${params.role} chưa được tạo trong bảng Role`);
+
+    const userData: Omit<Prisma.UserCreateInput, 'id' | 'roles'> = {
+      email: params.email,
+      fullName: params.fullName,
+      phoneNumber: params.phoneNumber,
+      password: hashedPassword,
+    };
 
     const user = await this.prisma.user.create({
       data: {
