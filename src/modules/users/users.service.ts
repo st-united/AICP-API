@@ -17,7 +17,7 @@ import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
-
+import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class UsersService {
   constructor(
@@ -130,8 +130,7 @@ export class UsersService {
       const oldDest = this.googleCloudStorageService.getFileDestFromPublicUrl(user.avatarUrl);
       await this.googleCloudStorageService.deleteFile(oldDest);
     }
-
-    const destPath = avtPathName('avatars', file.filename);
+    const destPath = avtPathName('avatars', uuidv4());
     const avatarUrl = await this.googleCloudStorageService.uploadFile(file, destPath);
 
     const updatedUser = await this.prisma.user.update({

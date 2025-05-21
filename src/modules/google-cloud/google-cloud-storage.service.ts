@@ -3,7 +3,7 @@ import { Storage, StorageOptions } from '@google-cloud/storage';
 import * as fs from 'fs';
 import { GOOGLE_CLOUD_STORAGE } from '@Constant/google-cloud';
 import { ConfigService } from '@nestjs/config';
-
+import { v4 as uuidv4 } from 'uuid';
 /**
  * Service for handling file operations with Google Cloud Storage.
  * Provides functionality for uploading, deleting files and managing file URLs.
