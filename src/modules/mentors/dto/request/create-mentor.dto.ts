@@ -1,18 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
-import { Prisma } from '@prisma/client';
+import { RegisterUserDto } from '@app/modules/auth/dto/register-user.dto';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Expose } from 'class-transformer';
+import { UserRoleEnum } from '@Constant/enums';
 
-export class CreateMentorDto implements Omit<Prisma.MentorCreateInput, 'user'> {
+export class CreateMentorDto extends OmitType(RegisterUserDto, ['password']) {
   @Expose()
   @ApiProperty({
-    description: 'The user ID of the mentor',
-    type: String,
-    format: 'uuid',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Force role to be MENTOR',
+    example: UserRoleEnum.MENTOR,
+    default: UserRoleEnum.MENTOR,
   })
-  @IsUUID()
-  userId: string;
+  role: string = UserRoleEnum.MENTOR;
 
   @Expose()
   @ApiProperty({

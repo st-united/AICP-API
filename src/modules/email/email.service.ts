@@ -32,6 +32,13 @@ export class EmailService {
     await this.sendEmail(email, 'Quên Mật khẩu', template);
   }
 
+  async sendIEmailNewMentor(fullName: string, email: string, password: string): Promise<void> {
+    const loginLink = `${this.configService.get('FE_APP_URL')}/login`;
+
+    const template = this.generateMentorAccountEmailTemplate(fullName, loginLink, password);
+    await this.sendEmail(email, 'Kích hoạt tài khoản Mentor DevPlus', template);
+  }
+
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {
     try {
       await this.transporter.sendMail({
@@ -122,5 +129,44 @@ export class EmailService {
         </body>
         </html>
       `;
+  }
+
+  private generateMentorAccountEmailTemplate(fullName: string, loginLink: string, password: string): string {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Kích hoạt tài khoản mentor</title>
+      <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { width: 100%; max-width: 660px; margin: 20px auto; background-color: #ffffff; border: 1px solid #d1d1d1; border-radius: 12px; }
+        .header { background-color: rgb(0, 48, 109); color: #ffffff; text-align: center; padding: 15px; border-radius: 8px 8px 0 0; font-size: 20px; font-weight: bold; }
+        .content { text-align: center; margin: 20px 0; }
+        .btn { display: inline-block; background-color: #4285f4; color: #ffffff !important; padding: 12px 25px; text-decoration: none; border-radius: 5px; margin: 20px 0; font-size: 16px; font-weight: bold; }
+        .footer { margin-top: 20px; text-align: center; font-size: 14px; color: #555555; border-top: 1px solid rgb(199, 198, 198); padding: 20px 10px; margin-left: 20px; margin-right: 20px; }
+        p { color: #000000 !important; font-size: 18px !important; margin: 10px 0 !important; }
+        .hello { font-size: 18px; font-weight: bold; color: rgb(0, 0, 0); margin-top: 10px; }
+        .highlight { font-weight: bold; background-color: #f0f0f0; padding: 5px 10px; border-radius: 5px; display: inline-block; margin: 5px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">Thông tin tài khoản Mentor của bạn</div>
+        <div class="content">
+          <div class="hello">Xin chào ${fullName},</div>
+          <p>Bạn đã được mời tham gia nền tảng của chúng tôi với vai trò <strong>Mentor</strong>.</p>
+          <p>Đây là mật khẩu tạm thời để đăng nhập:</p>
+          <p class="highlight">${password}</p>
+          <p>Để bảo mật, vui lòng kích hoạt tài khoản và đổi mật khẩu sau khi đăng nhập.</p>
+          <a href="${loginLink}" class="btn">Kích hoạt tài khoản</a>
+          <p>Nếu bạn không mong đợi email này, vui lòng bỏ qua hoặc liên hệ với chúng tôi.</p>
+          <p>Chúng tôi rất mong được hợp tác cùng bạn!<br>Trân trọng,<br>Đội ngũ DevPlus</p>
+        </div>
+        <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+      </div>
+    </body>
+    </html>
+  `;
   }
 }
