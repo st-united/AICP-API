@@ -3,24 +3,31 @@ export const generateSecurePassword = (length: number = 8): string => {
     throw new Error('Password length must be between 8 and 50 characters.');
   }
 
-  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const numbers = '0123456789';
+  // Create character sets using ASCII codes
+  const createCharSet = (start: number, end: number): string =>
+    Array.from({ length: end - start + 1 }, (_, i) => String.fromCharCode(start + i)).join('');
+
+  const lowercase = createCharSet(97, 122); // a-z
+  const uppercase = createCharSet(65, 90); // A-Z
+  const numbers = createCharSet(48, 57); // 0-9
   const allChars = lowercase + uppercase + numbers;
 
-  const getRandomChar = (charset: string) => charset.charAt(Math.floor(Math.random() * charset.length));
+  const getRandomChar = (charset: string): string => {
+    const randomBuffer = new Uint32Array(1);
+    crypto.getRandomValues(randomBuffer);
+    return charset.charAt(randomBuffer[0] % charset.length);
+  };
 
-  // Make sure at least one lowercase, one uppercase, and one number are included
   const guaranteedChars = [getRandomChar(lowercase), getRandomChar(uppercase), getRandomChar(numbers)];
 
-  // Generate the remaining characters
   const remainingLength = length - guaranteedChars.length;
   const remainingChars = Array.from({ length: remainingLength }, () => getRandomChar(allChars));
 
-  // Shuffle the array to ensure randomness
   const passwordArray = [...guaranteedChars, ...remainingChars];
   for (let i = passwordArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const randomBuffer = new Uint32Array(1);
+    crypto.getRandomValues(randomBuffer);
+    const j = randomBuffer[0] % (i + 1);
     [passwordArray[i], passwordArray[j]] = [passwordArray[j], passwordArray[i]];
   }
 
