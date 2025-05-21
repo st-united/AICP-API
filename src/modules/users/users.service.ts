@@ -14,7 +14,7 @@ import { UserDto } from './dto/user.dto';
 import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
-import { UserProviderEnum } from '@Constant/index';
+import { UserProviderEnum, UserRoleEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 
 @Injectable()
@@ -32,12 +32,28 @@ export class UsersService {
     if (emailExisted) throw new BadRequestException('Email đã tồn tại');
 
     const hashedPassword = await bcrypt.hash(params.password, 10);
-    params = { ...params, password: hashedPassword };
+    params = { ...params, password: hashedPassword, status: true };
+
+    const defaultRole = await this.prisma.role.findUnique({
+      where: { name: params.role },
+    });
+
+    if (!defaultRole) throw new Error(`Role mặc định ${params.role} chưa được tạo trong bảng Role`);
+    const { role, ...userData } = params;
 
     const user = await this.prisma.user.create({
       data: {
-        ...params,
+        ...userData,
         provider: UserProviderEnum.EMAIL,
+        roles: {
+          create: [
+            {
+              role: {
+                connect: { id: defaultRole.id },
+              },
+            },
+          ],
+        },
       },
       select: {
         id: true,

@@ -18,3 +18,10 @@ export enum UserProviderEnum {
   GOOGLE = 'GOOGLE',
   GITHUB = 'GITHUB',
 }
+
+export enum UserRoleEnum {
+  USER = 'user',
+  ADMIN = 'admin',
+  MENTOR = 'mentor',
+  SUPER_ADMIN = 'super_admin',
+}

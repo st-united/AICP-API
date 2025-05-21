@@ -1,5 +1,6 @@
 import { Expose } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsBoolean, IsDate } from 'class-validator';
+import { UserRoleEnum } from '@Constant/index';
 
 export class CreateUserDto {
   @Expose()
@@ -30,6 +31,9 @@ export class CreateUserDto {
   @IsBoolean()
   @IsOptional()
   status?: boolean = false;
+
+  @Expose()
+  role: string = UserRoleEnum.USER;
 
   @Expose()
   @IsOptional()
