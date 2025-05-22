@@ -14,6 +14,8 @@ export abstract class PageOptionsDto {
   order?: Order = Order.DESC;
 
   @ApiPropertyOptional({ description: 'Field to sort by' })
+  @IsOptional()
+  @IsString()
   orderBy?: string = 'createdAt';
 
   @ApiPropertyOptional({ description: 'Page number', default: 1, minimum: 1 })
