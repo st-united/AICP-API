@@ -1,0 +1,201 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { userAnswerDto } from './dto/request/user-answer.dto';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '@app/modules/prisma/prisma.service';
+import { UpdateStatusSubmitDto } from './dto/request/update-status-submit-answer.dto';
+
+@Injectable()
+export class AnswersService {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService
+  ) {}
+  async create(params: userAnswerDto): Promise<string> {
+    try {
+      if (!params.answers || params.answers.length === 0) {
+        throw new Error('No answers provided');
+      }
+      if (params.type === 'ESSAY') {
+        await this.handleEssayAnswer(params);
+      } else {
+        await this.handleSelectionAnswers(params);
+      }
+
+      return 'Answer created successfully';
+    } catch (error) {
+      throw new Error('Failed to create answer');
+    }
+  }
+
+  async update(userId: string, examSetId: string, params: UpdateStatusSubmitDto): Promise<string> {
+    try {
+      const existingExam = await this.prisma.exam.findFirst({
+        where: {
+          userId,
+          examSetId,
+        },
+      });
+
+      if (existingExam) {
+        throw new BadRequestException('This exam has already been submitted.');
+      }
+
+      await this.prisma.userAnswer.updateMany({
+        where: { userId, examSetId },
+        data: { status: 'SUBMIT' },
+      });
+
+      const existingAnswers = await this.prisma.userAnswer.findMany({
+        where: { userId, examSetId, status: 'SUBMIT' },
+        select: { id: true, questionId: true },
+      });
+
+      const userAnswerIds = existingAnswers.map((a) => a.id);
+      const questionIds = existingAnswers.map((a) => a.questionId);
+
+      const matchingSelections = await this.prisma.userAnswerSelection.findMany({
+        where: { userAnswerId: { in: userAnswerIds } },
+        include: { userAnswer: { select: { id: true, questionId: true } } },
+      });
+
+      const answerOptions = await this.prisma.answerOption.findMany({
+        where: { questionId: { in: questionIds }, isCorrect: true },
+        select: { id: true, content: true, isCorrect: true, questionId: true },
+      });
+
+      const groupedSelections = matchingSelections.reduce(
+        (acc, curr) => {
+          const { userAnswerId, answerOptionId, userAnswer } = curr;
+          const questionId = userAnswer?.questionId;
+
+          if (!acc[userAnswerId]) {
+            acc[userAnswerId] = { userAnswerId, questionId, answerOptionIds: [] };
+          }
+          acc[userAnswerId].answerOptionIds.push(answerOptionId);
+          return acc;
+        },
+        {} as Record<string, { userAnswerId: string; questionId: string; answerOptionIds: string[] }>
+      );
+
+      const groupedByQuestion = answerOptions.reduce(
+        (acc, curr) => {
+          const { questionId, id, content, isCorrect } = curr;
+          if (!acc[questionId]) {
+            acc[questionId] = { questionId, options: [] };
+          }
+          acc[questionId].options.push({ id, content, isCorrect });
+          return acc;
+        },
+        {} as Record<string, { questionId: string; options: { id: string; content: string; isCorrect: boolean }[] }>
+      );
+
+      const scores = await Promise.all(
+        Object.entries(groupedSelections).map(async ([userAnswerId, { questionId, answerOptionIds }]) => {
+          const questionData = groupedByQuestion[questionId];
+          if (!questionData) return [userAnswerId, 0];
+
+          const correctOptionIds = questionData.options.filter((opt) => opt.isCorrect).map((opt) => opt.id);
+
+          const totalCorrect = correctOptionIds.length;
+
+          const hasIncorrect = answerOptionIds.some((id) => !correctOptionIds.includes(id));
+
+          const matchedCorrect = answerOptionIds.filter((id) => correctOptionIds.includes(id)).length;
+
+          const rawScore = hasIncorrect ? matchedCorrect / totalCorrect : 0;
+
+          const score = parseFloat(rawScore.toFixed(2));
+
+          await this.prisma.userAnswer.update({
+            where: { id: userAnswerId, examSetId: examSetId },
+            data: { autoScore: score },
+          });
+
+          return [userAnswerId, score];
+        })
+      );
+
+      const totalScore = scores.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : Number(val)), 0);
+
+      await this.prisma.exam.create({
+        data: {
+          userId,
+          examSetId,
+          startedAt: new Date(params.timeStart),
+          finishedAt: new Date(params.timeEnd),
+          totalScore,
+        },
+      });
+
+      return 'Submit successfully';
+    } catch (error) {
+      throw new Error('Failed to update answers and calculate scores');
+    }
+  }
+
+  private async handleEssayAnswer(params: userAnswerDto) {
+    const [essayAnswer] = params.answers;
+    const { answers, type, ...restParams } = params;
+
+    const existingAnswers = await this.prisma.userAnswer.findMany({
+      where: { ...restParams },
+      select: { id: true },
+    });
+
+    const existingIds = existingAnswers.map((a) => a.id);
+    if (existingIds.length > 0) {
+      await this.prisma.userAnswer.deleteMany({
+        where: { id: { in: existingIds } },
+      });
+    }
+
+    await this.prisma.userAnswer.create({
+      data: {
+        answerText: essayAnswer.answer,
+        ...restParams,
+      },
+    });
+  }
+
+  private async handleSelectionAnswers(params: userAnswerDto) {
+    const { answers, type, ...restParams } = params;
+
+    const existingAnswers = await this.prisma.userAnswer.findMany({
+      where: {
+        ...restParams,
+      },
+      select: { id: true },
+    });
+
+    const existingIds = existingAnswers.map((a) => a.id);
+
+    if (existingIds.length > 0) {
+      await this.prisma.userAnswerSelection.deleteMany({
+        where: {
+          userAnswerId: { in: existingIds },
+        },
+      });
+
+      await this.prisma.userAnswer.deleteMany({
+        where: {
+          id: { in: existingIds },
+        },
+      });
+    }
+    const createdAnswer = await this.prisma.userAnswer.create({
+      data: {
+        ...restParams,
+      },
+    });
+    await Promise.all(
+      params.answers.map(async (answer) => {
+        await this.prisma.userAnswerSelection.create({
+          data: {
+            answerOptionId: answer.answerId,
+            userAnswerId: createdAnswer.id,
+          },
+        });
+      })
+    );
+  }
+}
