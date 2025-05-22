@@ -19,6 +19,8 @@ import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
+import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto.';
+import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 
 @Injectable()
 export class UsersService {
@@ -120,6 +122,70 @@ export class UsersService {
     });
 
     return new ResponseItem(user, 'Thay đổi mật khẩu thành công');
+  }
+
+  async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    const [result, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where: {
+          ...(queries.fullName && {
+            fullName: {
+              contains: queries.fullName,
+              mode: 'insensitive',
+            },
+          }),
+          status: queries.status,
+          createdAt: {
+            gte: queries.startDate ? new Date(queries.startDate) : undefined,
+            lte: queries.endDate ? new Date(queries.endDate) : undefined,
+          },
+        },
+        skip: queries.skip,
+        take: queries.take,
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
+
+    return new ResponsePaginate(result, pageMetaDto, queries.fullName);
+  }
+
+  async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
+    const [users, activates, unactivates] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.count({
+        where: {
+          status: true,
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          status: false,
+        },
+      }),
+    ]);
+
+    const data = {
+      users,
+      activates,
+      unactivates,
+    };
+
+    return new ResponseItem(data);
+  }
+
+  async getUser(id: string): Promise<ResponseItem<UserDto>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { roles: true },
+    });
+    if (!user) throw new BadRequestException('Nhân viên không tồn tại');
+
+    return new ResponseItem(
+      { ...user, avatarUrl: user.avatarUrl ? baseImageUrl + convertPath(user.avatarUrl) : null },
+      'Thành công'
+    );
   }
 
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
