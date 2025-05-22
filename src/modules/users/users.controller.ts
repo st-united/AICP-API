@@ -29,6 +29,9 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { CreateUserDto } from './dto/request/create-user.dto';
 import { Public } from '../auth/guards/decorator/public.decorator';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
+import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto.';
+import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
+
 @ApiTags('users')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -60,8 +63,15 @@ export class UsersController {
   }
 
   @Get()
-  async getUsers(@Query() getUsersDto: GetUsersDto): Promise<ResponsePaginate<UserDto>> {
-    return await this.usersService.getUsers(getUsersDto);
+  @Public()
+  async getUsers(@Query() queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    return await this.usersService.getUsers(queries);
+  }
+
+  @Get('status-summary')
+  @Public()
+  async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
+    return await this.usersService.getStatusSummary();
   }
 
   @Get('me')

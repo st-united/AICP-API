@@ -16,6 +16,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { UserProviderEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
+import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto.';
+import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 
 @Injectable()
 export class UsersService {
@@ -87,25 +89,55 @@ export class UsersService {
     return new ResponseItem(user, 'Thay đổi mật khẩu thành công');
   }
 
-  async getUsers(params: GetUsersDto): Promise<ResponsePaginate<UserDto>> {
-    const where = {
-      status: params.status ? params.status : undefined,
-      deletedAt: null,
-    };
-
+  async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
     const [result, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
-        where,
-        orderBy: { [params.orderBy]: params.order },
-        skip: params.skip,
-        take: params.take,
+        where: {
+          ...(queries.fullName && {
+            fullName: {
+              contains: queries.fullName,
+              mode: 'insensitive',
+            },
+          }),
+          status: queries.status,
+          createdAt: {
+            gte: queries.startDate ? new Date(queries.startDate) : undefined,
+            lte: queries.endDate ? new Date(queries.endDate) : undefined,
+          },
+        },
+        skip: queries.skip,
+        take: queries.take,
       }),
-      this.prisma.user.count({ where }),
+      this.prisma.user.count(),
     ]);
 
-    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
-    return new ResponsePaginate(result, pageMetaDto, 'Thành công');
+    return new ResponsePaginate(result, pageMetaDto, queries.fullName);
+  }
+
+  async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
+    const [users, activates, unactivates] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.count({
+        where: {
+          status: true,
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          status: false,
+        },
+      }),
+    ]);
+
+    const data = {
+      users,
+      activates,
+      unactivates,
+    };
+
+    return new ResponseItem(data);
   }
 
   async getUser(id: string): Promise<ResponseItem<UserDto>> {
