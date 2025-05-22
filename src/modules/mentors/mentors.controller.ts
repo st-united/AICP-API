@@ -6,6 +6,8 @@ import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
+import { GetMenteesDto } from './dto/request/get-mentees.dto';
+import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
 
 @Controller('mentors')
 export class MentorsController {
@@ -23,6 +25,11 @@ export class MentorsController {
   @Get('/stats')
   async getMentorStats(): Promise<ResponseItem<MentorStatsDto>> {
     return await this.mentorsService.getMentorStats();
+  }
+
+  @Get('/mentees')
+  getMentees(@Query() getMentees: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
+    return this.mentorsService.getMenteesByMentorId(getMentees);
   }
 
   @Get(':id')
