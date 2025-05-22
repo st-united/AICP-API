@@ -15,7 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { ResponseItem } from '@app/common/dtos';
+import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { fileOption } from '@app/config/image-multer-config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GetUsersDto } from '@UsersModule/dto/get-users.dto';

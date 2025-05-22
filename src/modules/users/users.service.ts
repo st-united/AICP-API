@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '@UsersModule/dto/request/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { UserDto } from './dto/user.dto';
-import { avtPathName } from '@Constant/url';
+import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto.';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
+import { convertPath } from '@app/common/utils';
 
 @Injectable()
 export class UsersService {
@@ -135,6 +136,12 @@ export class UsersService {
             },
           }),
           status: queries.status,
+          ...(queries.job && {
+            job: queries.job,
+          }),
+          ...(queries.province && {
+            province: queries.province,
+          }),
           createdAt: {
             gte: queries.startDate ? new Date(queries.startDate) : undefined,
             lte: queries.endDate ? new Date(queries.endDate) : undefined,
