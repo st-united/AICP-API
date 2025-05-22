@@ -98,11 +98,9 @@ export class AnswersService {
 
           const totalCorrect = correctOptionIds.length;
 
-          const hasIncorrect = answerOptionIds.some((id) => !correctOptionIds.includes(id));
-
           const matchedCorrect = answerOptionIds.filter((id) => correctOptionIds.includes(id)).length;
 
-          const rawScore = hasIncorrect ? matchedCorrect / totalCorrect : 0;
+          const rawScore = matchedCorrect / totalCorrect;
 
           const score = parseFloat(rawScore.toFixed(2));
 
