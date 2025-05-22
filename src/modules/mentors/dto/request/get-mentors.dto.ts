@@ -1,10 +1,13 @@
 import { IsOptional, IsBoolean } from 'class-validator';
 import { PageOptionsDto } from '@app/common/dtos';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
+import { Expose, Type } from 'class-transformer';
 
 export class GetMentorsDto extends PageOptionsDto {
-  @ApiPropertyOptional({ description: 'Filter by status', default: true })
+  @ApiProperty({ description: 'Filter by status', required: false })
+  @Expose()
   @IsOptional()
   @IsBoolean()
+  @Type(() => Boolean)
   status?: boolean;
 }

@@ -1,6 +1,7 @@
-import { Expose } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsBoolean, IsDate } from 'class-validator';
+import { Expose, Transform } from 'class-transformer';
+import { IsNotEmpty, IsOptional, IsBoolean, IsDate, IsEnum } from 'class-validator';
 import { UserRoleEnum } from '@Constant/index';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
   @Expose()
@@ -32,7 +33,8 @@ export class CreateUserDto {
   @IsOptional()
   status?: boolean = false;
 
-  @Expose()
+  @IsEnum(UserRoleEnum)
+  @Transform(({ value }) => value ?? UserRoleEnum.USER)
   role: string = UserRoleEnum.USER;
 
   @Expose()

@@ -61,6 +61,22 @@ export class MentorsService {
           skip: params.skip,
           take: params.take,
           include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                phoneNumber: true,
+                email: true,
+                status: true,
+              },
+            },
+            bookings: {
+              where: {
+                status: { in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED] },
+                scheduledAt: { gt: new Date() },
+              },
+              select: { id: true },
+            },
             _count: {
               select: {
                 bookings: {
@@ -75,9 +91,15 @@ export class MentorsService {
         this.prisma.mentor.count({ where }),
       ]);
 
+      const mentorsWithStats = result.map(({ _count, bookings, ...rest }) => ({
+        ...rest,
+        completedCount: _count.bookings,
+        upcomingCount: bookings.length,
+      }));
+
       const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
 
-      return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách mentor thành công');
+      return new ResponsePaginate(mentorsWithStats, pageMetaDto, 'Lấy danh sách mentor thành công');
     } catch (error) {
       throw new BadRequestException('Lỗi khi lấy danh sách mentor');
     }
