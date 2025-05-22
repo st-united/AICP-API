@@ -44,7 +44,7 @@ export class MentorsController {
   }
 
   @Delete(':id')
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<null>> {
-    return await this.mentorsService.softRemoveMentor(id);
+  async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<null>> {
+    return await this.mentorsService.deactivateMentorAccount(id);
   }
 }

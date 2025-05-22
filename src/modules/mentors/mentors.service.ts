@@ -211,7 +211,7 @@ export class MentorsService {
     }
   }
 
-  async softRemoveMentor(id: string): Promise<ResponseItem<null>> {
+  async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
     try {
       const existingMentor = await this.prisma.mentor.findFirst({
         where: { id },
