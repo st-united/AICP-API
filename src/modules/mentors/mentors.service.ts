@@ -10,6 +10,8 @@ import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
 import { MentorBookingStatus, Prisma } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
+import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
+import { GetMenteesDto } from './dto/request/get-mentees.dto';
 
 @Injectable()
 export class MentorsService {
@@ -59,31 +61,6 @@ export class MentorsService {
           skip: params.skip,
           take: params.take,
           include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phoneNumber: true,
-                status: true,
-              },
-            },
-            bookings: {
-              where: {
-                scheduledAt: {
-                  gt: new Date(),
-                },
-              },
-              select: {
-                user: {
-                  select: {
-                    email: true,
-                    fullName: true,
-                  },
-                },
-                scheduledAt: true,
-              },
-            },
             _count: {
               select: {
                 bookings: {
@@ -122,6 +99,55 @@ export class MentorsService {
       return new ResponseItem(mentor, 'Lấy thông tin mentor thành công', MentorResponseDto);
     } catch (error) {
       throw new BadRequestException('Lỗi khi lấy thông tin mentor');
+    }
+  }
+
+  async getMenteesByMentorId(params: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
+    try {
+      const [bookings, total] = await this.prisma.$transaction([
+        this.prisma.mentorBooking.findMany({
+          where: {
+            mentorId: params.mentorId,
+            scheduledAt: {
+              gt: new Date(),
+            },
+          },
+          orderBy: {
+            [params.orderBy]: params.order,
+          },
+          skip: params.skip,
+          take: params.take,
+          select: {
+            scheduledAt: true,
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        }),
+        this.prisma.mentorBooking.count({
+          where: {
+            mentorId: params.mentorId,
+            scheduledAt: {
+              gt: new Date(),
+            },
+          },
+        }),
+      ]);
+
+      const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
+
+      const mentees = bookings.map((booking) => ({
+        ...booking.user,
+        scheduledAt: booking.scheduledAt,
+      }));
+
+      return new ResponsePaginate(mentees, pageMetaDto, 'Lấy danh sách mentee thành công');
+    } catch (error) {
+      throw new BadRequestException('Lỗi khi lấy danh sách mentee');
     }
   }
 
