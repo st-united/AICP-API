@@ -61,6 +61,15 @@ export class MentorsService {
           skip: params.skip,
           take: params.take,
           include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                phoneNumber: true,
+                email: true,
+                status: true,
+              },
+            },
             _count: {
               select: {
                 bookings: {
