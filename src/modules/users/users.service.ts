@@ -12,12 +12,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
 import { EmailService } from '@app/modules/email/email.service';
-import { UserProviderEnum } from '@Constant/enums';
+import { UserProviderEnum, UserRoleEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
+import { Prisma } from '@prisma/client';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -44,12 +46,33 @@ export class UsersService {
     }
 
     const hashedPassword = await bcrypt.hash(params.password, 10);
-    params = { ...params, password: hashedPassword };
+
+    const defaultRole = await this.prisma.role.findUnique({
+      where: { name: params.role },
+    });
+
+    if (!defaultRole) throw new BadRequestException(`Role mặc định ${params.role} chưa được tạo trong bảng Role`);
+
+    const userData: Omit<Prisma.UserCreateInput, 'id' | 'roles'> = {
+      email: params.email,
+      fullName: params.fullName,
+      phoneNumber: params.phoneNumber,
+      password: hashedPassword,
+    };
 
     const user = await this.prisma.user.create({
       data: {
-        ...params,
+        ...userData,
         provider: UserProviderEnum.EMAIL,
+        roles: {
+          create: [
+            {
+              role: {
+                connect: { id: defaultRole.id },
+              },
+            },
+          ],
+        },
       },
       select: {
         id: true,

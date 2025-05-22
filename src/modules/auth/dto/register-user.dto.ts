@@ -1,5 +1,6 @@
-import { PASSWORD_REGEX_PATTERN, PHONE_REGEX_PATTERN } from '@Constant/index';
+import { PASSWORD_REGEX_PATTERN, PHONE_REGEX_PATTERN, UserRoleEnum } from '@Constant/index';
 import { ApiOperation, ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
 import { IsString, IsEmail, IsNotEmpty, Matches, IsBoolean } from 'class-validator';
 
 export class RegisterUserDto {
@@ -29,4 +30,8 @@ export class RegisterUserDto {
     message: 'Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số',
   })
   password: string;
+
+  @ApiProperty({ description: 'User role', example: UserRoleEnum.USER, default: UserRoleEnum.USER })
+  @Expose()
+  role: string = UserRoleEnum.USER;
 }
