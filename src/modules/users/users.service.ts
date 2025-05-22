@@ -3,7 +3,6 @@ import * as bcrypt from 'bcrypt';
 import { plainToClass } from 'class-transformer';
 import * as fs from 'fs';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
-import { convertPath } from '@app/common/utils';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '@UsersModule/dto/request/create-user.dto';
 import { GetUsersDto } from '@UsersModule/dto/get-users.dto';
@@ -18,6 +17,7 @@ import { UserProviderEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto.';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
+import { convertPath } from '@app/common/utils';
 
 @Injectable()
 export class UsersService {
@@ -100,6 +100,12 @@ export class UsersService {
             },
           }),
           status: queries.status,
+          ...(queries.job && {
+            job: queries.job,
+          }),
+          ...(queries.province && {
+            province: queries.province,
+          }),
           createdAt: {
             gte: queries.startDate ? new Date(queries.startDate) : undefined,
             lte: queries.endDate ? new Date(queries.endDate) : undefined,
