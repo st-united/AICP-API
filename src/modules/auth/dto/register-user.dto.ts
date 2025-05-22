@@ -1,7 +1,7 @@
 import { PASSWORD_REGEX_PATTERN, PHONE_REGEX_PATTERN, UserRoleEnum } from '@Constant/index';
 import { ApiOperation, ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform } from 'class-transformer';
-import { IsString, IsEmail, IsNotEmpty, Matches, IsBoolean } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, Matches, IsBoolean, IsOptional, IsEnum } from 'class-validator';
 
 export class RegisterUserDto {
   @ApiProperty({ description: 'Fullname', example: 'Nguyen Van A' })
@@ -31,8 +31,7 @@ export class RegisterUserDto {
   })
   password: string;
 
-  @ApiProperty({ description: 'User role', example: UserRoleEnum.USER, default: UserRoleEnum.USER })
-  @Expose()
+  @IsEnum(UserRoleEnum)
   @Transform(({ value }) => value ?? UserRoleEnum.USER)
   role: string = UserRoleEnum.USER;
 }
