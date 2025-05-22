@@ -14,36 +14,37 @@ export class MentorsController {
   constructor(private readonly mentorsService: MentorsService) {}
 
   @Post()
-  create(@Body() createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
-    return this.mentorsService.create(createMentorDto);
+  async create(@Body() createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
+    return await this.mentorsService.create(createMentorDto);
   }
 
   @Get()
   async findAll(@Query() getMentors: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
     return await this.mentorsService.getMentors(getMentors);
   }
+
   @Get('/stats')
   async getMentorStats(): Promise<ResponseItem<MentorStatsDto>> {
     return await this.mentorsService.getMentorStats();
   }
 
   @Get('/mentees')
-  getMentees(@Query() getMentees: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
-    return this.mentorsService.getMenteesByMentorId(getMentees);
+  async getMentees(@Query() getMentees: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
+    return await this.mentorsService.getMenteesByMentorId(getMentees);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.mentorsService.getMentor(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.mentorsService.getMentor(id);
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateMentorDto: UpdateMentorDto) {
-    return this.mentorsService.updateMentor(id, updateMentorDto);
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateMentorDto: UpdateMentorDto) {
+    return await this.mentorsService.updateMentor(id, updateMentorDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<null>> {
-    return this.mentorsService.softRemoveMentor(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<null>> {
+    return await this.mentorsService.softRemoveMentor(id);
   }
 }
