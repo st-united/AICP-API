@@ -1,4 +1,4 @@
-TTLX_TC_BE_DEV_REPO:= 902637028063.dkr.ecr.ap-southeast-1.amazonaws.com/aicp-tc-be:0.0.24
+AICP_API_DEV_REPO:= 902637028063.dkr.ecr.ap-southeast-1.amazonaws.com/aicp-tc-be:0.0.24
 PROJECT_ID=enspara
 PROJECT_NUMBER=288271283983
 REGION=asia-southeast1
@@ -6,7 +6,7 @@ ZONE=asia-southeast1-a
 
 REPOSITORY=aicp
 IMAGE_NAME=aicp-api
-VERSION=0.0.2
+VERSION=0.0.4
 ARTIFACT_REGISTRY_NAME=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME):$(VERSION)
 
 
@@ -99,3 +99,12 @@ map-redis:
 
 exec-api:
 	kubectl exec -it pod/aicp-api-0 -n devplus-aicp -- sh
+
+apply:
+	kubectl apply -k ./k8s
+
+get-pods:
+	kubectl get all -n devplus-aicp
+
+logs:
+	kubectl logs -n devplus-aicp pod/aicp-api-0
