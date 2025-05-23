@@ -152,6 +152,139 @@ async function main() {
       role: 'mentor',
     },
     {
+      phoneNumber: '0945678902',
+      email: 'mentor2@example.com',
+      fullName: 'Jane Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678903',
+      email: 'mentor3@example.com',
+      fullName: 'Mike Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678904',
+      email: 'mentor4@example.com',
+      fullName: 'Sarah Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678905',
+      email: 'mentor5@example.com',
+      fullName: 'David Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678906',
+      email: 'mentor6@example.com',
+      fullName: 'Lisa Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678907',
+      email: 'mentor7@example.com',
+      fullName: 'Tom Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678908',
+      email: 'mentor8@example.com',
+      fullName: 'Emma Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678909',
+      email: 'mentor9@example.com',
+      fullName: 'Chris Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678910',
+      email: 'mentor10@example.com',
+      fullName: 'Amy Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678911',
+      email: 'mentor11@example.com',
+      fullName: 'Peter Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678912',
+      email: 'mentor12@example.com',
+      fullName: 'Mary Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678913',
+      email: 'mentor13@example.com',
+      fullName: 'James Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678914',
+      email: 'mentor14@example.com',
+      fullName: 'Sophie Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678915',
+      email: 'mentor15@example.com',
+      fullName: 'Daniel Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678916',
+      email: 'mentor16@example.com',
+      fullName: 'Rachel Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678917',
+      email: 'mentor17@example.com',
+      fullName: 'Mark Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678918',
+      email: 'mentor18@example.com',
+      fullName: 'Laura Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678919',
+      email: 'mentor19@example.com',
+      fullName: 'Paul Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678920',
+      email: 'mentor20@example.com',
+      fullName: 'Julia Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
       phoneNumber: '0956789012',
       email: 'examiner@example.com',
       fullName: 'Eva Examiner',
@@ -169,6 +302,132 @@ async function main() {
       phoneNumber: '0978901234',
       email: 'user2@example.com',
       fullName: 'User Two',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901235',
+      email: 'user3@example.com',
+      fullName: 'User Three',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901236',
+      email: 'user4@example.com',
+      fullName: 'User Four',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901237',
+      email: 'user5@example.com',
+      fullName: 'User Five',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901238',
+      email: 'user6@example.com',
+      fullName: 'User Six',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901239',
+      email: 'user7@example.com',
+      fullName: 'User Seven',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901240',
+      email: 'user8@example.com',
+      fullName: 'User Eight',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901241',
+      email: 'user9@example.com',
+      fullName: 'User Nine',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901242',
+      email: 'user10@example.com',
+      fullName: 'User Ten',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901243',
+      email: 'user11@example.com',
+      fullName: 'User Eleven',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901244',
+      email: 'user12@example.com',
+      fullName: 'User Twelve',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901245',
+      email: 'user13@example.com',
+      fullName: 'User Thirteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901246',
+      email: 'user14@example.com',
+      fullName: 'User Fourteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901247',
+      email: 'user15@example.com',
+      fullName: 'User Fifteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901248',
+      email: 'user16@example.com',
+      fullName: 'User Sixteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901249',
+      email: 'user17@example.com',
+      fullName: 'User Seventeen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901250',
+      email: 'user18@example.com',
+      fullName: 'User Eighteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901251',
+      email: 'user19@example.com',
+      fullName: 'User Nineteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901252',
+      email: 'user20@example.com',
+      fullName: 'User Twenty',
       password: 'User123',
       role: 'user',
     },
@@ -1248,6 +1507,82 @@ async function main() {
       expertise: 'Machine Learning, Deep Learning, Computer Vision',
     },
     {
+      email: 'mentor2@example.com',
+      expertise: 'Natural Language Processing, Transformers, BERT',
+    },
+    {
+      email: 'mentor3@example.com',
+      expertise: 'Reinforcement Learning, Game AI, Decision Making',
+    },
+    {
+      email: 'mentor4@example.com',
+      expertise: 'Data Science, Statistical Analysis, Big Data',
+    },
+    {
+      email: 'mentor5@example.com',
+      expertise: 'AI Ethics, Responsible AI Development, Fairness',
+    },
+    {
+      email: 'mentor6@example.com',
+      expertise: 'Robotics, Computer Vision, Sensor Fusion',
+    },
+    {
+      email: 'mentor7@example.com',
+      expertise: 'MLOps, AI Infrastructure, Model Deployment',
+    },
+    {
+      email: 'mentor8@example.com',
+      expertise: 'AI in Healthcare, Medical Imaging, Bioinformatics',
+    },
+    {
+      email: 'mentor9@example.com',
+      expertise: 'AI for Finance, Quantitative Analysis, Risk Assessment',
+    },
+    {
+      email: 'mentor10@example.com',
+      expertise: 'Edge AI, IoT, Embedded Systems',
+    },
+    {
+      email: 'mentor11@example.com',
+      expertise: 'AI Security, Adversarial ML, Privacy',
+    },
+    {
+      email: 'mentor12@example.com',
+      expertise: 'Generative AI, GANs, Diffusion Models',
+    },
+    {
+      email: 'mentor13@example.com',
+      expertise: 'AI Research, Academic Publishing, Scientific Methods',
+    },
+    {
+      email: 'mentor14@example.com',
+      expertise: 'AI Product Management, Strategy, Business Impact',
+    },
+    {
+      email: 'mentor15@example.com',
+      expertise: 'Speech Recognition, Audio Processing, Voice AI',
+    },
+    {
+      email: 'mentor16@example.com',
+      expertise: 'AI for Climate Change, Environmental Modeling, Sustainability',
+    },
+    {
+      email: 'mentor17@example.com',
+      expertise: 'AI Education, Curriculum Development, Teaching',
+    },
+    {
+      email: 'mentor18@example.com',
+      expertise: 'AI in Agriculture, Precision Farming, Crop Analysis',
+    },
+    {
+      email: 'mentor19@example.com',
+      expertise: 'AI for Social Good, Humanitarian AI, Impact Assessment',
+    },
+    {
+      email: 'mentor20@example.com',
+      expertise: 'AI Startups, Entrepreneurship, Innovation',
+    },
+    {
       email: 'admin@example.com', // Admin can also be a mentor
       expertise: 'AI Ethics, Responsible AI, Policy',
     },
@@ -1269,29 +1604,28 @@ async function main() {
     },
   });
 
-  const mentorBookingsData = [
-    {
-      userEmail: 'user@example.com',
-      mentorEmail: 'mentor1@example.com',
-      scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days in future
-      status: MentorBookingStatus.ACCEPTED,
-      notes: 'Discussion about AI career path and required skills',
-    },
-    {
-      userEmail: 'user1@example.com',
-      mentorEmail: 'mentor1@example.com',
-      scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days in future
-      status: MentorBookingStatus.PENDING,
-      notes: 'Help with practical ML project implementation',
-    },
-    {
-      userEmail: 'user2@example.com',
-      mentorEmail: 'admin@example.com',
-      scheduledAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days in future
-      status: MentorBookingStatus.ACCEPTED,
-      notes: 'Guidance on ethical considerations in healthcare AI',
-    },
-  ];
+  // 20 mentees bookings for each mentor
+  const mentorBookingsData = [];
+  const mentorEmails = mentorsData.map((mentor) => mentor.email);
+  const userEmails = usersData.filter((user) => user.role === 'user').map((user) => user.email);
+
+  function randomFutureDate(daysAhead = 30) {
+    const randomDays = Math.floor(Math.random() * daysAhead) + 1;
+    return new Date(Date.now() + randomDays * 24 * 60 * 60 * 1000);
+  }
+
+  mentorEmails.forEach((mentorEmail, mentorIndex) => {
+    for (let i = 0; i < 20; i++) {
+      const menteeIndex = (mentorIndex * 20 + i) % userEmails.length;
+      mentorBookingsData.push({
+        userEmail: userEmails[menteeIndex],
+        mentorEmail,
+        scheduledAt: randomFutureDate(),
+        status: MentorBookingStatus.ACCEPTED,
+        notes: `Session between ${userEmails[menteeIndex]} and ${mentorEmail}`,
+      });
+    }
+  });
 
   const mentorEmailMap = {};
   for (const mentor of mentors) {
