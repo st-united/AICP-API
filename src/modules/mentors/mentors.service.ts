@@ -142,11 +142,6 @@ export class MentorsService {
               gt: new Date(),
             },
           },
-          orderBy: {
-            [params.orderBy]: params.order,
-          },
-          skip: params.skip,
-          take: params.take,
           select: {
             scheduledAt: true,
             user: {
