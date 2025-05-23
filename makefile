@@ -6,7 +6,7 @@ ZONE=asia-southeast1-a
 
 REPOSITORY=aicp
 IMAGE_NAME=aicp-api
-VERSION=0.3
+VERSION=0.0.2
 ARTIFACT_REGISTRY_NAME=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME):$(VERSION)
 
 
@@ -90,3 +90,12 @@ helm-redis:
 		--create-namespace \
 		--namespace devplus-aicp \
 		-f ./k8s/redis/values.yaml
+
+map-db:
+	kubectl -n devplus-aicp port-forward pod/postgres-aicp-postgresql-0 5432:5432
+
+map-redis:
+	kubectl -n devplus-aicp port-forward pod/redis-aicp-0 6379:6379
+
+exec-api:
+	kubectl exec -it pod/aicp-api-0 -n devplus-aicp -- sh
