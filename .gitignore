@@ -40,3 +40,8 @@ lerna-debug.log*
 
 /etc
 /etc/secrets
+
+# k8s
+
+/k8s/.env
+/k8s/secrets
