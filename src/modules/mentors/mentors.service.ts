@@ -49,9 +49,14 @@ export class MentorsService {
 
   async getMentors(params: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
     try {
-      const where = {
-        isActive: params.status || true,
-        fullName: params.search || undefined,
+      const where: Prisma.MentorWhereInput = {
+        isActive: params.status || undefined,
+        user: {
+          fullName: {
+            contains: params.search || '',
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
       };
 
       const [result, total] = await this.prisma.$transaction([
@@ -194,16 +199,16 @@ export class MentorsService {
   }
 
   async updateMentor(id: string, updateMentorDto: UpdateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
+    const existingMentor = await this.prisma.mentor.findFirst({
+      where: { id },
+    });
+
+    if (!existingMentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
     try {
       return await this.prisma.$transaction(async (transactionClient) => {
-        const existingMentor = await transactionClient.mentor.findFirst({
-          where: { id },
-        });
-
-        if (!existingMentor) {
-          throw new NotFoundException('Không tìm thấy mentor');
-        }
-
         const userUpdateData: Omit<Prisma.UserUpdateInput, 'password'> = {
           fullName: updateMentorDto.fullName,
           phoneNumber: updateMentorDto.phoneNumber,

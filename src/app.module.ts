@@ -11,6 +11,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { EmailModule } from './modules/email/email.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { MentorsModule } from './modules/mentors/mentors.module';
+import { AnswersModule } from '@AnswersModule/answers.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { MentorsModule } from './modules/mentors/mentors.module';
     EmailModule,
     RedisModule,
     MentorsModule,
+    AnswersModule,
   ],
   providers: [
     {
