@@ -1320,6 +1320,7 @@ async function main() {
       manualScore: null,
       autoScore: 10,
       answerOptionIndex: 3, // The correct option (Học qua internet)
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user1@example.com',
@@ -1328,6 +1329,7 @@ async function main() {
       manualScore: null,
       autoScore: 10,
       answerOptionIndex: 0, // The correct option (Đúng)
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user2@example.com',
@@ -1337,6 +1339,7 @@ async function main() {
       manualScore: 18,
       autoScore: null,
       answerOptionIndex: null, // Essay doesn't have options
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user@example.com',
@@ -1346,6 +1349,7 @@ async function main() {
       manualScore: 19,
       autoScore: null,
       answerOptionIndex: null, // Essay doesn't have options
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user@example.com',
@@ -1355,6 +1359,7 @@ async function main() {
       autoScore: 10,
       answerOptionIndex: null,
       answerOptionIndices: [0, 1, 3], // The correct options
+      examSetName: 'AI Foundations Assessment',
     },
   ];
 
@@ -1366,6 +1371,7 @@ async function main() {
         answerText: answerData.answerText,
         manualScore: answerData.manualScore,
         autoScore: answerData.autoScore,
+        examSetId: examSetMap[answerData.examSetName].id,
       },
     });
 

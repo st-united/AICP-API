@@ -151,15 +151,18 @@ model AnswerOption {
 
 model UserAnswer {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  answerText  String   @map("answer_text") @db.Text
-  manualScore Int?     @map("manual_score") @db.SmallInt
-  autoScore   Int?     @map("auto_score") @db.SmallInt
+  answerText  String?  @map("answer_text") @db.Text
+  manualScore Float?    @map("manual_score") @db.Real
+  autoScore   Float?     @map("auto_score") @db.Real
   questionId  String   @map("question_id") @db.Uuid
   userId      String   @map("user_id") @db.Uuid
+  examSetId   String   @map("exam_set_id") @db.Uuid
+  status      UserAnswerStatus @default(DRAFT)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  examSet    ExamSet           @relation(fields: [examSetId], references: [id], onDelete: Cascade)
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   selections UserAnswerSelection[]
 }
@@ -221,6 +224,8 @@ model ExamSet {
 
   exams     Exam[]
   questions ExamSetQuestion[]
+
+  UserAnswer UserAnswer[]
 }
 
 model Exam {
@@ -289,4 +294,9 @@ enum MentorBookingStatus {
   REJECTED
   CANCELLED
   COMPLETED
+}
+
+enum UserAnswerStatus {
+ DRAFT
+ SUBMIT
 }
