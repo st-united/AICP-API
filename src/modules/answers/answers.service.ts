@@ -29,18 +29,17 @@ export class AnswersService {
   }
 
   async update(userId: string, examSetId: string, params: UpdateStatusSubmitDto): Promise<string> {
+    const existingExam = await this.prisma.exam.findFirst({
+      where: {
+        userId,
+        examSetId,
+      },
+    });
+
+    if (existingExam) {
+      throw new BadRequestException('This exam has already been submitted.');
+    }
     try {
-      const existingExam = await this.prisma.exam.findFirst({
-        where: {
-          userId,
-          examSetId,
-        },
-      });
-
-      if (existingExam) {
-        throw new BadRequestException('This exam has already been submitted.');
-      }
-
       await this.prisma.userAnswer.updateMany({
         where: { userId, examSetId },
         data: { status: UserAnswerStatus.SUBMIT },
