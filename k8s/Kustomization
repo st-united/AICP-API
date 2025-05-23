@@ -1,0 +1,13 @@
+namespace: devplus-aicp
+
+resources:
+  - namespace.yaml
+  - statefulSet.yaml
+
+secretGenerator:
+  - name: aicp-api-env
+    namespace: devplus-aicp
+    envs:
+      - .env
+    options:
+      disableNameSuffixHash: true

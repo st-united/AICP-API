@@ -1,0 +1,4 @@
+redis:
+  enabled: true
+  auth:
+    password: rb4eyAH97hFimV4SVg1zDQ==
