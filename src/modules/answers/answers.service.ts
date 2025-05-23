@@ -3,6 +3,7 @@ import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
 import { UpdateStatusSubmitDto } from './dto/request/update-status-submit-answer.dto';
+import { UserAnswerStatus } from '@prisma/client';
 
 @Injectable()
 export class AnswersService {
@@ -28,25 +29,24 @@ export class AnswersService {
   }
 
   async update(userId: string, examSetId: string, params: UpdateStatusSubmitDto): Promise<string> {
+    const existingExam = await this.prisma.exam.findFirst({
+      where: {
+        userId,
+        examSetId,
+      },
+    });
+
+    if (existingExam) {
+      throw new BadRequestException('This exam has already been submitted.');
+    }
     try {
-      const existingExam = await this.prisma.exam.findFirst({
-        where: {
-          userId,
-          examSetId,
-        },
-      });
-
-      if (existingExam) {
-        throw new BadRequestException('This exam has already been submitted.');
-      }
-
       await this.prisma.userAnswer.updateMany({
         where: { userId, examSetId },
-        data: { status: 'SUBMIT' },
+        data: { status: UserAnswerStatus.SUBMIT },
       });
 
       const existingAnswers = await this.prisma.userAnswer.findMany({
-        where: { userId, examSetId, status: 'SUBMIT' },
+        where: { userId, examSetId, status: UserAnswerStatus.SUBMIT },
         select: { id: true, questionId: true },
       });
 
