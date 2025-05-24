@@ -162,9 +162,18 @@ export class UsersService {
       this.prisma.user.count(),
     ]);
 
+    const mappedResult = result.map((user) => ({
+      ...user,
+      dob: null,
+      country: null,
+      province: null,
+      job: null,
+      referralCode: null,
+    }));
+
     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
-    return new ResponseItem(new ResponsePaginate(result, pageMetaDto, 'Success'));
+    return new ResponseItem(new ResponsePaginate(mappedResult, pageMetaDto, 'Success'));
   }
 
   async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
