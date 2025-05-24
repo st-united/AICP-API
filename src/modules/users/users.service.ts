@@ -125,28 +125,30 @@ export class UsersService {
     return new ResponseItem(user, 'Thay đổi mật khẩu thành công');
   }
 
-  async getUsers(queries: GetUsersByAdminDto): Promise<ResponseItem<ResponsePaginate<UserDto>>> {
+  async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    const where: Prisma.UserWhereInput = {
+      ...(queries.search && {
+        fullName: {
+          contains: queries.search,
+          mode: 'insensitive',
+        },
+      }),
+      status: queries.status,
+      ...(queries.job && {
+        job: queries.job,
+      }),
+      ...(queries.province && {
+        province: queries.province,
+      }),
+      createdAt: {
+        gte: queries.startDate ? new Date(queries.startDate) : undefined,
+        lte: queries.endDate ? new Date(queries.endDate) : undefined,
+      },
+    };
+
     const [result, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
-        where: {
-          ...(queries.fullName && {
-            fullName: {
-              contains: queries.fullName,
-              mode: 'insensitive',
-            },
-          }),
-          status: queries.status,
-          ...(queries.job && {
-            job: queries.job,
-          }),
-          ...(queries.province && {
-            province: queries.province,
-          }),
-          createdAt: {
-            gte: queries.startDate ? new Date(queries.startDate) : undefined,
-            lte: queries.endDate ? new Date(queries.endDate) : undefined,
-          },
-        },
+        where,
         select: {
           id: true,
           phoneNumber: true,
@@ -159,7 +161,9 @@ export class UsersService {
         skip: queries.skip,
         take: queries.take,
       }),
-      this.prisma.user.count(),
+      this.prisma.user.count({
+        where,
+      }),
     ]);
 
     const mappedResult = result.map((user) => ({
@@ -173,7 +177,7 @@ export class UsersService {
 
     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
-    return new ResponseItem(new ResponsePaginate(mappedResult, pageMetaDto, 'Success'));
+    return new ResponsePaginate(mappedResult, pageMetaDto, 'Lấy danh sách người dùng thành công');
   }
 
   async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
