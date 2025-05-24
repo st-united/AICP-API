@@ -2,9 +2,11 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import { Order } from '../constants';
+import { ApiProperty } from '@nestjs/swagger';
 
 export abstract class PageOptionsDto {
   @IsString()
+  @ApiProperty({ required: false })
   search?: string = '';
 
   @IsEnum(Order)

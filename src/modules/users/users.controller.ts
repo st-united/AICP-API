@@ -64,7 +64,7 @@ export class UsersController {
 
   @Get()
   @Public()
-  async getUsers(@Query() queries: GetUsersByAdminDto): Promise<ResponseItem<ResponsePaginate<UserDto>>> {
+  async getUsers(@Query() queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
     return await this.usersService.getUsers(queries);
   }
 

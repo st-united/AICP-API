@@ -6,11 +6,6 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class GetUsersByAdminDto extends PageOptionsDto {
   @Expose()
-  @ApiProperty({ required: false })
-  @IsOptional()
-  fullName: string;
-
-  @Expose()
   @IsOptional()
   @ApiProperty({ required: false })
   @Transform(({ value }) => {
