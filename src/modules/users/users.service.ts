@@ -89,7 +89,7 @@ export class UsersService {
     return new ResponseItem(user, 'Thay đổi mật khẩu thành công');
   }
 
-  async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+  async getUsers(queries: GetUsersByAdminDto): Promise<ResponseItem<ResponsePaginate<UserDto>>> {
     const [result, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
         where: {
@@ -111,6 +111,15 @@ export class UsersService {
             lte: queries.endDate ? new Date(queries.endDate) : undefined,
           },
         },
+        select: {
+          id: true,
+          phoneNumber: true,
+          email: true,
+          fullName: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
         skip: queries.skip,
         take: queries.take,
       }),
@@ -119,7 +128,7 @@ export class UsersService {
 
     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
-    return new ResponsePaginate(result, pageMetaDto, queries.fullName);
+    return new ResponseItem(new ResponsePaginate(result, pageMetaDto, 'Success'));
   }
 
   async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
