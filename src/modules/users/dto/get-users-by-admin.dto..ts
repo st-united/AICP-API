@@ -6,42 +6,42 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class GetUsersByAdminDto extends PageOptionsDto {
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   fullName: string;
 
   @Expose()
   @IsOptional()
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @Transform(({ value }) => {
-    if (value === '0') return false;
-    if (value === '1') return true;
+    if (value === '0' || value === 'false') return false;
+    if (value === '1' || value === 'true') return true;
     return undefined;
   })
   status: boolean;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   province: string;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   job: string;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   startDate: Date;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   endDate: Date;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsOptional()
   createdAt: Date;
 }
