@@ -109,6 +109,13 @@ export class UsersService {
         gte: queries.startDate ? new Date(queries.startDate) : undefined,
         lte: queries.endDate ? new Date(queries.endDate) : undefined,
       },
+      roles: {
+        some: {
+          role: {
+            name: 'user',
+          },
+        },
+      },
     };
 
     const [result, total] = await this.prisma.$transaction([
@@ -122,6 +129,9 @@ export class UsersService {
           status: true,
           createdAt: true,
           updatedAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
         },
         skip: queries.skip,
         take: queries.take,
