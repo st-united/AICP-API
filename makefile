@@ -6,7 +6,7 @@ ZONE=asia-southeast1-a
 
 REPOSITORY=aicp
 IMAGE_NAME=aicp-api
-VERSION=0.3
+VERSION=0.0.4
 ARTIFACT_REGISTRY_NAME=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME):$(VERSION)
 
 
@@ -86,7 +86,7 @@ helm-db:
 
 helm-redis:
 	helm install redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
-		--version 18.6.0 \
-		--create-namespace \
-		--namespace devplus-aicp \
-		-f ./k8s/redis/values.yaml
+			--version 18.6.0 \
+			--create-namespace \
+			--namespace devplus-aicp \
+			-f ./k8s/redis/values.yaml

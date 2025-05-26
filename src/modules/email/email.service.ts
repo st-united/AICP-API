@@ -49,7 +49,7 @@ export class EmailService {
         html,
       });
     } catch (error) {
-      throw new Error('Failed to send email');
+      throw new Error(error.message);
     }
   }
 
