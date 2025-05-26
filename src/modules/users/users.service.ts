@@ -156,15 +156,29 @@ export class UsersService {
   }
 
   async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
+    const where: Prisma.UserWhereInput = {
+      roles: {
+        some: {
+          role: {
+            name: 'user',
+          },
+        },
+      },
+    };
+
     const [users, activates, unactivates] = await this.prisma.$transaction([
-      this.prisma.user.count(),
+      this.prisma.user.count({
+        where,
+      }),
       this.prisma.user.count({
         where: {
+          ...where,
           status: true,
         },
       }),
       this.prisma.user.count({
         where: {
+          ...where,
           status: false,
         },
       }),
