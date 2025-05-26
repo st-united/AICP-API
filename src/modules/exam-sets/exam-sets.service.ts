@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateExamSetDto } from './dto/create-exam-set.dto';
 import { UpdateExamSetDto } from './dto/update-exam-set.dto';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import { GetExamSetDto } from './dto/get-exam-set.dto';
 
 @Injectable()
 export class ExamSetsService {
-  prisma = new PrismaClient();
+  constructor(private readonly prisma: PrismaService) {}
 
   create(createExamSetDto: CreateExamSetDto) {
     return 'This action adds a new examSet';
@@ -14,15 +14,15 @@ export class ExamSetsService {
 
   findAll() {}
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} examSet`;
   }
 
-  update(id: number, updateExamSetDto: UpdateExamSetDto) {
+  update(id: string, updateExamSetDto: UpdateExamSetDto) {
     return `This action updates a #${id} examSet`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} examSet`;
   }
 
