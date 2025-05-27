@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRoleEnum } from '@Constant/enums';
+import { PERMISSION_METHOD } from '@Constant/permission-method';
 
 interface Permission {
   endpoint: string;
@@ -90,7 +91,7 @@ export class PermissionsService {
    * @returns {boolean} True if the permission is a 'manage' permission
    */
   private isManagePermission(permission: Permission): boolean {
-    return permission.method === 'manage';
+    return permission.method === PERMISSION_METHOD.MANAGE;
   }
 
   /**
