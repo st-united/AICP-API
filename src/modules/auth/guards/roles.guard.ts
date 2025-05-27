@@ -17,18 +17,16 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    if (!requiredRoles) {
-      return true;
-    }
+    if (!requiredRoles) return true;
 
     const req = context.switchToHttp().getRequest<RequestCustom>();
     const user = req.user;
 
-    const isHasRole = await this.permissionsService.hasAnyRole(user.userId, requiredRoles);
-    const permissionSlugs = await this.permissionsService.getRolePermissionSlugs(requiredRoles);
-    console.log(permissionSlugs);
-    console.log(req.path, req.method);
-    const isHasPermission = this.permissionsService.hasPermission(req.path, req.method, permissionSlugs);
-    return isHasRole && isHasPermission;
+    const matchedRoles = await this.permissionsService.getMatchedRoles(user.userId, requiredRoles);
+
+    if (matchedRoles.length === 0) return false;
+
+    req.user._matchedRoles = matchedRoles;
+    return true;
   }
 }

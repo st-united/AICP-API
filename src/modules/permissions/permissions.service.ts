@@ -38,13 +38,13 @@ export class PermissionsService {
   }
 
   /**
-   * Checks if a user has any of the specified roles.
+   * Retrieves the matched roles for a user based on the provided roles.
    *
-   * @param {string} userId - The ID of the user to check
-   * @param {UserRoleEnum[]} roles - Array of roles to check against
-   * @returns {Promise<boolean>} True if user has any of the specified roles, false otherwise
+   * @param {string} userId - The ID of the user whose roles are to be checked.
+   * @param {UserRoleEnum[]} roles - The array of roles to match against the user's roles.
+   * @returns {Promise<UserRoleEnum[]>} - A promise that resolves to an array of matched user roles.
    */
-  async hasAnyRole(userId: string, roles: UserRoleEnum[]): Promise<boolean> {
+  async getMatchedRoles(userId: string, roles: UserRoleEnum[]): Promise<UserRoleEnum[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -56,7 +56,9 @@ export class PermissionsService {
       },
     });
 
-    return user?.roles.some(({ role }) => roles.includes(role.name as UserRoleEnum)) ?? false;
+    if (!user) return [];
+
+    return user.roles.map(({ role }) => role.name as UserRoleEnum).filter((r) => roles.includes(r));
   }
 
   /**
