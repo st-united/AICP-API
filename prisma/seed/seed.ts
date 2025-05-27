@@ -1444,6 +1444,7 @@ async function main() {
       data: {
         name: examSetData.name,
         description: examSetData.description,
+        duration: 40,
       },
     });
 
