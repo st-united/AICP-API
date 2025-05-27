@@ -38,6 +38,46 @@ export class PermissionsService {
   }
 
   /**
+   * Retrieves all permission slugs for a specific user based on their roles.
+   *
+   * @param {string} userId - The ID of the user to get permissions for
+   * @returns {Promise<string[]>} Array of unique permission slugs the user has access to
+   */
+  public async getUserPermissionSlugs(userId: string): Promise<string[]> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        roles: {
+          select: {
+            role: {
+              select: {
+                name: true,
+                permissions: {
+                  select: {
+                    permission: {
+                      select: {
+                        slug: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) return [];
+
+    const slugs = user.roles
+      .flatMap(({ role }) => role.permissions.map((p) => p.permission.slug))
+      .filter((slug): slug is string => Boolean(slug));
+
+    return [...new Set(slugs)];
+  }
+
+  /**
    * Retrieves the matched roles for a user based on the provided roles.
    *
    * @param {string} userId - The ID of the user whose roles are to be checked.

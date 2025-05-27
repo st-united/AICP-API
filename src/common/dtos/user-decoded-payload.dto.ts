@@ -1,7 +1,4 @@
-import { UserRoleEnum } from '@Constant/enums';
-
 export class UserDecodedPayload {
-  userId: string;
-  email: string;
-  _matchedRoles: UserRoleEnum[];
+  public userId: string;
+  public email: string;
 }

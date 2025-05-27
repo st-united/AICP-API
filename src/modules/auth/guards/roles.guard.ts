@@ -11,7 +11,7 @@ export class RolesGuard implements CanActivate {
     private readonly permissionsService: PermissionsService
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  public async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<UserRoleEnum[]>('roles', [
       context.getHandler(),
       context.getClass(),
@@ -24,9 +24,6 @@ export class RolesGuard implements CanActivate {
 
     const matchedRoles = await this.permissionsService.getMatchedRoles(user.userId, requiredRoles);
 
-    if (matchedRoles.length === 0) return false;
-
-    req.user._matchedRoles = matchedRoles;
-    return true;
+    return matchedRoles.length > 0;
   }
 }
