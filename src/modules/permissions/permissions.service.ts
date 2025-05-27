@@ -18,7 +18,7 @@ export class PermissionsService {
    * @param {UserRoleEnum[]} roles - Array of user roles to get permissions for
    * @returns {Promise<string[]>} Array of unique permission slugs
    */
-  async getRolePermissionSlugs(roles: UserRoleEnum[]): Promise<string[]> {
+  public async getRolePermissionSlugs(roles: UserRoleEnum[]): Promise<string[]> {
     const roleData = await this.prisma.role.findMany({
       where: { name: { in: roles } },
       select: {
@@ -44,7 +44,7 @@ export class PermissionsService {
    * @param {UserRoleEnum[]} roles - The array of roles to match against the user's roles.
    * @returns {Promise<UserRoleEnum[]>} - A promise that resolves to an array of matched user roles.
    */
-  async getMatchedRoles(userId: string, roles: UserRoleEnum[]): Promise<UserRoleEnum[]> {
+  public async getMatchedRoles(userId: string, roles: UserRoleEnum[]): Promise<UserRoleEnum[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -126,7 +126,7 @@ export class PermissionsService {
    * @param {string[]} permissions - Array of permission strings the user has
    * @returns {boolean} True if user has permission, false otherwise
    */
-  hasPermission(endpoint: string, method: string, permissions: string[]): boolean {
+  public hasPermission(endpoint: string, method: string, permissions: string[]): boolean {
     return permissions.some((permission) => {
       const parsedPermission = this.parsePermission(permission);
       return this.matchesEndpoint(endpoint, parsedPermission.endpoint) && this.matchesMethod(method, parsedPermission);
