@@ -4,7 +4,8 @@ import { CreateExamSetDto } from './dto/create-exam-set.dto';
 import { UpdateExamSetDto } from './dto/update-exam-set.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-
+import { GetExamSetDto } from './dto/get-exam-set.dto';
+import { ResponseItem } from '@app/common/dtos';
 @ApiTags('exam-sets')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -25,8 +26,8 @@ export class ExamSetsController {
   }
   @Get(':id')
   @ApiOperation({ summary: 'Get exam set with questions' })
-  async getExamSet(@Param('id') id: string) {
-    return this.examSetsService.getExamSetWithQuestions(id);
+  async getExamSet(@Param('id') id: string): Promise<ResponseItem<GetExamSetDto>> {
+    return await this.examSetsService.getExamSetWithQuestions(id);
   }
 
   @Patch(':id')

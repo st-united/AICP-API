@@ -3,6 +3,7 @@ import { CreateExamSetDto } from './dto/create-exam-set.dto';
 import { UpdateExamSetDto } from './dto/update-exam-set.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GetExamSetDto } from './dto/get-exam-set.dto';
+import { ResponseItem } from '@app/common/dtos';
 
 @Injectable()
 export class ExamSetsService {
@@ -26,7 +27,7 @@ export class ExamSetsService {
     return `This action removes a #${id} examSet`;
   }
 
-  async getExamSetWithQuestions(examSetId: string): Promise<GetExamSetDto> {
+  async getExamSetWithQuestions(examSetId: string): Promise<ResponseItem<GetExamSetDto>> {
     const examSet = await this.prisma.examSet.findUnique({
       where: { id: examSetId },
       include: {
@@ -49,7 +50,7 @@ export class ExamSetsService {
       throw new NotFoundException('Exam set not found');
     }
 
-    return {
+    const examSetData = {
       id: examSet.id,
       name: examSet.name,
       description: examSet.description,
@@ -69,5 +70,6 @@ export class ExamSetsService {
         };
       }),
     };
+    return new ResponseItem(examSetData, 'Exam set retrieved successfully', GetExamSetDto);
   }
 }
