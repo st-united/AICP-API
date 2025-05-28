@@ -22,14 +22,15 @@ export class MentorsService {
   ) {}
 
   async create(createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
+    const password = generateSecurePassword();
+    const { expertise, ...userData } = createMentorDto;
+    const createUser = await this.userService.create({ ...userData, password });
     try {
-      const password = generateSecurePassword();
-      const { expertise, ...userData } = createMentorDto;
-      const createUser = await this.userService.create({ ...userData, password });
       const mentor = await this.prisma.mentor.create({
         data: {
           userId: createUser.id,
           expertise: createMentorDto.expertise,
+          isActive: false,
         },
       });
 
@@ -237,14 +238,18 @@ export class MentorsService {
   }
 
   async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
-    try {
-      const existingMentor = await this.prisma.mentor.findFirst({
-        where: { id },
-      });
-      if (!existingMentor) {
-        throw new NotFoundException('Không tìm thấy mentor');
-      }
+    const existingMentor = await this.prisma.mentor.findFirst({
+      where: { id },
+      include: {
+        user: true,
+      },
+    });
 
+    if (!existingMentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
+    try {
       await this.prisma.mentor.update({
         where: { id },
         data: {
@@ -252,9 +257,47 @@ export class MentorsService {
         },
       });
 
+      const emailContent = {
+        fullName: existingMentor.user.fullName,
+        email: existingMentor.user.email,
+      };
+
+      this.emailService.sendEmailDeactivateMentorAccount(emailContent);
+
       return new ResponseItem(null, 'Xóa mentor thành công');
     } catch (error) {
       throw new BadRequestException('Lỗi khi xóa mentor');
+    }
+  }
+
+  async activateMentorAccount(id: string): Promise<ResponseItem<null>> {
+    const existingMentor = await this.prisma.mentor.findFirst({
+      where: { id },
+      include: {
+        user: true,
+      },
+    });
+    if (!existingMentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
+    try {
+      await this.prisma.mentor.update({
+        where: { id },
+        data: {
+          isActive: true,
+        },
+      });
+
+      const emailContent = {
+        fullName: existingMentor.user.fullName,
+        email: existingMentor.user.email,
+      };
+
+      this.emailService.sendEmailActivateMentorAccount(emailContent);
+      return new ResponseItem(null, 'Kích hoạt tài khoản mentor thành công');
+    } catch (error) {
+      throw new BadRequestException('Lỗi khi kích hoạt tài khoản mentor');
     }
   }
 }
