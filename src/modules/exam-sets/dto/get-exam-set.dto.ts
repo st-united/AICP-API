@@ -16,6 +16,9 @@ export class QuestionDto {
   id: string;
 
   @Expose()
+  type: string;
+
+  @Expose()
   content: string;
 
   @Expose()

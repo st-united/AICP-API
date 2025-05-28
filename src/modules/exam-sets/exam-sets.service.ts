@@ -58,6 +58,7 @@ export class ExamSetsService {
         const q = qSet.question;
         return {
           id: q.id,
+          type: q.type,
           content: q.content,
           subcontent: q.subcontent,
           image: q.image,
