@@ -45,6 +45,7 @@ export class UsersService {
       fullName: params.fullName,
       phoneNumber: params.phoneNumber,
       password: hashedPassword,
+      status: defaultRole.name === UserRoleEnum.MENTOR ? true : false,
     };
 
     const user = await this.prisma.user.create({
