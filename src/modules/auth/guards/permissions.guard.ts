@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PermissionsService } from '../../permissions/permissions.service';
 import { RequestCustom } from '@app/common/interfaces';
 
@@ -9,6 +9,10 @@ export class PermissionsGuard implements CanActivate {
   public async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<RequestCustom>();
     const user = req.user;
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
 
     const permissionSlugs = await this.permissionsService.getUserPermissionSlugs(user.userId);
 

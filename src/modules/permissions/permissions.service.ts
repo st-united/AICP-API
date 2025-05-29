@@ -43,22 +43,21 @@ export class PermissionsService {
    * @param {string} userId - The ID of the user to get permissions for
    * @returns {Promise<string[]>} Array of unique permission slugs the user has access to
    */
+  // TODO: Add caching for better performance
   public async getUserPermissionSlugs(userId: string): Promise<string[]> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+    const userRoles = await this.prisma.userRole.findMany({
+      where: {
+        userId: userId,
+      },
       select: {
-        roles: {
+        role: {
           select: {
-            role: {
+            name: true,
+            permissions: {
               select: {
-                name: true,
-                permissions: {
+                permission: {
                   select: {
-                    permission: {
-                      select: {
-                        slug: true,
-                      },
-                    },
+                    slug: true,
                   },
                 },
               },
@@ -68,9 +67,8 @@ export class PermissionsService {
       },
     });
 
-    if (!user) return [];
-
-    const slugs = user.roles
+    if (!userRoles) return [];
+    const slugs = userRoles
       .flatMap(({ role }) => role.permissions.map((p) => p.permission.slug))
       .filter((slug): slug is string => Boolean(slug));
 
