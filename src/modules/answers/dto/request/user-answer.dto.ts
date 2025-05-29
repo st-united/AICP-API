@@ -11,11 +11,6 @@ export class userAnswerDto {
   @Expose()
   @IsNotEmpty()
   @ApiProperty()
-  userId: string;
-
-  @Expose()
-  @IsNotEmpty()
-  @ApiProperty()
   questionId: string;
 
   @Expose()

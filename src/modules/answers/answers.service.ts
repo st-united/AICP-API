@@ -11,15 +11,15 @@ export class AnswersService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService
   ) {}
-  async create(params: userAnswerDto): Promise<string> {
+  async create(userId, params: userAnswerDto): Promise<string> {
     try {
       if (!params.answers || params.answers.length === 0) {
         throw new Error('No answers provided');
       }
       if (params.type === 'ESSAY') {
-        await this.handleEssayAnswer(params);
+        await this.handleEssayAnswer(userId, params);
       } else {
-        await this.handleSelectionAnswers(params);
+        await this.handleSelectionAnswers(userId, params);
       }
 
       return 'Answer created successfully';
@@ -104,10 +104,19 @@ export class AnswersService {
 
           const score = parseFloat(rawScore.toFixed(2));
 
-          await this.prisma.userAnswer.update({
-            where: { id: userAnswerId, examSetId: examSetId },
-            data: { autoScore: score },
+          const userAnswer = await this.prisma.userAnswer.findFirst({
+            where: {
+              userId: userAnswerId,
+              examSetId: examSetId,
+            },
           });
+
+          if (userAnswer) {
+            await this.prisma.userAnswer.update({
+              where: { id: userAnswer.id },
+              data: { autoScore: score },
+            });
+          }
 
           return [userAnswerId, score];
         })
@@ -131,12 +140,12 @@ export class AnswersService {
     }
   }
 
-  private async handleEssayAnswer(params: userAnswerDto) {
+  private async handleEssayAnswer(userId, params: userAnswerDto) {
     const [essayAnswer] = params.answers;
     const { answers, type, ...restParams } = params;
 
     const existingAnswers = await this.prisma.userAnswer.findMany({
-      where: { ...restParams },
+      where: { userId, ...restParams },
       select: { id: true },
     });
 
@@ -151,16 +160,18 @@ export class AnswersService {
       data: {
         answerText: essayAnswer.answer,
         ...restParams,
+        userId,
       },
     });
   }
 
-  private async handleSelectionAnswers(params: userAnswerDto) {
+  private async handleSelectionAnswers(userId, params: userAnswerDto) {
     const { answers, type, ...restParams } = params;
 
     const existingAnswers = await this.prisma.userAnswer.findMany({
       where: {
         ...restParams,
+        userId,
       },
       select: { id: true },
     });
@@ -183,6 +194,7 @@ export class AnswersService {
     const createdAnswer = await this.prisma.userAnswer.create({
       data: {
         ...restParams,
+        userId,
       },
     });
     await Promise.all(

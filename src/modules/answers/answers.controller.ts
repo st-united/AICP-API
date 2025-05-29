@@ -4,6 +4,7 @@ import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UpdateStatusSubmitDto } from './dto/request/update-status-submit-answer.dto';
 import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
+import { Req } from '@nestjs/common';
 
 @ApiTags('answers')
 @ApiBearerAuth('access-token')
@@ -13,16 +14,16 @@ export class AnswersController {
   constructor(private readonly answersService: AnswersService) {}
 
   @Post()
-  async create(@Body() dto: userAnswerDto): Promise<string> {
-    return await this.answersService.create(dto);
+  async create(@Req() req, @Body() dto: userAnswerDto): Promise<string> {
+    return await this.answersService.create(req.user.userId, dto);
   }
 
-  @Patch(':userId/:examSetId')
+  @Patch(':examSetId')
   update(
-    @Param('userId') userId: string,
+    @Req() req,
     @Param('examSetId') examSetId: string,
     @Body() UpdateStatusSubmitDto: UpdateStatusSubmitDto
   ): Promise<string> {
-    return this.answersService.update(userId, examSetId, UpdateStatusSubmitDto);
+    return this.answersService.update(req.user.userId, examSetId, UpdateStatusSubmitDto);
   }
 }
