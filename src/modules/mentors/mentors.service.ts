@@ -50,7 +50,6 @@ export class MentorsService {
   async getMentors(params: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
     try {
       const where: Prisma.MentorWhereInput = {
-        isActive: params.status || undefined,
         user: {
           fullName: {
             contains: params.search || '',
@@ -58,6 +57,10 @@ export class MentorsService {
           },
         },
       };
+
+      if (params.isActive !== undefined) {
+        where.isActive = params.isActive;
+      }
 
       const [result, total] = await this.prisma.$transaction([
         this.prisma.mentor.findMany({
@@ -139,11 +142,6 @@ export class MentorsService {
               gt: new Date(),
             },
           },
-          orderBy: {
-            [params.orderBy]: params.order,
-          },
-          skip: params.skip,
-          take: params.take,
           select: {
             scheduledAt: true,
             user: {

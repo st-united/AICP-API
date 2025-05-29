@@ -19,7 +19,7 @@ import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
-import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto.';
+import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
 
@@ -164,6 +164,11 @@ export class UsersService {
           status: true,
           createdAt: true,
           updatedAt: true,
+          province: true,
+          country: true,
+          dob: true,
+          job: true,
+          referralCode: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -176,18 +181,9 @@ export class UsersService {
       }),
     ]);
 
-    const mappedResult = result.map((user) => ({
-      ...user,
-      dob: null,
-      country: null,
-      province: null,
-      job: null,
-      referralCode: null,
-    }));
-
     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
-    return new ResponsePaginate(mappedResult, pageMetaDto, 'Lấy danh sách người dùng thành công');
+    return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách người dùng thành công');
   }
 
   async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
