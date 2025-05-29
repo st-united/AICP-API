@@ -47,14 +47,15 @@ export class ExamSetsService {
     });
 
     if (!examSet) {
-      throw new NotFoundException('Exam set not found');
+      throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
+    const sortedQuestions = examSet.questions.sort((a, b) => a.question.sequence - b.question.sequence);
 
     const examSetData = {
       id: examSet.id,
       name: examSet.name,
       description: examSet.description,
-      questions: examSet.questions.map((qSet) => {
+      questions: sortedQuestions.map((qSet) => {
         const q = qSet.question;
         return {
           id: q.id,
@@ -71,6 +72,6 @@ export class ExamSetsService {
         };
       }),
     };
-    return new ResponseItem(examSetData, 'Exam set retrieved successfully', GetExamSetDto);
+    return new ResponseItem(examSetData, 'Thành công nhận bộ đề thi', GetExamSetDto);
   }
 }
