@@ -104,10 +104,19 @@ export class AnswersService {
 
           const score = parseFloat(rawScore.toFixed(2));
 
-          await this.prisma.userAnswer.update({
-            where: { id: userAnswerId, examSetId: examSetId },
-            data: { autoScore: score },
+          const userAnswer = await this.prisma.userAnswer.findFirst({
+            where: {
+              userId: userAnswerId,
+              examSetId: examSetId,
+            },
           });
+
+          if (userAnswer) {
+            await this.prisma.userAnswer.update({
+              where: { id: userAnswer.id },
+              data: { autoScore: score },
+            });
+          }
 
           return [userAnswerId, score];
         })
