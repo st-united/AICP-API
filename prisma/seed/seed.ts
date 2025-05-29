@@ -17,18 +17,18 @@ async function hashPassword(password: string) {
 async function main() {
   // 1. Create permissions
   const permissionsData = [
-    { name: 'View Dashboard', slug: 'view-dashboard', description: 'Can view dashboard' },
-    { name: 'Manage Users', slug: 'manage-users', description: 'Can manage users' },
-    { name: 'Manage Roles', slug: 'manage-roles', description: 'Can manage roles' },
-    { name: 'Manage Companies', slug: 'manage-companies', description: 'Can manage companies' },
-    { name: 'Create Questions', slug: 'create-questions', description: 'Can create questions' },
-    { name: 'Edit Questions', slug: 'edit-questions', description: 'Can edit questions' },
-    { name: 'Delete Questions', slug: 'delete-questions', description: 'Can delete questions' },
-    { name: 'View Exams', slug: 'view-exams', description: 'Can view exams' },
-    { name: 'Create Exams', slug: 'create-exams', description: 'Can create exams' },
-    { name: 'Evaluate Answers', slug: 'evaluate-answers', description: 'Can evaluate user answers' },
-    { name: 'Manage Mentors', slug: 'manage-mentors', description: 'Can manage mentors' },
-    { name: 'Book Mentors', slug: 'book-mentors', description: 'Can book mentors' },
+    { name: 'View Dashboard', slug: 'dashboard:get', description: 'Can view dashboard' },
+    { name: 'Manage Users', slug: 'users:manage', description: 'Can manage users' },
+    { name: 'Manage Roles', slug: 'roles:manage', description: 'Can manage roles' },
+    { name: 'Manage Companies', slug: 'companies:manage', description: 'Can manage companies' },
+    { name: 'Create Questions', slug: 'questions:create', description: 'Can create questions' },
+    { name: 'Edit Questions', slug: 'questions:edit', description: 'Can edit questions' },
+    { name: 'Delete Questions', slug: 'questions:delete', description: 'Can delete questions' },
+    { name: 'View Exams', slug: 'exams:get', description: 'Can view exams' },
+    { name: 'Create Exams', slug: 'exams:create', description: 'Can create exams' },
+    { name: 'Evaluate Answers', slug: 'answers/evaluate:post', description: 'Can evaluate user answers' },
+    { name: 'Manage Mentors', slug: 'mentors:manage', description: 'Can manage mentors' },
+    { name: 'Book Mentors', slug: 'mentors/booking:post', description: 'Can booking mentors' },
   ];
 
   const permissions = [];
@@ -93,25 +93,27 @@ async function main() {
     permissions.map((p) => p.slug)
   );
   await assignRolePermission('admin', [
-    'view-dashboard',
-    'manage-users',
-    'manage-roles',
-    'create-questions',
-    'edit-questions',
-    'delete-questions',
-    'view-exams',
-    'manage-mentors',
+    'dashboard:get',
+    'users:manage',
+    'roles:manage',
+    'questions:create',
+    'questions:edit',
+    'questions:delete',
+    'exams:get',
+    'mentors:manage',
+    'mentors/booking:post',
   ]);
-  await assignRolePermission('company', ['manage-companies', 'view-dashboard', 'view-exams']);
-  await assignRolePermission('user', ['view-dashboard', 'book-mentors']);
-  await assignRolePermission('mentor', ['view-dashboard']);
+  await assignRolePermission('company', ['companies:manage', 'dashboard:get', 'exams:get']);
+  await assignRolePermission('user', ['dashboard:get', 'mentors/booking:post']);
+  await assignRolePermission('mentor', ['dashboard:get']);
   await assignRolePermission('examiner', [
-    'view-dashboard',
-    'create-questions',
-    'edit-questions',
-    'create-exams',
-    'evaluate-answers',
-    'view-exams',
+    'dashboard:get',
+    'questions:create',
+    'questions:edit',
+    'questions:delete',
+    'exams:create',
+    'answers/evaluate:post',
+    'exams:get',
   ]);
 
   // 4. Create users and assign roles
@@ -1429,7 +1431,7 @@ async function main() {
       questions: [1, 3, 6], // Indices from the questions array
     },
     {
-      name: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
+      name: 'AI INPUT TEST',
       description:
         'Bài kiểm tra đánh giá đầu vào cho các bạn đã có kiến thức về AI, là developer và muốn nâng cao kiến thức về AI',
       questions: [
@@ -1479,7 +1481,7 @@ async function main() {
     },
     {
       email: 'user@example.com',
-      examSetName: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
+      examSetName: 'AI INPUT TEST',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // 90 minutes after start
       totalScore: 68.5,
