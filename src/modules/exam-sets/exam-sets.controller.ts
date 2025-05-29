@@ -24,10 +24,11 @@ export class ExamSetsController {
   findAll() {
     return this.examSetsService.findAll();
   }
-  @Get(':id')
+
+  @Get('input-test')
   @ApiOperation({ summary: 'Get exam set with questions' })
-  async getExamSet(@Param('id') id: string): Promise<ResponseItem<GetExamSetDto>> {
-    return await this.examSetsService.getExamSetWithQuestions(id);
+  async getExamSet(@Body() body: { examName: string }): Promise<ResponseItem<GetExamSetDto>> {
+    return await this.examSetsService.getExamSetWithQuestions(body.examName);
   }
 
   @Patch(':id')
