@@ -14,8 +14,8 @@ export class AnswersController {
   constructor(private readonly answersService: AnswersService) {}
 
   @Post()
-  async create(@Body() dto: userAnswerDto): Promise<string> {
-    return await this.answersService.create(dto);
+  async create(@Req() req, @Body() dto: userAnswerDto): Promise<string> {
+    return await this.answersService.create(req.user.userId, dto);
   }
 
   @Patch(':examSetId')
@@ -24,9 +24,6 @@ export class AnswersController {
     @Param('examSetId') examSetId: string,
     @Body() UpdateStatusSubmitDto: UpdateStatusSubmitDto
   ): Promise<string> {
-    console.log('====================================');
-    console.log(req.user.userId);
-    console.log('====================================');
     return this.answersService.update(req.user.userId, examSetId, UpdateStatusSubmitDto);
   }
 }
