@@ -42,6 +42,11 @@ export class ExamSetsService {
               },
             },
           },
+          orderBy: {
+            question: {
+              sequence: 'asc',
+            },
+          },
         },
       },
     });
@@ -49,13 +54,12 @@ export class ExamSetsService {
     if (!examSet) {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
-    const sortedQuestions = examSet.questions.sort((a, b) => a.question.sequence - b.question.sequence);
 
     const examSetData = {
       id: examSet.id,
       name: examSet.name,
       description: examSet.description,
-      questions: sortedQuestions.map((qSet) => {
+      questions: examSet.questions.map((qSet) => {
         const q = qSet.question;
         return {
           id: q.id,
