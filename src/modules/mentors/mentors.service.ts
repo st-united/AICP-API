@@ -213,6 +213,7 @@ export class MentorsService {
           fullName: updateMentorDto.fullName,
           phoneNumber: updateMentorDto.phoneNumber,
           avatarUrl: updateMentorDto.avatarUrl,
+          dob: updateMentorDto.dob,
         };
 
         await transactionClient.user.update({

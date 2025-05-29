@@ -40,6 +40,11 @@ export class CreateUserDto {
   @Expose()
   @IsOptional()
   @IsDate()
+  dob?: Date;
+
+  @Expose()
+  @IsOptional()
+  @IsDate()
   createdAt?: Date;
 
   @Expose()

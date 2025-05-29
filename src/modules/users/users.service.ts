@@ -57,6 +57,7 @@ export class UsersService {
       email: params.email,
       fullName: params.fullName,
       phoneNumber: params.phoneNumber,
+      dob: params.dob,
       password: hashedPassword,
       status: defaultRole.name === UserRoleEnum.MENTOR ? true : false,
     };
