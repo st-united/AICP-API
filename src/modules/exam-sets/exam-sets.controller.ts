@@ -27,8 +27,8 @@ export class ExamSetsController {
 
   @Get('input-test')
   @ApiOperation({ summary: 'Get exam set with questions' })
-  async getExamSet(@Body() body: { examName: string }): Promise<ResponseItem<GetExamSetDto>> {
-    return await this.examSetsService.getExamSetWithQuestions(body.examName);
+  async getExamSet(): Promise<ResponseItem<GetExamSetDto>> {
+    return await this.examSetsService.getExamSetWithQuestions();
   }
 
   @Patch(':id')

@@ -27,11 +27,7 @@ export class ExamSetsService {
     return `This action removes a #${id} examSet`;
   }
 
-  async getExamSetWithQuestions(examName: string): Promise<ResponseItem<GetExamSetDto>> {
-    if (examName !== 'AI INPUT TEST') {
-      throw new NotFoundException('Giá trị truyền vào không đúng');
-    }
-
+  async getExamSetWithQuestions(): Promise<ResponseItem<GetExamSetDto>> {
     const examSet = await this.prisma.examSet.findFirst({
       where: { name: 'AI INPUT TEST' },
       include: {
