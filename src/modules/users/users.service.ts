@@ -166,23 +166,18 @@ export class UsersService {
       },
     };
 
-    const [users, activates, unactivates] = await this.prisma.$transaction([
-      this.prisma.user.count({
-        where,
-      }),
-      this.prisma.user.count({
-        where: {
-          ...where,
+    const [users, statusCounts] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.groupBy({
+        by: ['status'],
+        _count: {
           status: true,
         },
-      }),
-      this.prisma.user.count({
-        where: {
-          ...where,
-          status: false,
-        },
-      }),
+      }) as any,
     ]);
+
+    const activates = statusCounts.find((item: { status: boolean }) => item.status === true)?._count?.status || 0;
+    const unactivates = statusCounts.find((item: { status: boolean }) => item.status === false)?._count?.status || 0;
 
     const data = {
       users,
