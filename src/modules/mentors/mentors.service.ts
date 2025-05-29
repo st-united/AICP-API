@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
@@ -15,6 +15,7 @@ import { GetMenteesDto } from './dto/request/get-mentees.dto';
 
 @Injectable()
 export class MentorsService {
+  private readonly logger = new Logger(MentorsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
@@ -237,7 +238,7 @@ export class MentorsService {
     }
   }
 
-  async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
+  private async toggleMentorAccountStatus(id: string, activate: boolean): Promise<ResponseItem<null>> {
     const existingMentor = await this.prisma.mentor.findFirst({
       where: { id },
       include: {
@@ -249,11 +250,15 @@ export class MentorsService {
       throw new NotFoundException('Không tìm thấy mentor');
     }
 
+    if (existingMentor.isActive === activate) {
+      throw new ConflictException(`Mentor đã ${activate ? 'được kích hoạt' : 'bị vô hiệu hóa'}`);
+    }
+
     try {
       await this.prisma.mentor.update({
         where: { id },
         data: {
-          isActive: false,
+          isActive: activate,
         },
       });
 
@@ -262,42 +267,24 @@ export class MentorsService {
         email: existingMentor.user.email,
       };
 
-      this.emailService.sendEmailDeactivateMentorAccount(emailContent);
-
-      return new ResponseItem(null, 'Xóa mentor thành công');
+      if (activate) {
+        await this.emailService.sendEmailActivateMentorAccount(emailContent);
+        return new ResponseItem(null, 'Kích hoạt tài khoản mentor thành công');
+      } else {
+        await this.emailService.sendEmailDeactivateMentorAccount(emailContent);
+        return new ResponseItem(null, 'Xóa mentor thành công');
+      }
     } catch (error) {
-      throw new BadRequestException('Lỗi khi xóa mentor');
+      this.logger.error(error);
+      throw new BadRequestException(`Lỗi khi ${activate ? 'kích hoạt' : 'xóa'} mentor`);
     }
   }
 
+  async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
+    return this.toggleMentorAccountStatus(id, false);
+  }
+
   async activateMentorAccount(id: string): Promise<ResponseItem<null>> {
-    const existingMentor = await this.prisma.mentor.findFirst({
-      where: { id },
-      include: {
-        user: true,
-      },
-    });
-    if (!existingMentor) {
-      throw new NotFoundException('Không tìm thấy mentor');
-    }
-
-    try {
-      await this.prisma.mentor.update({
-        where: { id },
-        data: {
-          isActive: true,
-        },
-      });
-
-      const emailContent = {
-        fullName: existingMentor.user.fullName,
-        email: existingMentor.user.email,
-      };
-
-      this.emailService.sendEmailActivateMentorAccount(emailContent);
-      return new ResponseItem(null, 'Kích hoạt tài khoản mentor thành công');
-    } catch (error) {
-      throw new BadRequestException('Lỗi khi kích hoạt tài khoản mentor');
-    }
+    return this.toggleMentorAccountStatus(id, true);
   }
 }

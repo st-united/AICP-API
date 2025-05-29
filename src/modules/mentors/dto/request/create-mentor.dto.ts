@@ -25,7 +25,7 @@ export class CreateMentorDto extends OmitType(RegisterUserDto, ['password', 'rol
     description: 'The date of birth of the mentor',
     type: Date,
     required: false,
-    example: '1990-01-01',
+    example: new Date(),
   })
   @IsOptional()
   dob?: Date;
