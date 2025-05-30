@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '@UsersModule/dto/request/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { UserDto } from './dto/user.dto';
-import { avtPathName } from '@Constant/url';
+import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
@@ -19,6 +19,9 @@ import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
+import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
+import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
+import { convertPath } from '@app/common/utils';
 
 @Injectable()
 export class UsersService {
@@ -122,6 +125,113 @@ export class UsersService {
     });
 
     return new ResponseItem(user, 'Thay đổi mật khẩu thành công');
+  }
+
+  async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    const where: Prisma.UserWhereInput = {
+      ...(queries.search && {
+        fullName: {
+          contains: queries.search,
+          mode: 'insensitive',
+        },
+      }),
+      status: queries.status,
+      ...(queries.job && {
+        job: queries.job,
+      }),
+      ...(queries.province && {
+        province: queries.province,
+      }),
+      createdAt: {
+        gte: queries.startDate ? new Date(queries.startDate) : undefined,
+        lte: queries.endDate ? new Date(queries.endDate) : undefined,
+      },
+      roles: {
+        some: {
+          role: {
+            name: 'user',
+          },
+        },
+      },
+    };
+
+    const [result, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          phoneNumber: true,
+          email: true,
+          fullName: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          province: true,
+          country: true,
+          dob: true,
+          job: true,
+          referralCode: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: queries.skip,
+        take: queries.take,
+      }),
+      this.prisma.user.count({
+        where,
+      }),
+    ]);
+
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
+
+    return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách người dùng thành công');
+  }
+
+  async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
+    const where: Prisma.UserWhereInput = {
+      roles: {
+        some: {
+          role: {
+            name: 'user',
+          },
+        },
+      },
+    };
+
+    const [users, statusCounts] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.groupBy({
+        by: ['status'],
+        _count: {
+          status: true,
+        },
+      }) as any,
+    ]);
+
+    const activates = statusCounts.find((item: { status: boolean }) => item.status === true)?._count?.status || 0;
+    const unactivates = statusCounts.find((item: { status: boolean }) => item.status === false)?._count?.status || 0;
+
+    const data = {
+      users,
+      activates,
+      unactivates,
+    };
+
+    return new ResponseItem(data);
+  }
+
+  async getUser(id: string): Promise<ResponseItem<UserDto>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { roles: true },
+    });
+    if (!user) throw new BadRequestException('Nhân viên không tồn tại');
+
+    return new ResponseItem(
+      { ...user, avatarUrl: user.avatarUrl ? baseImageUrl + convertPath(user.avatarUrl) : null },
+      'Thành công'
+    );
   }
 
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {

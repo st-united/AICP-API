@@ -448,7 +448,7 @@ async function main() {
         password: hashedPassword,
         fullName: userData.fullName,
         provider: 'local',
-        status: true,
+        status: Math.random() >= 0.5,
       },
     });
 

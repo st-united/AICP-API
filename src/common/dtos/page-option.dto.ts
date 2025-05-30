@@ -2,10 +2,12 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Order } from '../constants';
+import { ApiProperty } from '@nestjs/swagger';
 
 export abstract class PageOptionsDto {
   @ApiPropertyOptional({ description: 'Search keyword', default: '' })
   @IsString()
+  @ApiProperty({ required: false })
   search?: string = '';
 
   @ApiPropertyOptional({ enum: Order, description: 'Sort order', default: Order.DESC })
