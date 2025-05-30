@@ -18,3 +18,7 @@ export enum UserProviderEnum {
   GOOGLE = 'GOOGLE',
   GITHUB = 'GITHUB',
 }
+
+export enum examSetDefaultName {
+  DEFAULT = 'AI INPUT TEST',
+}
