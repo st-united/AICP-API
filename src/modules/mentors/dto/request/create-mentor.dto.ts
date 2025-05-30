@@ -19,4 +19,14 @@ export class CreateMentorDto extends OmitType(RegisterUserDto, ['password', 'rol
   @IsOptional()
   @IsString()
   expertise?: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'The date of birth of the mentor',
+    type: Date,
+    required: false,
+    example: new Date(),
+  })
+  @IsOptional()
+  dob?: Date;
 }

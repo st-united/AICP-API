@@ -1,4 +1,4 @@
 export class UserDecodedPayload {
-  userId: string;
-  email: string;
+  public userId: string;
+  public email: string;
 }
