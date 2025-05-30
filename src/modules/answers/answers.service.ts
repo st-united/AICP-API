@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UpdateStatusSubmitDto } from './dto/request/update-status-submit-answer.dto';
 import { UserAnswerStatus } from '@prisma/client';
 
 @Injectable()
@@ -28,7 +27,7 @@ export class AnswersService {
     }
   }
 
-  async update(userId: string, examSetId: string, params: UpdateStatusSubmitDto): Promise<string> {
+  async update(userId: string, examSetId: string): Promise<string> {
     const existingExam = await this.prisma.exam.findFirst({
       where: {
         userId,
@@ -124,12 +123,18 @@ export class AnswersService {
 
       const totalScore = scores.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : Number(val)), 0);
 
-      await this.prisma.exam.create({
+      const exam = await this.prisma.exam.findFirst({
+        where: {
+          userId,
+          examSetId,
+        },
+      });
+
+      await this.prisma.exam.update({
+        where: { id: exam.id },
         data: {
           userId,
           examSetId,
-          startedAt: new Date(params.timeStart),
-          finishedAt: new Date(params.timeEnd),
           totalScore,
         },
       });
