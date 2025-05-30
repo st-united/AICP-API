@@ -40,6 +40,18 @@ export class EmailService {
     await this.sendEmail(emailContent.email, 'Kích hoạt tài khoản Mentor DevPlus', template);
   }
 
+  async sendEmailActivateMentorAccount(emailContent: SendEmailNewMentorDto): Promise<void> {
+    const loginLink = `${this.configService.get('FE_APP_URL')}/login`;
+
+    const template = this.activateMentorAccountEmailTemplate(emailContent.fullName, loginLink);
+    await this.sendEmail(emailContent.email, 'Tài khoản Mentor của bạn đã được kích hoạt', template);
+  }
+
+  async sendEmailDeactivateMentorAccount(emailContent: SendEmailNewMentorDto): Promise<void> {
+    const template = this.deactivateMentorAccountEmailTemplate(emailContent.fullName);
+    await this.sendEmail(emailContent.email, 'Tài khoản Mentor của bạn đã bị vô hiệu hóa', template);
+  }
+
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {
     try {
       await this.transporter.sendMail({
@@ -168,6 +180,153 @@ export class EmailService {
       </div>
     </body>
     </html>
+  `;
+  }
+
+  private activateMentorAccountEmailTemplate(fullName: string, loginLink: string): string {
+    return `
+  <!DOCTYPE html>
+  <html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <title>Tài khoản Mentor đã được kích hoạt</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 20px;
+        color: #333333;
+      }
+      .email-wrapper {
+        max-width: 600px;
+        margin: auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        padding: 30px;
+      }
+      h2 {
+        color: #002f6c;
+        font-size: 22px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      p {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #007bff;
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        font-size: 13px;
+        color: #888888;
+        margin-top: 30px;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 15px;
+      }
+      .highlight {
+        font-weight: bold;
+        color: #002f6c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <h2>Tài khoản Mentor của bạn đã được kích hoạt</h2>
+      <p>Chào <span class="highlight">${fullName}</span>,</p>
+      <p>Chúc mừng! Tài khoản mentor của bạn trên nền tảng <strong>AI Competency</strong> đã được kích hoạt thành công.</p>
+      <p>Bạn có thể đăng nhập và bắt đầu kết nối với các mentee ngay bây giờ.</p>
+      <p style="text-align: center;">
+        <a href="${loginLink}" class="btn">Đăng nhập ngay</a>
+      </p>
+      <p>Nếu bạn cần hỗ trợ hoặc có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua email: <strong>hello@devplus.edu.vn</strong></p>
+      <p>Chúng tôi rất vui khi có bạn đồng hành trong hành trình chia sẻ và truyền cảm hứng!</p>
+      <p>Trân trọng,<br>Đội ngũ DevPlus</p>
+
+      <div class="footer">
+        © ${new Date().getFullYear()} DevPlus. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+  }
+
+  private deactivateMentorAccountEmailTemplate(fullName: string): string {
+    return `
+  <!DOCTYPE html>
+  <html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <title>Tài khoản Mentor đã bị vô hiệu hóa</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 20px;
+        color: #333333;
+      }
+      .email-wrapper {
+        max-width: 600px;
+        margin: auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        padding: 30px;
+      }
+      h2 {
+        color: #002f6c;
+        font-size: 22px;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      p {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
+      .footer {
+        text-align: center;
+        font-size: 13px;
+        color: #888888;
+        margin-top: 30px;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 15px;
+      }
+      .highlight {
+        font-weight: bold;
+        color: #002f6c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <h2>Tài khoản Mentor đã bị vô hiệu hóa</h2>
+      <p>Chào <span class="highlight">${fullName}</span>,</p>
+      <p>Chúng tôi xin thông báo rằng tài khoản Mentor của bạn trên nền tảng <strong>AI Competency</strong> đã bị vô hiệu hóa. Hiện tại bạn sẽ không thể đăng nhập hoặc sử dụng các tính năng của hệ thống.</p>
+      <p>Nếu bạn cho rằng đây là sự nhầm lẫn hoặc có thắc mắc về hành động này, vui lòng liên hệ với chúng tôi qua email: <strong>hello@devplus.edu.vn</strong>.</p>
+      <p>Chúng tôi rất trân trọng những đóng góp của bạn trong thời gian qua và mong sẽ có cơ hội hợp tác trong tương lai.</p>
+      <p>Trân trọng,<br>Đội ngũ DevPlus</p>
+
+      <div class="footer">
+        © ${new Date().getFullYear()} DevPlus. All rights reserved.
+      </div>
+    </div>
+  </body>
+  </html>
   `;
   }
 }

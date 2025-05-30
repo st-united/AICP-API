@@ -12,5 +12,5 @@ export class SendEmailNewMentorDto {
 
   @Expose()
   @IsNotEmpty()
-  password: string;
+  password?: string;
 }

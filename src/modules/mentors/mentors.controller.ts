@@ -43,6 +43,11 @@ export class MentorsController {
     return await this.mentorsService.updateMentor(id, updateMentorDto);
   }
 
+  @Patch('/activate/:id')
+  async activateMentorAccount(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.mentorsService.activateMentorAccount(id);
+  }
+
   @Delete(':id')
   async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<null>> {
     return await this.mentorsService.deactivateMentorAccount(id);
