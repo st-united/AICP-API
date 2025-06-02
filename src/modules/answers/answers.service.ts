@@ -163,7 +163,7 @@ export class AnswersService {
 
     await this.prisma.userAnswer.create({
       data: {
-        answerText: essayAnswer.answer,
+        answerText: essayAnswer[0],
         ...restParams,
         userId,
       },
@@ -206,7 +206,7 @@ export class AnswersService {
       params.answers.map(async (answer) => {
         await this.prisma.userAnswerSelection.create({
           data: {
-            answerOptionId: answer.answerId,
+            answerOptionId: answer,
             userAnswerId: createdAnswer.id,
           },
         });
