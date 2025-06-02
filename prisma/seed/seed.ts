@@ -1431,7 +1431,7 @@ async function main() {
       questions: [1, 3, 6], // Indices from the questions array
     },
     {
-      name: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
+      name: 'AI INPUT TEST',
       description:
         'Bài kiểm tra đánh giá đầu vào cho các bạn đã có kiến thức về AI, là developer và muốn nâng cao kiến thức về AI',
       questions: [
@@ -1481,7 +1481,7 @@ async function main() {
     },
     {
       email: 'user@example.com',
-      examSetName: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
+      examSetName: 'AI INPUT TEST',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // 90 minutes after start
       totalScore: 68.5,

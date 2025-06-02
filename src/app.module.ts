@@ -12,6 +12,7 @@ import { EmailModule } from './modules/email/email.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { MentorsModule } from './modules/mentors/mentors.module';
 import { AnswersModule } from '@AnswersModule/answers.module';
+import { ExamSetsModule } from './modules/exam-sets/exam-sets.module';
 import { ExamModule } from './modules/exam/exam.module';
 
 @Module({
@@ -50,6 +51,7 @@ import { ExamModule } from './modules/exam/exam.module';
     RedisModule,
     MentorsModule,
     AnswersModule,
+    ExamSetsModule,
     ExamModule,
   ],
   providers: [
