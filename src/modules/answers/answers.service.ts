@@ -36,7 +36,7 @@ export class AnswersService {
       },
     });
 
-    if (existingExam) {
+    if (existingExam.totalScore != null) {
       throw new BadRequestException('Bài kiểm tra này đã được nộp trước đó.');
     }
     try {
