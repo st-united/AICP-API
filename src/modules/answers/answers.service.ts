@@ -3,6 +3,7 @@ import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
 import { UserAnswerStatus } from '@prisma/client';
+import { ResponseItem } from '@app/common/dtos';
 
 @Injectable()
 export class AnswersService {
@@ -10,10 +11,10 @@ export class AnswersService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService
   ) {}
-  async create(userId, params: userAnswerDto): Promise<string> {
+  async create(userId, params: userAnswerDto): Promise<ResponseItem<userAnswerDto>> {
     try {
       if (!params.answers || params.answers.length === 0) {
-        throw new Error('No answers provided');
+        throw new Error('Không có câu trả lời nào được cung cấp');
       }
       if (params.type === 'ESSAY') {
         await this.handleEssayAnswer(userId, params);
@@ -21,13 +22,13 @@ export class AnswersService {
         await this.handleSelectionAnswers(userId, params);
       }
 
-      return 'Answer created successfully';
+      return new ResponseItem(null, 'Lưu câu trả lời thành công');
     } catch (error) {
-      throw new Error('Failed to create answer');
+      throw new Error('Không tạo được câu trả lời');
     }
   }
 
-  async update(userId: string, examSetId: string): Promise<string> {
+  async update(userId: string, examSetId: string): Promise<ResponseItem<userAnswerDto>> {
     const existingExam = await this.prisma.exam.findFirst({
       where: {
         userId,
@@ -36,7 +37,7 @@ export class AnswersService {
     });
 
     if (existingExam) {
-      throw new BadRequestException('This exam has already been submitted.');
+      throw new BadRequestException('Bài kiểm tra này đã được nộp trước đó.');
     }
     try {
       await this.prisma.userAnswer.updateMany({
@@ -139,9 +140,9 @@ export class AnswersService {
         },
       });
 
-      return 'Submit successfully';
+      return new ResponseItem(null, 'Đã nộp bài thành công');
     } catch (error) {
-      throw new Error('Failed to update answers and calculate scores');
+      throw new Error('Không cập nhật được câu trả lời và tính điểm');
     }
   }
 
