@@ -46,6 +46,9 @@ export class GetExamSetDto {
   description?: string;
 
   @Expose()
+  duration?: number;
+
+  @Expose()
   @Type(() => QuestionDto)
   questions: QuestionDto[];
 }

@@ -55,19 +55,24 @@ export class ExamSetsService {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
 
-    const newExam = await this.prisma.exam.create({
+    const duration = examSet.duration ?? 40;
+    const startedAt = new Date();
+    const finishedAt = new Date(startedAt.getTime() + duration * 60 * 1000);
+
+    await this.prisma.exam.create({
       data: {
         userId,
         examSetId: examSet.id,
-        startedAt: new Date(),
+        startedAt: startedAt,
+        finishedAt: finishedAt,
       },
     });
-    console.log(11111, newExam);
 
     const examSetData = {
       id: examSet.id,
       name: examSet.name,
       description: examSet.description,
+      duration: examSet.duration,
       questions: examSet.questions.map((qSet) => {
         const q = qSet.question;
         return {
