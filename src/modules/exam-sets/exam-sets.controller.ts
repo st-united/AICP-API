@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { ExamSetsService } from './exam-sets.service';
 import { CreateExamSetDto } from './dto/create-exam-set.dto';
 import { UpdateExamSetDto } from './dto/update-exam-set.dto';
@@ -27,8 +27,9 @@ export class ExamSetsController {
 
   @Get('input-test')
   @ApiOperation({ summary: 'Get exam set with questions' })
-  async getExamSet(): Promise<ResponseItem<GetExamSetDto>> {
-    return await this.examSetsService.getExamSetWithQuestions();
+  async getExamSet(@Req() req: any): Promise<ResponseItem<GetExamSetDto>> {
+    const userId = req.user.userId;
+    return await this.examSetsService.getExamSetWithQuestions(userId);
   }
 
   @Patch(':id')
