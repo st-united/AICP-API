@@ -11,6 +11,12 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
 
+  @Get('taken-input-test')
+  @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi Input test chưa' })
+  hasTakenExamInputTest(@Req() req): Promise<ResponseItem<HasTakenExamResponseDto>> {
+    return this.examService.hasTakenExamInputTest(req.user.id);
+  }
+
   @Get('has-taken-exam/:examSetId')
   @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi chưa' })
   @ApiParam({ name: 'examSetId', type: String, description: 'ID bộ đề' })
