@@ -20,7 +20,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: aicp-api
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.0.7
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.0.8
           ports:
             - containerPort: 6002
           envFrom:
