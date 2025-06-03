@@ -55,6 +55,17 @@ export class ExamSetsService {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
 
+    const existingExam = await this.prisma.exam.findFirst({
+      where: {
+        userId: userId,
+        examSetId: examSet.id,
+      },
+    });
+
+    if (existingExam) {
+      return new ResponseItem(null, 'Bạn đã làm bài kiểm tra đầu vào, không thể làm lại.');
+    }
+
     const duration = examSet.duration ?? 40;
     const startedAt = new Date();
     const finishedAt = new Date(startedAt.getTime() + duration * 60 * 1000);
