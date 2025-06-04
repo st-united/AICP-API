@@ -207,7 +207,7 @@ model Domain {
 
   courses    Course[]
   categories CategoryDomain[]
-  exam       Exam[]
+  ExamSet    ExamSet[]
 }
 
 model CategoryDomain {
@@ -224,6 +224,7 @@ model CategoryDomain {
 
 model ExamSet {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domainId    String   @map("domain_id") @db.Uuid
   name        String   @db.VarChar
   description String?  @db.Text
   duration    Int      @db.SmallInt
@@ -232,13 +233,13 @@ model ExamSet {
 
   exams     Exam[]
   questions ExamSetQuestion[]
+  Domain    Domain            @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model Exam {
   id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId        String      @map("user_id") @db.Uuid
   examSetId     String      @map("exam_set_id") @db.Uuid
-  domainId      String      @map("domain_id") @db.Uuid
   startedAt     DateTime?   @map("started_at") @db.Timestamptz(6)
   finishedAt    DateTime?   @map("finished_at") @db.Timestamptz(6)
   totalScore    Float?      @map("total_score") @db.Real
@@ -249,7 +250,6 @@ model Exam {
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   examSet ExamSet @relation(fields: [examSetId], references: [id], onDelete: Cascade)
-  domain  Domain  @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model ExamSetQuestion {

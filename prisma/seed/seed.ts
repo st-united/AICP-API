@@ -606,21 +606,25 @@ async function main() {
       name: 'AI Foundations Assessment',
       description: 'Basic assessment of foundational AI knowledge',
       questions: [0, 2, 5, 8], // Indices from the questions array
+      domainName: 'General',
     },
     {
       name: 'AI Ethics and Impact',
       description: 'Assessment focusing on ethical considerations and societal impacts of AI',
       questions: [4, 7, 9], // Indices from the questions array
+      domainName: 'General',
     },
     {
       name: 'AI Tools and Applications',
       description: 'Assessment of practical AI tools and applications knowledge',
       questions: [1, 3, 6], // Indices from the questions array
+      domainName: 'Healthcare',
     },
     {
       name: 'Comprehensive AI Assessment',
       description: 'Full assessment covering all aspects of AI competency',
       questions: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], // All questions
+      domainName: 'Education',
     },
   ];
 
@@ -630,6 +634,7 @@ async function main() {
         name: examSetData.name,
         description: examSetData.description,
         duration: 40,
+        domainId: domainMap[examSetData.domainName].id,
       },
     });
 
@@ -654,7 +659,6 @@ async function main() {
       startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000), // 45 minutes after start
       totalScore: 75.5,
-      domainName: 'General',
     },
     {
       email: 'user2@example.com',
@@ -662,7 +666,6 @@ async function main() {
       startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       finishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 60 minutes after start
       totalScore: 82.0,
-      domainName: 'Healthcare',
     },
     {
       email: 'user@example.com',
@@ -670,7 +673,6 @@ async function main() {
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // 90 minutes after start
       totalScore: 68.5,
-      domainName: 'Education',
     },
   ];
 
@@ -682,7 +684,6 @@ async function main() {
       data: {
         userId: userMap[data.email].id,
         examSetId: examSetMap[data.examSetName].id,
-        domainId: domainMap[data.domainName].id,
         startedAt: data.startedAt,
         finishedAt: data.finishedAt,
         totalScore: data.totalScore,
