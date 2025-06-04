@@ -5,12 +5,11 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // If using Supabase, uncoment this line
 }
 
 model User {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  phoneNumber  String    @unique @db.VarChar @map("phone_number")
+  phoneNumber  String    @unique @map("phone_number") @db.VarChar
   email        String    @unique @db.VarChar
   password     String    @db.VarChar
   fullName     String    @map("full_name") @db.VarChar
@@ -22,11 +21,11 @@ model User {
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken String?   @unique @map("refresh_token") @db.VarChar
 
-  roles          UserRole[]
-  userAnswer     UserAnswer[]
-  exam           Exam[]
-  mentor         Mentor[]
-  mentor_booking MentorBooking[]
+  roles         UserRole[]
+  userAnswer    UserAnswer[]
+  exam          Exam[]
+  mentor        Mentor[]
+  mentorBooking MentorBooking[]
 }
 
 model Role {
@@ -208,6 +207,7 @@ model Domain {
 
   courses    Course[]
   categories CategoryDomain[]
+  exam       Exam[]
 }
 
 model CategoryDomain {
@@ -235,17 +235,21 @@ model ExamSet {
 }
 
 model Exam {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  examSetId  String?   @map("exam_set_id") @db.Uuid
-  startedAt  DateTime? @map("started_at") @db.Timestamptz(6)
-  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
-  totalScore Float?    @map("total_score") @db.Real
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  examSetId     String      @map("exam_set_id") @db.Uuid
+  domainId      String      @map("domain_id") @db.Uuid
+  startedAt     DateTime?   @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime?   @map("finished_at") @db.Timestamptz(6)
+  totalScore    Float?      @map("total_score") @db.Real
+  examStatus    ExamStatus? @map("exam_status")
+  levelOfDomain SFIALevel?  @map("level_of_domain")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  examSet ExamSet? @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examSet ExamSet @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  domain  Domain  @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model ExamSetQuestion {
@@ -309,4 +313,18 @@ enum MentorBookingStatus {
   REJECTED
   CANCELLED
   COMPLETED
+}
+
+enum ExamStatus {
+  IN_PROGRESS
+  SUBMITTED
+  WAITING_FOR_REVIEW
+  GRADED
+}
+
+enum SFIALevel {
+  FOUNDATION_L1_L2
+  INTERMEDIATE_L3_L4
+  ADVANCED_L5_L6
+  EXPERT_L7
 }

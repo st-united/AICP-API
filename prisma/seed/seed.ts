@@ -1,4 +1,11 @@
-import { PrismaClient, QuestionType, DifficultyLevel, MentorBookingStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  QuestionType,
+  DifficultyLevel,
+  MentorBookingStatus,
+  ExamStatus,
+  SFIALevel,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 // If you want to run seed. Follow steps below:
@@ -647,6 +654,7 @@ async function main() {
       startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
       finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000), // 45 minutes after start
       totalScore: 75.5,
+      domainName: 'General',
     },
     {
       email: 'user2@example.com',
@@ -654,6 +662,7 @@ async function main() {
       startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
       finishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 60 minutes after start
       totalScore: 82.0,
+      domainName: 'Healthcare',
     },
     {
       email: 'user@example.com',
@@ -661,6 +670,7 @@ async function main() {
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // 90 minutes after start
       totalScore: 68.5,
+      domainName: 'Education',
     },
   ];
 
@@ -672,9 +682,12 @@ async function main() {
       data: {
         userId: userMap[data.email].id,
         examSetId: examSetMap[data.examSetName].id,
+        domainId: domainMap[data.domainName].id,
         startedAt: data.startedAt,
         finishedAt: data.finishedAt,
         totalScore: data.totalScore,
+        examStatus: Object.values(ExamStatus)[Math.floor(Math.random() * Object.values(ExamStatus).length)],
+        levelOfDomain: Object.values(SFIALevel)[Math.floor(Math.random() * Object.values(SFIALevel).length)],
       },
     });
   }
