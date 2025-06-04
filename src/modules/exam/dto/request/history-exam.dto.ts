@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { IsDate, IsOptional } from 'class-validator';
 
 export class GetHistoryExamDto {
@@ -9,12 +9,14 @@ export class GetHistoryExamDto {
 
   @Expose()
   @ApiProperty()
+  @Type(() => Date)
   @IsDate()
   @IsOptional()
   startDate?: Date;
 
   @Expose()
   @ApiProperty()
+  @Type(() => Date)
   @IsDate()
   @IsOptional()
   endDate?: Date;
