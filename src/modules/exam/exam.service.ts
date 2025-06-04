@@ -77,6 +77,9 @@ export class ExamService {
 
     const exams = await this.prisma.exam.findMany({
       where,
+      orderBy: {
+        finishedAt: 'desc',
+      },
       select: {
         id: true,
         examStatus: true,
