@@ -1,6 +1,5 @@
 import { Expose, Type } from 'class-transformer';
 import { IsNotEmpty, ValidateNested, IsArray, IsString } from 'class-validator';
-import { AnswerItem } from './answer-item.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class userAnswerDto {
@@ -24,18 +23,13 @@ export class userAnswerDto {
 
   @Expose()
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => AnswerItem)
+  @IsString({ each: true })
   @ApiProperty({
-    type: [AnswerItem],
-    example: [
-      {
-        answerId: 'answer-1',
-      },
-    ],
-    description: 'List of answers. For writing questions, use "answer"; for others, use "answerId".',
+    type: [String],
+    example: ['answer-1', 'answer-2'],
+    description: 'List of answer IDs.',
   })
-  answers: AnswerItem[];
+  answers: string[];
 
   @Expose()
   @IsNotEmpty()

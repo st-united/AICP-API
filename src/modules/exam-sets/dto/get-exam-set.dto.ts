@@ -9,6 +9,9 @@ export class AnswerOptionDto {
 
   @Expose()
   isCorrect: boolean;
+
+  @Expose()
+  selected?: boolean;
 }
 
 export class QuestionDto {
@@ -33,6 +36,9 @@ export class QuestionDto {
   @Expose()
   @Type(() => AnswerOptionDto)
   answerOptions: AnswerOptionDto[];
+
+  @Expose()
+  userAnswerText?: string;
 }
 
 export class GetExamSetDto {
@@ -43,10 +49,10 @@ export class GetExamSetDto {
   name: string;
 
   @Expose()
-  description?: string;
+  description: string;
 
   @Expose()
-  duration?: number;
+  duration: number;
 
   @Expose()
   @Type(() => QuestionDto)

@@ -4,6 +4,7 @@ import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
 import { Req } from '@nestjs/common';
+import { ResponseItem } from '@app/common/dtos';
 
 @ApiTags('answers')
 @ApiBearerAuth('access-token')
@@ -30,7 +31,7 @@ export class AnswersController {
     description: 'Invalid input data.',
   })
   @ApiBody({ type: userAnswerDto })
-  async create(@Req() req, @Body() dto: userAnswerDto): Promise<string> {
+  async create(@Req() req, @Body() dto: userAnswerDto): Promise<ResponseItem<userAnswerDto>> {
     return await this.answersService.create(req.user.userId, dto);
   }
 
@@ -55,7 +56,7 @@ export class AnswersController {
     status: 404,
     description: 'Exam set not found or user not authorized.',
   })
-  update(@Req() req, @Param('examSetId') examSetId: string): Promise<string> {
+  update(@Req() req, @Param('examSetId') examSetId: string): Promise<ResponseItem<userAnswerDto>> {
     return this.answersService.update(req.user.userId, examSetId);
   }
 }
