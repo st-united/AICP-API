@@ -5,6 +5,8 @@ import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.
 import { ResponseItem } from '@app/common/dtos';
 import { Exam, ExamSet } from '@prisma/client';
 import { examSetDefaultName } from '@Constant/enums';
+import { GetHistoryExamDto } from './dto/request/history-exam.dto';
+import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 
 @Injectable()
 export class ExamService {
@@ -61,5 +63,28 @@ export class ExamService {
     });
     const exam = examSet.exams[0];
     return this.createExamResponse(examSet, exam, !!exam);
+  }
+
+  async getHistoryExam(historyExam: GetHistoryExamDto): Promise<ResponseItem<HistoryExamResponseDto[]>> {
+    const where: any = { userId: historyExam.userId };
+
+    if (historyExam.startDate && historyExam.endDate) {
+      where.createdAt = {
+        gte: historyExam.startDate,
+        lte: historyExam.endDate,
+      };
+    }
+
+    const exams = await this.prisma.exam.findMany({
+      where,
+      select: {
+        id: true,
+        examStatus: true,
+        levelOfDomain: true,
+        createdAt: true,
+      },
+    });
+
+    return new ResponseItem<HistoryExamResponseDto[]>(exams, 'Lấy lịch sử thi thành công');
   }
 }
