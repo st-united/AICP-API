@@ -4,7 +4,8 @@ import { IsDate, IsOptional } from 'class-validator';
 
 export class GetHistoryExamDto {
   @Expose()
-  userId: string;
+  @IsOptional()
+  userId?: string;
 
   @Expose()
   @ApiProperty()

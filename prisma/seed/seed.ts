@@ -624,7 +624,7 @@ async function main() {
       name: 'Comprehensive AI Assessment',
       description: 'Full assessment covering all aspects of AI competency',
       questions: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], // All questions
-      domainName: 'Education',
+      domainName: 'General',
     },
   ];
 
