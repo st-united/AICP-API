@@ -207,7 +207,7 @@ model Domain {
 
   courses    Course[]
   categories CategoryDomain[]
-  ExamSet    ExamSet[]
+  examSet    ExamSet[]
 }
 
 model CategoryDomain {
@@ -233,7 +233,7 @@ model ExamSet {
 
   exams     Exam[]
   questions ExamSetQuestion[]
-  Domain    Domain            @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  domain    Domain            @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model Exam {
