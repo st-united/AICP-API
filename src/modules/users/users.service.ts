@@ -264,6 +264,12 @@ export class UsersService {
         secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
       });
 
+      console.log(verifiedToken);
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (verifiedToken.exp && verifiedToken.exp < currentTime) {
+        throw new BadRequestException('Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.');
+      }
+
       const userId = verifiedToken.sub;
 
       const foundUser = await this.prisma.user.findUnique({
@@ -287,7 +293,10 @@ export class UsersService {
 
       return new ResponseItem(true, 'Đổi mật khẩu thành công!');
     } catch (error) {
-      throw new BadRequestException('Invalid or expired token', { cause: error });
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.');
+      }
+      throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
   }
 }
