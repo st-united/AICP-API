@@ -1,12 +1,10 @@
 import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from '@nestjs/passport';
 import { Observable } from 'rxjs';
-
+import { TokenService } from '../services/token.service';
 @Injectable()
 export class JwtRefreshTokenGuard extends AuthGuard('jwt-refresh-token') {
-  constructor(private readonly jwtService: JwtService, private readonly configService: ConfigService) {
+  constructor(private readonly tokenService: TokenService) {
     super();
   }
 
@@ -21,9 +19,7 @@ export class JwtRefreshTokenGuard extends AuthGuard('jwt-refresh-token') {
     const token = authorization.replace('Bearer ', '');
 
     try {
-      this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRETKEY'),
-      });
+      this.tokenService.verifyRefreshToken(token);
     } catch (error) {
       throw new UnauthorizedException('TOKEN_EXPIRED');
     }

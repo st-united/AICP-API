@@ -8,73 +8,315 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  password     String
-  fullName     String     @map("full_name")
-  phoneNumber  String     @unique @map("phone_number")
-  avatarUrl    String?    @map("avatar_url")
-  provider     String?
-  status       Boolean    @default(false)
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  deletedAt    DateTime?  @map("deleted_at")
-  refreshToken String?    @unique @map("refresh_token")
-  
-  roles        UserRole[]
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phoneNumber  String    @unique @map("phone_number") @db.VarChar
+  email        String    @unique @db.VarChar
+  password     String    @db.VarChar
+  fullName     String    @map("full_name") @db.VarChar
+  avatarUrl    String?   @map("avatar_url") @db.Text
+  provider     String?   @db.VarChar
+  status       Boolean   @default(false)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  refreshToken String?   @unique @map("refresh_token") @db.VarChar
 
-  @@map("Users")
+  dob          DateTime? @map("dob") @db.Timestamptz(6)
+  country      String?   @db.VarChar
+  province     String?   @db.VarChar
+  job          String?   @db.VarChar
+  referralCode String?   @unique @map("referral_code") @db.VarChar
+
+  roles         UserRole[]
+  userAnswer    UserAnswer[]
+  exam          Exam[]
+  mentor        Mentor[]
+  mentorBooking MentorBooking[]
 }
 
 model Role {
-  id                 String           @id @default(uuid())
-  name               String           @unique
-  description        String?
-  isOrganizationRole Boolean         @default(false) @map("is_organization_role")
-  createdAt          DateTime        @default(now()) @map("created_at")
-  updatedAt          DateTime        @updatedAt @map("updated_at")
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String   @unique
+  description        String?  @db.Text
+  isOrganizationRole Boolean  @default(false) @map("is_organization_role")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  users              UserRole[]
-  permissions        RolePermission[]
-
-  @@map("Roles")
+  users       UserRole[]
+  permissions RolePermission[]
 }
 
 model Permission {
-  id          String           @id @default(uuid())
-  name        String           @unique
-  description String?
-  slug        String?
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar
+  description String?  @db.Text
+  slug        String?  @db.VarChar
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  roles       RolePermission[]
-
-  @@map("Permissions")
+  roles RolePermission[]
 }
 
 model UserRole {
-  userId    String   @map("user_id")
-  roleId    String   @map("role_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String   @map("user_id") @db.Uuid
+  roleId    String   @map("role_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user User @relation(fields: [userId], references: [id])
-  role Role @relation(fields: [roleId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
-  @@map("UserRoles")
 }
 
 model RolePermission {
-  roleId       String   @map("role_id")
-  permissionId String   @map("permission_id")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
-  @@map("RolePermissions")
+}
+
+model Question {
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type       QuestionType @default(SINGLE_CHOICE)
+  content    String       @db.Text
+  subcontent String?      @db.Text
+  image      String?      @db.Text
+  sequence   Int?         @db.SmallInt
+  parentId   String?      @map("parent_id") @db.Uuid
+  criteriaId String       @map("criteria_id") @db.Uuid
+  levelId    String       @map("level_id") @db.Uuid
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  answerOptions   AnswerOption[]
+  userAnswers     UserAnswer[]
+  criteria        Criteria          @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+  level           Level             @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  examSetQuestion ExamSetQuestion[]
+}
+
+model Level {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String     @unique @db.VarChar
+  description String     @db.Text
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Question    Question[]
+}
+
+model Category {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar
+  description String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  courses        Course[]
+  categoryDomain CategoryDomain[]
+  Criteria       Criteria[]
+}
+
+model Course {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String   @db.VarChar
+  description String   @db.Text
+  provider    String   @db.VarChar
+  url         String   @db.Text
+  categoryId  String   @map("category_id") @db.Uuid
+  domainId    String?  @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  domain   Domain?  @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model AnswerOption {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content    String   @db.Text
+  isCorrect  Boolean  @map("is_correct")
+  questionId String   @map("question_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selections UserAnswerSelection[]
+}
+
+model UserAnswer {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  answerText  String?          @map("answer_text") @db.Text
+  manualScore Float?           @map("manual_score") @db.Real
+  autoScore   Float?           @map("auto_score") @db.Real
+  questionId  String           @map("question_id") @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  examSetId   String           @map("exam_set_id") @db.Uuid
+  status      UserAnswerStatus @default(DRAFT)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  examSet    ExamSet               @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selections UserAnswerSelection[]
+}
+
+model UserAnswerSelection {
+  answerOptionId String   @map("answer_option_id") @db.Uuid
+  userAnswerId   String   @map("user_answer_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  answerOption AnswerOption @relation(fields: [answerOptionId], references: [id], onDelete: Cascade)
+  userAnswer   UserAnswer   @relation(fields: [userAnswerId], references: [id], onDelete: Cascade)
+
+  @@id([userAnswerId, answerOptionId])
+}
+
+model Criteria {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar
+  description String?  @db.Text
+  scoreWeight Float    @map("score_weight") @db.Real
+  categoryId  String   @map("category_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  questions Question[]
+  category  Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+model Domain {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique @db.VarChar
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  courses    Course[]
+  categories CategoryDomain[]
+  examSet    ExamSet[]
+}
+
+model CategoryDomain {
+  domainId   String   @map("domain_id") @db.Uuid
+  categoryId String   @map("category_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  domain   Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, domainId])
+}
+
+model ExamSet {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domainId    String   @map("domain_id") @db.Uuid
+  name        String   @db.VarChar
+  description String?  @db.Text
+  duration    Int      @db.SmallInt
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  exams     Exam[]
+  questions ExamSetQuestion[]
+
+  UserAnswer UserAnswer[]
+  domain     Domain       @relation(fields: [domainId], references: [id], onDelete: Cascade)
+}
+
+model Exam {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  examSetId     String      @map("exam_set_id") @db.Uuid
+  startedAt     DateTime?   @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime?   @map("finished_at") @db.Timestamptz(6)
+  totalScore    Float?      @map("total_score") @db.Real
+  examStatus    ExamStatus? @map("exam_status")
+  levelOfDomain SFIALevel?  @map("level_of_domain")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examSet ExamSet @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+}
+
+model ExamSetQuestion {
+  questionId String   @map("question_id") @db.Uuid
+  examSetId  String   @map("exam_set_id") @db.Uuid
+  orderIndex Int      @map("order_index") @db.SmallInt
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  examSet  ExamSet  @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+
+  @@id([examSetId, questionId])
+}
+
+model Mentor {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  isActive  Boolean  @default(true) @map("is_active")
+  expertise String?  @db.VarChar
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings MentorBooking[]
+}
+
+model MentorBooking {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  mentorId    String              @map("mentor_id") @db.Uuid
+  scheduledAt DateTime            @map("scheduled_at") @db.Timestamptz(6)
+  status      MentorBookingStatus @default(PENDING)
+  notes       String?             @db.Text
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  ESSAY
+}
+
+enum MentorBookingStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum UserAnswerStatus {
+  DRAFT
+  SUBMIT
+}
+
+enum ExamStatus {
+  IN_PROGRESS
+  SUBMITTED
+  WAITING_FOR_REVIEW
+  GRADED
+}
+
+enum SFIALevel {
+  FOUNDATION_L1_L2
+  INTERMEDIATE_L3_L4
+  ADVANCED_L5_L6
+  EXPERT_L7
 }
