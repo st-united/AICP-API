@@ -256,9 +256,8 @@ export class UsersService {
 
       const token: string = this.tokenService.generateAccessToken(payload);
 
-      const ttl = parseInt(this.configService.get<string>('JWT_EXPIRED_TIME').replace('m', '')) * 60; // Convert minutes to seconds
-      await this.redisService.setValue(`reset_password:${token}`, 'pending');
-      await this.redisService.setValue(`reset_password:${token}:exp`, ttl.toString());
+      const ttl = parseInt(this.configService.get<string>('JWT_EXPIRED_TIME'));
+      await this.redisService.setValue(`reset_password:${token}`, 'pending', ttl);
 
       await this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
 
