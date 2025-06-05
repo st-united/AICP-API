@@ -277,7 +277,8 @@ model MentorBooking {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String              @map("user_id") @db.Uuid
   mentorId    String              @map("mentor_id") @db.Uuid
-  scheduledAt DateTime            @map("scheduled_at") @db.Timestamptz(6)
+  scheduledAt DateTime            @map("scheduled_at") @db.Date
+  timeSlot    TimeSlotBooking?    @map("time_slot")
   status      MentorBookingStatus @default(PENDING)
   notes       String?             @db.Text
   createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -319,4 +320,15 @@ enum SFIALevel {
   INTERMEDIATE_L3_L4
   ADVANCED_L5_L6
   EXPERT_L7
+}
+
+enum TimeSlotBooking {
+  AM_08_09
+  AM_09_10
+  AM_10_11
+  AM_11_12
+  PM_02_03
+  PM_03_04
+  PM_04_05
+  PM_05_06
 }

@@ -1621,7 +1621,9 @@ async function main() {
 
   function randomFutureDate(daysAhead = 30) {
     const randomDays = Math.floor(Math.random() * daysAhead) + 1;
-    return new Date(Date.now() + randomDays * 24 * 60 * 60 * 1000);
+    const date = new Date(Date.now() + randomDays * 24 * 60 * 60 * 1000);
+    date.setHours(0, 0, 0, 0);
+    return date;
   }
 
   mentorEmails.forEach((mentorEmail, mentorIndex) => {
@@ -1631,6 +1633,7 @@ async function main() {
         userEmail: userEmails[menteeIndex],
         mentorEmail,
         scheduledAt: randomFutureDate(),
+        timeSlot: 'AM_08_09',
         status: MentorBookingStatus.ACCEPTED,
         notes: `Session between ${userEmails[menteeIndex]} and ${mentorEmail}`,
       });
