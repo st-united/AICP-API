@@ -24,7 +24,10 @@ export class ExamService {
   private async findExamSet(where: any) {
     try {
       const examSet = await this.prisma.examSet.findFirst({
-        where,
+        where: {
+          ...(where.id && { id: where.id }),
+          ...(where.name && { name: where.name }),
+        },
         include: {
           exams: {
             where: { userId: where.userId },
