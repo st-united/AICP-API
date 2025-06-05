@@ -83,11 +83,16 @@ export class RedisService implements OnModuleDestroy {
    * Sets a value in Redis for a given key
    * @param key - The key to set the value for
    * @param value - The value to store
+   * @param ttl - Time to live in seconds (optional)
    * @throws {Error} If Redis operation fails
    */
-  async setValue(key: string, value: string) {
+  async setValue(key: string, value: string, ttl?: number) {
     try {
-      await this.redisClient.set(key, value);
+      if (ttl) {
+        await this.redisClient.set(key, value, 'EX', ttl);
+      } else {
+        await this.redisClient.set(key, value);
+      }
     } catch (error) {
       Logger.error(`Error setting value: ${error.message}`, error.stack);
       throw error;
