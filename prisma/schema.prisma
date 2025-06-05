@@ -21,17 +21,17 @@ model User {
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken String?   @unique @map("refresh_token") @db.VarChar
 
-  dob          DateTime? @map("dob") @db.Timestamptz(6) 
-  country      String?   @db.VarChar                     
-  province     String?   @db.VarChar                      
-  job          String?   @db.VarChar                      
+  dob          DateTime? @map("dob") @db.Timestamptz(6)
+  country      String?   @db.VarChar
+  province     String?   @db.VarChar
+  job          String?   @db.VarChar
   referralCode String?   @unique @map("referral_code") @db.VarChar
 
-  roles          UserRole[]
-  userAnswer     UserAnswer[]
-  exam           Exam[]
-  mentor         Mentor[]
-  mentor_booking MentorBooking[]
+  roles         UserRole[]
+  userAnswer    UserAnswer[]
+  exam          Exam[]
+  mentor        Mentor[]
+  mentorBooking MentorBooking[]
 }
 
 model Role {
@@ -150,19 +150,19 @@ model AnswerOption {
 }
 
 model UserAnswer {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  answerText  String?  @map("answer_text") @db.Text
-  manualScore Float?    @map("manual_score") @db.Real
-  autoScore   Float?     @map("auto_score") @db.Real
-  questionId  String   @map("question_id") @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  examSetId   String   @map("exam_set_id") @db.Uuid
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  answerText  String?          @map("answer_text") @db.Text
+  manualScore Float?           @map("manual_score") @db.Real
+  autoScore   Float?           @map("auto_score") @db.Real
+  questionId  String           @map("question_id") @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  examSetId   String           @map("exam_set_id") @db.Uuid
   status      UserAnswerStatus @default(DRAFT)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  examSet    ExamSet           @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  examSet    ExamSet               @relation(fields: [examSetId], references: [id], onDelete: Cascade)
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   selections UserAnswerSelection[]
 }
@@ -201,6 +201,7 @@ model Domain {
 
   courses    Course[]
   categories CategoryDomain[]
+  examSet    ExamSet[]
 }
 
 model CategoryDomain {
@@ -217,6 +218,7 @@ model CategoryDomain {
 
 model ExamSet {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domainId    String   @map("domain_id") @db.Uuid
   name        String   @db.VarChar
   description String?  @db.Text
   duration    Int      @db.SmallInt
@@ -227,20 +229,23 @@ model ExamSet {
   questions ExamSetQuestion[]
 
   UserAnswer UserAnswer[]
+  domain     Domain       @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model Exam {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  examSetId  String?   @map("exam_set_id") @db.Uuid
-  startedAt  DateTime? @map("started_at") @db.Timestamptz(6)
-  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
-  totalScore Float?    @map("total_score") @db.Real
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  examSetId     String      @map("exam_set_id") @db.Uuid
+  startedAt     DateTime?   @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime?   @map("finished_at") @db.Timestamptz(6)
+  totalScore    Float?      @map("total_score") @db.Real
+  examStatus    ExamStatus? @map("exam_status")
+  levelOfDomain SFIALevel?  @map("level_of_domain")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  examSet ExamSet? @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examSet ExamSet @relation(fields: [examSetId], references: [id], onDelete: Cascade)
 }
 
 model ExamSetQuestion {
@@ -272,7 +277,8 @@ model MentorBooking {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String              @map("user_id") @db.Uuid
   mentorId    String              @map("mentor_id") @db.Uuid
-  scheduledAt DateTime            @map("scheduled_at") @db.Timestamptz(6)
+  scheduledAt DateTime            @map("scheduled_at") @db.Date
+  timeSlot    TimeSlotBooking?    @map("time_slot")
   status      MentorBookingStatus @default(PENDING)
   notes       String?             @db.Text
   createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -298,6 +304,31 @@ enum MentorBookingStatus {
 }
 
 enum UserAnswerStatus {
- DRAFT
- SUBMIT
+  DRAFT
+  SUBMIT
+}
+
+enum ExamStatus {
+  IN_PROGRESS
+  SUBMITTED
+  WAITING_FOR_REVIEW
+  GRADED
+}
+
+enum SFIALevel {
+  FOUNDATION_L1_L2
+  INTERMEDIATE_L3_L4
+  ADVANCED_L5_L6
+  EXPERT_L7
+}
+
+enum TimeSlotBooking {
+  AM_08_09
+  AM_09_10
+  AM_10_11
+  AM_11_12
+  PM_02_03
+  PM_03_04
+  PM_04_05
+  PM_05_06
 }
