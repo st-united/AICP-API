@@ -15,19 +15,20 @@ import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
-import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '@app/modules/email/email.service';
 import { UserProviderEnum } from '@Constant/enums';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
-
+import { TokenService } from '@app/modules/auth/services/token.service';
+import { RedisService } from '@app/modules/redis/redis.service';
 @Injectable()
 export class UsersService {
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly tokenService: TokenService,
+    private readonly redisService: RedisService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -36,6 +37,14 @@ export class UsersService {
     });
 
     if (emailExisted) throw new BadRequestException('Email đã tồn tại');
+
+    if (params.phoneNumber) {
+      const phoneExisted = await this.prisma.user.findUnique({
+        where: { phoneNumber: params.phoneNumber },
+      });
+
+      if (phoneExisted) throw new BadRequestException('Số điện thoại đã tồn tại');
+    }
 
     const hashedPassword = await bcrypt.hash(params.password, 10);
     params = { ...params, password: hashedPassword };
@@ -245,31 +254,29 @@ export class UsersService {
 
       const payload: JwtPayload = { sub: user.id, email: user.email };
 
-      const token: string = this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-        expiresIn: this.configService.get<string>('JWT_EXPIRED_TIME'),
-      });
+      const token: string = this.tokenService.generateAccessToken(payload);
+
+      const ttl = parseInt(this.configService.get<string>('JWT_EXPIRED_TIME').replace('m', '')) * 60; // Convert minutes to seconds
+      await this.redisService.setValue(`reset_password:${token}`, 'pending');
+      await this.redisService.setValue(`reset_password:${token}:exp`, ttl.toString());
 
       await this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
 
       return new ResponseItem(true, 'Gửi email thành công');
     } catch (error) {
-      throw new BadRequestException('Cauth a error: ', { cause: error });
+      throw new BadRequestException('Có lỗi xảy ra: ', { cause: error });
     }
   }
 
   async updateNewPassword(updateForgotPasswordUserDto: UpdateForgotPasswordUserDto): Promise<ResponseItem<boolean>> {
     try {
-      const verifiedToken = this.jwtService.verify(updateForgotPasswordUserDto.token, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-      });
+      const tokenStatus = await this.redisService.getValue(`reset_password:${updateForgotPasswordUserDto.token}`);
 
-      console.log(verifiedToken);
-      const currentTime = Math.floor(Date.now() / 1000);
-      if (verifiedToken.exp && verifiedToken.exp < currentTime) {
-        throw new BadRequestException('Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.');
+      if (!tokenStatus) {
+        throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
       }
 
+      const verifiedToken = this.tokenService.verifyAccessToken(updateForgotPasswordUserDto.token);
       const userId = verifiedToken.sub;
 
       const foundUser = await this.prisma.user.findUnique({
@@ -280,6 +287,7 @@ export class UsersService {
 
       if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
 
+      await this.redisService.deleteValue(`reset_password:${updateForgotPasswordUserDto.token}`);
       const hashedNewPassword = await bcrypt.hash(updateForgotPasswordUserDto.password, 10);
 
       await this.prisma.user.update({
