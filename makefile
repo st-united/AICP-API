@@ -108,3 +108,6 @@ get-pods:
 
 logs:
 	kubectl logs -n devplus-aicp pod/aicp-api-0
+
+restart-api:
+	kubectl rollout restart statefulset aicp-api -n devplus-aicp
