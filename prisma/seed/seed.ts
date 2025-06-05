@@ -1,4 +1,4 @@
-import { PrismaClient, QuestionType, MentorBookingStatus } from '@prisma/client';
+import { PrismaClient, QuestionType, MentorBookingStatus, ExamStatus, SFIALevel } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 // If you want to run seed. Follow steps below:
@@ -1419,16 +1419,19 @@ async function main() {
       name: 'AI Foundations Assessment',
       description: 'Basic assessment of foundational AI knowledge',
       questions: [0, 2, 5, 8], // Indices from the questions array
+      domainName: 'General',
     },
     {
       name: 'AI Ethics and Impact',
       description: 'Assessment focusing on ethical considerations and societal impacts of AI',
       questions: [4, 7, 9], // Indices from the questions array
+      domainName: 'General',
     },
     {
       name: 'AI Tools and Applications',
       description: 'Assessment of practical AI tools and applications knowledge',
       questions: [1, 3, 6], // Indices from the questions array
+      domainName: 'Healthcare',
     },
     {
       name: 'AI INPUT TEST',
@@ -1438,6 +1441,7 @@ async function main() {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
         30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
       ], // All questions
+      domainName: 'General',
     },
   ];
 
@@ -1447,6 +1451,7 @@ async function main() {
         name: examSetData.name,
         description: examSetData.description,
         duration: 40,
+        domainId: domainMap[examSetData.domainName].id,
       },
     });
 
@@ -1499,6 +1504,8 @@ async function main() {
         startedAt: data.startedAt,
         finishedAt: data.finishedAt,
         totalScore: data.totalScore,
+        examStatus: Object.values(ExamStatus)[Math.floor(Math.random() * Object.values(ExamStatus).length)],
+        levelOfDomain: Object.values(SFIALevel)[Math.floor(Math.random() * Object.values(SFIALevel).length)],
       },
     });
   }
