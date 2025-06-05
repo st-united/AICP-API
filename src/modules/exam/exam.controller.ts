@@ -17,7 +17,7 @@ export class ExamController {
   @Get('taken-input-test')
   @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi Input test chưa' })
   hasTakenExamInputTest(@Req() req): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    return this.examService.hasTakenExamInputTest(req.user.id);
+    return this.examService.hasTakenExamInputTest(req.user.userId);
   }
 
   @Get('history-exam')
@@ -36,7 +36,7 @@ export class ExamController {
     @Param('examSetId', ParseUUIDPipe) examSetId: string
   ): Promise<ResponseItem<HasTakenExamResponseDto>> {
     return this.examService.hasTakenExam({
-      userId: req.user.id,
+      userId: req.user.userId,
       examSetId,
     });
   }
