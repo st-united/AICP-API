@@ -2,7 +2,10 @@ import { Expose } from 'class-transformer';
 
 export class ProfileDto {
   @Expose()
-  username: string;
+  id: string;
+
+  @Expose()
+  userName: string;
 
   @Expose()
   email: string;
