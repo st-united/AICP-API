@@ -1,4 +1,4 @@
-import { PrismaClient, QuestionType, MentorBookingStatus } from '@prisma/client';
+import { PrismaClient, QuestionType, MentorBookingStatus, ExamStatus, SFIALevel } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 // If you want to run seed. Follow steps below:
@@ -17,18 +17,18 @@ async function hashPassword(password: string) {
 async function main() {
   // 1. Create permissions
   const permissionsData = [
-    { name: 'View Dashboard', slug: 'view-dashboard', description: 'Can view dashboard' },
-    { name: 'Manage Users', slug: 'manage-users', description: 'Can manage users' },
-    { name: 'Manage Roles', slug: 'manage-roles', description: 'Can manage roles' },
-    { name: 'Manage Companies', slug: 'manage-companies', description: 'Can manage companies' },
-    { name: 'Create Questions', slug: 'create-questions', description: 'Can create questions' },
-    { name: 'Edit Questions', slug: 'edit-questions', description: 'Can edit questions' },
-    { name: 'Delete Questions', slug: 'delete-questions', description: 'Can delete questions' },
-    { name: 'View Exams', slug: 'view-exams', description: 'Can view exams' },
-    { name: 'Create Exams', slug: 'create-exams', description: 'Can create exams' },
-    { name: 'Evaluate Answers', slug: 'evaluate-answers', description: 'Can evaluate user answers' },
-    { name: 'Manage Mentors', slug: 'manage-mentors', description: 'Can manage mentors' },
-    { name: 'Book Mentors', slug: 'book-mentors', description: 'Can book mentors' },
+    { name: 'View Dashboard', slug: 'dashboard:get', description: 'Can view dashboard' },
+    { name: 'Manage Users', slug: 'users:manage', description: 'Can manage users' },
+    { name: 'Manage Roles', slug: 'roles:manage', description: 'Can manage roles' },
+    { name: 'Manage Companies', slug: 'companies:manage', description: 'Can manage companies' },
+    { name: 'Create Questions', slug: 'questions:create', description: 'Can create questions' },
+    { name: 'Edit Questions', slug: 'questions:edit', description: 'Can edit questions' },
+    { name: 'Delete Questions', slug: 'questions:delete', description: 'Can delete questions' },
+    { name: 'View Exams', slug: 'exams:get', description: 'Can view exams' },
+    { name: 'Create Exams', slug: 'exams:create', description: 'Can create exams' },
+    { name: 'Evaluate Answers', slug: 'answers/evaluate:post', description: 'Can evaluate user answers' },
+    { name: 'Manage Mentors', slug: 'mentors:manage', description: 'Can manage mentors' },
+    { name: 'Book Mentors', slug: 'mentors/booking:post', description: 'Can booking mentors' },
   ];
 
   const permissions = [];
@@ -93,25 +93,27 @@ async function main() {
     permissions.map((p) => p.slug)
   );
   await assignRolePermission('admin', [
-    'view-dashboard',
-    'manage-users',
-    'manage-roles',
-    'create-questions',
-    'edit-questions',
-    'delete-questions',
-    'view-exams',
-    'manage-mentors',
+    'dashboard:get',
+    'users:manage',
+    'roles:manage',
+    'questions:create',
+    'questions:edit',
+    'questions:delete',
+    'exams:get',
+    'mentors:manage',
+    'mentors/booking:post',
   ]);
-  await assignRolePermission('company', ['manage-companies', 'view-dashboard', 'view-exams']);
-  await assignRolePermission('user', ['view-dashboard', 'book-mentors']);
-  await assignRolePermission('mentor', ['view-dashboard']);
+  await assignRolePermission('company', ['companies:manage', 'dashboard:get', 'exams:get']);
+  await assignRolePermission('user', ['dashboard:get', 'mentors/booking:post']);
+  await assignRolePermission('mentor', ['dashboard:get']);
   await assignRolePermission('examiner', [
-    'view-dashboard',
-    'create-questions',
-    'edit-questions',
-    'create-exams',
-    'evaluate-answers',
-    'view-exams',
+    'dashboard:get',
+    'questions:create',
+    'questions:edit',
+    'questions:delete',
+    'exams:create',
+    'answers/evaluate:post',
+    'exams:get',
   ]);
 
   // 4. Create users and assign roles
@@ -152,6 +154,139 @@ async function main() {
       role: 'mentor',
     },
     {
+      phoneNumber: '0945678902',
+      email: 'mentor2@example.com',
+      fullName: 'Jane Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678903',
+      email: 'mentor3@example.com',
+      fullName: 'Mike Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678904',
+      email: 'mentor4@example.com',
+      fullName: 'Sarah Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678905',
+      email: 'mentor5@example.com',
+      fullName: 'David Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678906',
+      email: 'mentor6@example.com',
+      fullName: 'Lisa Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678907',
+      email: 'mentor7@example.com',
+      fullName: 'Tom Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678908',
+      email: 'mentor8@example.com',
+      fullName: 'Emma Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678909',
+      email: 'mentor9@example.com',
+      fullName: 'Chris Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678910',
+      email: 'mentor10@example.com',
+      fullName: 'Amy Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678911',
+      email: 'mentor11@example.com',
+      fullName: 'Peter Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678912',
+      email: 'mentor12@example.com',
+      fullName: 'Mary Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678913',
+      email: 'mentor13@example.com',
+      fullName: 'James Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678914',
+      email: 'mentor14@example.com',
+      fullName: 'Sophie Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678915',
+      email: 'mentor15@example.com',
+      fullName: 'Daniel Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678916',
+      email: 'mentor16@example.com',
+      fullName: 'Rachel Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678917',
+      email: 'mentor17@example.com',
+      fullName: 'Mark Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678918',
+      email: 'mentor18@example.com',
+      fullName: 'Laura Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678919',
+      email: 'mentor19@example.com',
+      fullName: 'Paul Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
+      phoneNumber: '0945678920',
+      email: 'mentor20@example.com',
+      fullName: 'Julia Mentor',
+      password: 'Mentor123',
+      role: 'mentor',
+    },
+    {
       phoneNumber: '0956789012',
       email: 'examiner@example.com',
       fullName: 'Eva Examiner',
@@ -172,6 +307,132 @@ async function main() {
       password: 'User123',
       role: 'user',
     },
+    {
+      phoneNumber: '0978901235',
+      email: 'user3@example.com',
+      fullName: 'User Three',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901236',
+      email: 'user4@example.com',
+      fullName: 'User Four',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901237',
+      email: 'user5@example.com',
+      fullName: 'User Five',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901238',
+      email: 'user6@example.com',
+      fullName: 'User Six',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901239',
+      email: 'user7@example.com',
+      fullName: 'User Seven',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901240',
+      email: 'user8@example.com',
+      fullName: 'User Eight',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901241',
+      email: 'user9@example.com',
+      fullName: 'User Nine',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901242',
+      email: 'user10@example.com',
+      fullName: 'User Ten',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901243',
+      email: 'user11@example.com',
+      fullName: 'User Eleven',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901244',
+      email: 'user12@example.com',
+      fullName: 'User Twelve',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901245',
+      email: 'user13@example.com',
+      fullName: 'User Thirteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901246',
+      email: 'user14@example.com',
+      fullName: 'User Fourteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901247',
+      email: 'user15@example.com',
+      fullName: 'User Fifteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901248',
+      email: 'user16@example.com',
+      fullName: 'User Sixteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901249',
+      email: 'user17@example.com',
+      fullName: 'User Seventeen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901250',
+      email: 'user18@example.com',
+      fullName: 'User Eighteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901251',
+      email: 'user19@example.com',
+      fullName: 'User Nineteen',
+      password: 'User123',
+      role: 'user',
+    },
+    {
+      phoneNumber: '0978901252',
+      email: 'user20@example.com',
+      fullName: 'User Twenty',
+      password: 'User123',
+      role: 'user',
+    },
   ];
 
   const userMap = {};
@@ -187,7 +448,7 @@ async function main() {
         password: hashedPassword,
         fullName: userData.fullName,
         provider: 'local',
-        status: true,
+        status: Math.random() >= 0.5,
       },
     });
 
@@ -1158,25 +1419,29 @@ async function main() {
       name: 'AI Foundations Assessment',
       description: 'Basic assessment of foundational AI knowledge',
       questions: [0, 2, 5, 8], // Indices from the questions array
+      domainName: 'General',
     },
     {
       name: 'AI Ethics and Impact',
       description: 'Assessment focusing on ethical considerations and societal impacts of AI',
       questions: [4, 7, 9], // Indices from the questions array
+      domainName: 'General',
     },
     {
       name: 'AI Tools and Applications',
       description: 'Assessment of practical AI tools and applications knowledge',
       questions: [1, 3, 6], // Indices from the questions array
+      domainName: 'Healthcare',
     },
     {
-      name: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
+      name: 'AI INPUT TEST',
       description:
         'Bài kiểm tra đánh giá đầu vào cho các bạn đã có kiến thức về AI, là developer và muốn nâng cao kiến thức về AI',
       questions: [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
         30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
       ], // All questions
+      domainName: 'General',
     },
   ];
 
@@ -1185,6 +1450,8 @@ async function main() {
       data: {
         name: examSetData.name,
         description: examSetData.description,
+        duration: 40,
+        domainId: domainMap[examSetData.domainName].id,
       },
     });
 
@@ -1219,7 +1486,7 @@ async function main() {
     },
     {
       email: 'user@example.com',
-      examSetName: 'AI FOR DEVELOPER - BÀI KIỂM TRA ĐÁNH GIÁ ĐẦU VÀO',
+      examSetName: 'AI INPUT TEST',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // 90 minutes after start
       totalScore: 68.5,
@@ -1237,6 +1504,8 @@ async function main() {
         startedAt: data.startedAt,
         finishedAt: data.finishedAt,
         totalScore: data.totalScore,
+        examStatus: Object.values(ExamStatus)[Math.floor(Math.random() * Object.values(ExamStatus).length)],
+        levelOfDomain: Object.values(SFIALevel)[Math.floor(Math.random() * Object.values(SFIALevel).length)],
       },
     });
   }
@@ -1246,6 +1515,82 @@ async function main() {
     {
       email: 'mentor1@example.com',
       expertise: 'Machine Learning, Deep Learning, Computer Vision',
+    },
+    {
+      email: 'mentor2@example.com',
+      expertise: 'Natural Language Processing, Transformers, BERT',
+    },
+    {
+      email: 'mentor3@example.com',
+      expertise: 'Reinforcement Learning, Game AI, Decision Making',
+    },
+    {
+      email: 'mentor4@example.com',
+      expertise: 'Data Science, Statistical Analysis, Big Data',
+    },
+    {
+      email: 'mentor5@example.com',
+      expertise: 'AI Ethics, Responsible AI Development, Fairness',
+    },
+    {
+      email: 'mentor6@example.com',
+      expertise: 'Robotics, Computer Vision, Sensor Fusion',
+    },
+    {
+      email: 'mentor7@example.com',
+      expertise: 'MLOps, AI Infrastructure, Model Deployment',
+    },
+    {
+      email: 'mentor8@example.com',
+      expertise: 'AI in Healthcare, Medical Imaging, Bioinformatics',
+    },
+    {
+      email: 'mentor9@example.com',
+      expertise: 'AI for Finance, Quantitative Analysis, Risk Assessment',
+    },
+    {
+      email: 'mentor10@example.com',
+      expertise: 'Edge AI, IoT, Embedded Systems',
+    },
+    {
+      email: 'mentor11@example.com',
+      expertise: 'AI Security, Adversarial ML, Privacy',
+    },
+    {
+      email: 'mentor12@example.com',
+      expertise: 'Generative AI, GANs, Diffusion Models',
+    },
+    {
+      email: 'mentor13@example.com',
+      expertise: 'AI Research, Academic Publishing, Scientific Methods',
+    },
+    {
+      email: 'mentor14@example.com',
+      expertise: 'AI Product Management, Strategy, Business Impact',
+    },
+    {
+      email: 'mentor15@example.com',
+      expertise: 'Speech Recognition, Audio Processing, Voice AI',
+    },
+    {
+      email: 'mentor16@example.com',
+      expertise: 'AI for Climate Change, Environmental Modeling, Sustainability',
+    },
+    {
+      email: 'mentor17@example.com',
+      expertise: 'AI Education, Curriculum Development, Teaching',
+    },
+    {
+      email: 'mentor18@example.com',
+      expertise: 'AI in Agriculture, Precision Farming, Crop Analysis',
+    },
+    {
+      email: 'mentor19@example.com',
+      expertise: 'AI for Social Good, Humanitarian AI, Impact Assessment',
+    },
+    {
+      email: 'mentor20@example.com',
+      expertise: 'AI Startups, Entrepreneurship, Innovation',
     },
     {
       email: 'admin@example.com', // Admin can also be a mentor
@@ -1269,29 +1614,31 @@ async function main() {
     },
   });
 
-  const mentorBookingsData = [
-    {
-      userEmail: 'user@example.com',
-      mentorEmail: 'mentor1@example.com',
-      scheduledAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days in future
-      status: MentorBookingStatus.ACCEPTED,
-      notes: 'Discussion about AI career path and required skills',
-    },
-    {
-      userEmail: 'user1@example.com',
-      mentorEmail: 'mentor1@example.com',
-      scheduledAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days in future
-      status: MentorBookingStatus.PENDING,
-      notes: 'Help with practical ML project implementation',
-    },
-    {
-      userEmail: 'user2@example.com',
-      mentorEmail: 'admin@example.com',
-      scheduledAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days in future
-      status: MentorBookingStatus.ACCEPTED,
-      notes: 'Guidance on ethical considerations in healthcare AI',
-    },
-  ];
+  // 20 mentees bookings for each mentor
+  const mentorBookingsData = [];
+  const mentorEmails = mentorsData.map((mentor) => mentor.email);
+  const userEmails = usersData.filter((user) => user.role === 'user').map((user) => user.email);
+
+  function randomFutureDate(daysAhead = 30) {
+    const randomDays = Math.floor(Math.random() * daysAhead) + 1;
+    const date = new Date(Date.now() + randomDays * 24 * 60 * 60 * 1000);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  mentorEmails.forEach((mentorEmail, mentorIndex) => {
+    for (let i = 0; i < 20; i++) {
+      const menteeIndex = (mentorIndex * 20 + i) % userEmails.length;
+      mentorBookingsData.push({
+        userEmail: userEmails[menteeIndex],
+        mentorEmail,
+        scheduledAt: randomFutureDate(),
+        timeSlot: 'AM_08_09',
+        status: MentorBookingStatus.ACCEPTED,
+        notes: `Session between ${userEmails[menteeIndex]} and ${mentorEmail}`,
+      });
+    }
+  });
 
   const mentorEmailMap = {};
   for (const mentor of mentors) {
@@ -1320,6 +1667,7 @@ async function main() {
       manualScore: null,
       autoScore: 10,
       answerOptionIndex: 3, // The correct option (Học qua internet)
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user1@example.com',
@@ -1328,6 +1676,7 @@ async function main() {
       manualScore: null,
       autoScore: 10,
       answerOptionIndex: 0, // The correct option (Đúng)
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user2@example.com',
@@ -1337,6 +1686,7 @@ async function main() {
       manualScore: 18,
       autoScore: null,
       answerOptionIndex: null, // Essay doesn't have options
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user@example.com',
@@ -1346,6 +1696,7 @@ async function main() {
       manualScore: 19,
       autoScore: null,
       answerOptionIndex: null, // Essay doesn't have options
+      examSetName: 'AI Foundations Assessment',
     },
     {
       email: 'user@example.com',
@@ -1355,6 +1706,7 @@ async function main() {
       autoScore: 10,
       answerOptionIndex: null,
       answerOptionIndices: [0, 1, 3], // The correct options
+      examSetName: 'AI Foundations Assessment',
     },
   ];
 
@@ -1366,6 +1718,7 @@ async function main() {
         answerText: answerData.answerText,
         manualScore: answerData.manualScore,
         autoScore: answerData.autoScore,
+        examSetId: examSetMap[answerData.examSetName].id,
       },
     });
 
