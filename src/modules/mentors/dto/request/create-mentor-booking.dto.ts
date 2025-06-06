@@ -9,6 +9,10 @@ export class CreateMentorBookingDto {
   @IsString()
   mentorId: string;
 
+  @IsString()
+  @IsOptional()
+  examId?: string;
+
   @IsDateString()
   scheduledAt: string; // ISO Date string: '2025-06-10'
 

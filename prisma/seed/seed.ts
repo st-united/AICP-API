@@ -1061,6 +1061,7 @@ async function main() {
         mentorEmail,
         scheduledAt: randomFutureDate(),
         timeSlot: 'AM_08_09',
+        meetingLink: 'meet.google.com/miy-bonq-orf',
         status: MentorBookingStatus.ACCEPTED,
         notes: `Session between ${userEmails[menteeIndex]} and ${mentorEmail}`,
       });
@@ -1072,12 +1073,14 @@ async function main() {
     const email = mentor.user.email;
     mentorEmailMap[email] = mentor;
   }
-
+  const exams = await prisma.examSet.findMany();
+  const examMap = Object.fromEntries(exams.map((es) => [es.name, es]));
   for (const bookingData of mentorBookingsData) {
     await prisma.mentorBooking.create({
       data: {
         userId: userMap[bookingData.userEmail].id,
         mentorId: mentorEmailMap[bookingData.mentorEmail].id,
+        meetingLink: bookingData.meetingLink,
         scheduledAt: bookingData.scheduledAt,
         status: bookingData.status,
         notes: bookingData.notes,

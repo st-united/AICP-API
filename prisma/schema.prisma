@@ -242,8 +242,9 @@ model Exam {
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  examSet ExamSet? @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examSet       ExamSet?        @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  mentorBooking MentorBooking[]
 }
 
 model ExamSetQuestion {
@@ -275,7 +276,9 @@ model MentorBooking {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String              @map("user_id") @db.Uuid
   mentorId    String              @map("mentor_id") @db.Uuid
+  examId      String?             @unique @map("exam_id") @db.Uuid
   scheduledAt DateTime            @map("scheduled_at") @db.Date
+  meetingLink String              @map("meeting_link") @db.Text
   timeSlot    TimeSlotBooking?    @map("time_slot")
   status      MentorBookingStatus @default(PENDING)
   notes       String?             @db.Text
@@ -284,6 +287,7 @@ model MentorBooking {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  exam   Exam?  @relation(fields: [examId], references: [id], onDelete: Cascade)
 }
 
 enum QuestionType {
