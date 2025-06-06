@@ -15,6 +15,12 @@ export class UpdateProfileUserDto {
   @IsString()
   avatarUrl?: string;
 
+  @ApiProperty({ description: 'email', example: 'example@example.com' })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  email?: string;
+
   @ApiProperty({ description: 'phoneNumber', example: '0123456789' })
   @Expose()
   @IsOptional()
@@ -44,4 +50,10 @@ export class UpdateProfileUserDto {
   @IsOptional()
   @IsString()
   job?: string;
+
+  @ApiProperty({ description: 'referralCode', example: 'REF123' })
+  @Expose()
+  @IsOptional()
+  @IsString()
+  referralCode?: string;
 }
