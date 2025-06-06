@@ -5,6 +5,10 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+<<<<<<< HEAD
+=======
+  //directUrl = env("DIRECT_URL") // If using Supabase, uncoment this line
+>>>>>>> feat/AICP-40
 }
 
 model User {
