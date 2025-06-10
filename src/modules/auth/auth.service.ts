@@ -15,6 +15,7 @@ import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +24,8 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
     private readonly redisService: RedisService,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
@@ -91,6 +93,64 @@ export class AuthService {
     await this.redisService.saveSessionToRedis(sessionDto);
 
     return new ResponseItem(data, 'Đăng nhập thành công');
+  }
+
+  async loginWithGoogle(idToken: string): Promise<ResponseItem<TokenDto>> {
+    try {
+      const decodedToken = await this.firebaseService.verifyIdToken(idToken);
+      const { email, name, picture } = decodedToken;
+      console.log(email);
+
+      const hashedPassword = await bcrypt.hash('loginWithGooogle', 10);
+
+      const user = await this.prisma.user.upsert({
+        where: { email },
+        update: {
+          fullName: name,
+          avatarUrl: picture,
+        },
+        create: {
+          email,
+          fullName: name,
+          avatarUrl: picture,
+          password: hashedPassword,
+          phoneNumber: null,
+        },
+      });
+
+      const isNewUser = !user.refreshToken;
+      const payload: JwtPayload = { sub: user.id, email: user.email };
+      let refreshToken = user.refreshToken;
+
+      if (!refreshToken || this.tokenService.checkExpiredToken(refreshToken, 'refresh')) {
+        refreshToken = this.tokenService.generateRefreshToken(payload);
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { refreshToken },
+        });
+      }
+
+      const accessToken = this.tokenService.generateAccessToken(payload);
+
+      const sessionDto: SessionDto = {
+        userId: user.id,
+        userAgent: 'google-login',
+        ip: '',
+      };
+      await this.redisService.saveSessionToRedis(sessionDto);
+
+      const data: TokenDto = {
+        name: user.fullName,
+        accessToken,
+        refreshToken,
+      };
+
+      const message = isNewUser ? 'Tạo tài khoản' : 'Cập nhật tài khoản';
+
+      return new ResponseItem(data, message);
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
   }
 
   async handleLogout(userId: string): Promise<ResponseItem<string>> {
