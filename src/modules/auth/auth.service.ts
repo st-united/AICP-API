@@ -145,7 +145,7 @@ export class AuthService {
         refreshToken,
       };
 
-      const message = isNewUser ? 'Tạo tài khoản' : 'Cập nhật tài khoản';
+      const message = isNewUser ? 'Chào mừng bạn đã đến với nền tảng đánh giá năng lực' : 'Chào mừng bạn đã trở lại';
 
       return new ResponseItem(data, message);
     } catch (error) {
