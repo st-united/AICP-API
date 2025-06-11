@@ -4,7 +4,6 @@ import { UpdateExamSetDto } from './dto/update-exam-set.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GetExamSetDto } from './dto/get-exam-set.dto';
 import { ResponseItem } from '@app/common/dtos';
-import { userAnswerDto } from '@AnswersModule/dto/request/user-answer.dto';
 
 @Injectable()
 export class ExamSetsService {
@@ -59,13 +58,13 @@ export class ExamSetsService {
     return this.prisma.examSet.findFirst({
       where: { name: EXAM_SET_NAME },
       include: {
-        exams: true,
-        questions: {
+        exam: true,
+        setQuestion: {
           include: {
             question: {
               include: {
                 answerOptions: true,
-                criteria: true,
+                skill: true,
                 level: true,
               },
             },
@@ -89,11 +88,11 @@ export class ExamSetsService {
     });
   }
 
-  private async findUserAnswers(userId: string, examSetId: string) {
+  private async findUserAnswers(userId: string, examId: string) {
     return this.prisma.userAnswer.findMany({
       where: {
         userId: userId,
-        examSetId: examSetId,
+        examId: examId,
       },
       include: {
         selections: true,

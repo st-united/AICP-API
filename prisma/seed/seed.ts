@@ -1495,7 +1495,10 @@ async function main() {
       data: {
         name: examSetData.name,
         description: examSetData.description,
+<<<<<<< HEAD
         timeLimitMinutes: 40,
+=======
+>>>>>>> c0f10e7 (feat: [AICP-82] fix conflict api answers and exam-set)
         frameworkId: competencyFrameworkMap[examSetData.frameworkVersion].id,
       },
     });

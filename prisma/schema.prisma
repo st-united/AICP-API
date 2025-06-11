@@ -325,6 +325,7 @@ model MentorBooking {
   userId          String              @map("user_id") @db.Uuid
   mentorId        String              @map("mentor_id") @db.Uuid
   scheduledAt     DateTime            @map("scheduled_at") @db.Timestamptz(6)
+  timeSlot        TimeSlotBooking?    @map("time_slot")
   status          MentorBookingStatus @default(PENDING)
   notes           String?             @db.Text
   competencyFocus String?             @map("competency_focus") @db.Uuid
