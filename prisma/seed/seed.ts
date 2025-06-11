@@ -1495,6 +1495,7 @@ async function main() {
       data: {
         name: examSetData.name,
         description: examSetData.description,
+        timeLimitMinutes: 40,
         frameworkId: competencyFrameworkMap[examSetData.frameworkVersion].id,
       },
     });
