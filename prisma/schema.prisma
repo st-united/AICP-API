@@ -484,7 +484,8 @@ model Portfolio {
   userId           String     @map("user_id") @db.Uuid
   linkedInUrl      String?    @map("linked_in_url") @db.Text
   githubUrl        String?    @map("github_url") @db.Text
-  certificates     Json       @default("[]") @db.JsonB
+  certificateFiles String[]   @default([])
+  experienceFiles  String[]   @default([])
   competencyAreaId String?    @map("competency_area_id") @db.Uuid
   sfiaLevelClaimed SFIALevel? @map("sfia_level_claimed")
   isVerified       Boolean    @default(false) @map("is_verified")
