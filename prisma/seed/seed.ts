@@ -476,34 +476,6 @@ async function main() {
     });
   }
 
-  // 5. Create Categories (mindset, toolset, skillset)
-  const categoriesData = [
-    {
-      name: 'AI Ethics & Responsibility',
-      dimension: CompetencyDimension.MINDSET,
-      description:
-        'Ethical decision-making, bias mitigation, privacy protection, transparency, and responsible AI deployment in software systems.',
-    },
-    {
-      dimension: CompetencyDimension.MINDSET,
-      name: 'AI Problem-Solving & Domain Application',
-      description:
-        'Systematic problem decomposition, architectural design, domain-specific AI application, and complex system optimization.',
-    },
-  ];
-
-  const categories = [];
-  for (const catData of categoriesData) {
-    const category = await prisma.category.upsert({
-      where: { name: catData.name },
-      update: {},
-      create: catData,
-    });
-    categories.push(category);
-  }
-
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.name, c]));
-
   // 6. Create Domains
   const domainsData = [
     {
@@ -570,9 +542,6 @@ async function main() {
       update: {},
       create: {
         version: domainNameData.version,
-        mindsetWeight: 0.2,
-        toolsetWeight: 0.3,
-        skillsetWeight: 0.5,
         domainId: domainMap[domainNameData.domainName].id,
       },
     });
@@ -626,6 +595,39 @@ async function main() {
   }
 
   const competencyAreaMap = Object.fromEntries(competencyArea.map((c) => [c.name, c]));
+
+  // 5. Create Categories (mindset, toolset, skillset)
+  const categoriesData = [
+    {
+      name: 'AI Ethics & Responsibility',
+      dimension: CompetencyDimension.MINDSET,
+      description:
+        'Ethical decision-making, bias mitigation, privacy protection, transparency, and responsible AI deployment in software systems.',
+    },
+    {
+      dimension: CompetencyDimension.MINDSET,
+      name: 'AI Problem-Solving & Domain Application',
+      description:
+        'Systematic problem decomposition, architectural design, domain-specific AI application, and complex system optimization.',
+    },
+  ];
+
+  const categories = [];
+  for (const catData of categoriesData) {
+    const category = await prisma.category.upsert({
+      where: { name: catData.name },
+      update: {},
+      create: {
+        name: catData.name,
+        description: catData.description,
+        dimension: catData.dimension,
+        competencyAreaId: competencyAreaMap[catData.dimension].id,
+      },
+    });
+    categories.push(category);
+  }
+
+  const categoryMap = Object.fromEntries(categories.map((c) => [c.name, c]));
 
   // 9. Levels
   const levelsData = [
@@ -695,48 +697,48 @@ async function main() {
       description:
         'Basic computer operations, using standard office software, understanding fundamental IT concepts and terminology',
       sfiaLevel: SFIALevel.LEVEL_1_AWARENESS,
-      compatencyAreaName: CompetencyDimension.MINDSET,
+      compatencyAreaName: 'AI Ethics & Responsibility',
     },
     {
       name: 'LEVEL_2 - TECHNICAL SUPPORT',
       description:
         'Hardware/software troubleshooting, basic network configuration, user support, system maintenance tasks',
       sfiaLevel: SFIALevel.LEVEL_2_FOUNDATION,
-      compatencyAreaName: CompetencyDimension.TOOLSET,
+      compatencyAreaName: 'AI Problem-Solving & Domain Application',
     },
     {
       name: 'LEVEL_3 - SYSTEM ADMINISTRATION',
       description:
         'Managing servers, network infrastructure, security implementation, database administration, user management',
       sfiaLevel: SFIALevel.LEVEL_3_APPLICATION,
-      compatencyAreaName: CompetencyDimension.MINDSET,
+      compatencyAreaName: 'AI Problem-Solving & Domain Application',
     },
     {
       name: 'LEVEL_4 - IT PROJECT MANAGEMENT',
       description: 'Leading IT projects, system integration, team coordination, resource planning, risk management',
       sfiaLevel: SFIALevel.LEVEL_4_INTEGRATION,
-      compatencyAreaName: CompetencyDimension.MINDSET,
+      compatencyAreaName: 'AI Problem-Solving & Domain Application',
     },
     {
       name: 'LEVEL_5 - IT ARCHITECTURE',
       description:
         'Designing enterprise solutions, technology strategy, system optimization, performance tuning, technical consulting',
       sfiaLevel: SFIALevel.LEVEL_5_INNOVATION,
-      compatencyAreaName: CompetencyDimension.SKILLSET,
+      compatencyAreaName: 'AI Problem-Solving & Domain Application',
     },
     {
       name: 'LEVEL_6 - IT DIRECTOR',
       description:
         'Digital transformation leadership, IT governance, strategic planning, enterprise architecture, vendor management',
       sfiaLevel: SFIALevel.LEVEL_6_LEADERSHIP,
-      compatencyAreaName: CompetencyDimension.SKILLSET,
+      compatencyAreaName: 'AI Problem-Solving & Domain Application',
     },
     {
       name: 'LEVEL_7 - CHIEF TECHNOLOGY OFFICER',
       description:
         'Technology vision and strategy, digital innovation, enterprise-wide IT leadership, industry thought leadership',
       sfiaLevel: SFIALevel.LEVEL_7_MASTERY,
-      compatencyAreaName: CompetencyDimension.TOOLSET,
+      compatencyAreaName: 'AI Problem-Solving & Domain Application',
     },
   ];
 
@@ -749,7 +751,7 @@ async function main() {
         name: competentcy.name,
         description: competentcy.description,
         sfiaLevel: competentcy.sfiaLevel,
-        competencyAreaId: competencyAreaMap[competentcy.compatencyAreaName].id,
+        categoryId: categoryMap[competentcy.compatencyAreaName].id,
       },
     });
     competencySkills.push(competencySkill);
@@ -1495,10 +1497,7 @@ async function main() {
       data: {
         name: examSetData.name,
         description: examSetData.description,
-<<<<<<< HEAD
         timeLimitMinutes: 40,
-=======
->>>>>>> c0f10e7 (feat: [AICP-82] fix conflict api answers and exam-set)
         frameworkId: competencyFrameworkMap[examSetData.frameworkVersion].id,
       },
     });

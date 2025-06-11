@@ -222,14 +222,17 @@ model Domain {
 }
 
 model Category {
-  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String              @unique @db.VarChar
-  description String              @db.Text
-  dimension   CompetencyDimension
-  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String              @unique @db.VarChar
+  description      String              @db.Text
+  competencyAreaId String              @map("competency_area_id") @db.Uuid
+  dimension        CompetencyDimension
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  courses Course[]
+  courses         Course[]
+  competencySkill CompetencySkill[]
+  competencyArea  CompetencyArea    @relation(fields: [competencyAreaId], references: [id], onDelete: Cascade)
 }
 
 model ExamSet {
@@ -338,15 +341,12 @@ model MentorBooking {
 }
 
 model CompetencyFramework {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  domainId       String   @map("domain_id") @db.Uuid
-  version        String   @default("1.0") @db.VarChar
-  mindsetWeight  Decimal  @default("0.4") @map("mindset_weight") @db.Decimal(3, 2)
-  skillsetWeight Decimal  @default("0.35") @map("skillset_weight") @db.Decimal(3, 2)
-  toolsetWeight  Decimal  @default("0.25") @map("toolset_weight") @db.Decimal(3, 2)
-  isActive       Boolean  @default(true) @map("is_active") @db.Boolean
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domainId  String   @map("domain_id") @db.Uuid
+  version   String   @default("1.0") @db.VarChar
+  isActive  Boolean  @default(true) @map("is_active") @db.Boolean
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   area         CompetencyArea[]
   examSet      ExamSet[]
@@ -365,27 +365,26 @@ model CompetencyArea {
   createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  skill                 CompetencySkill[]
-  score                 CompetencyScore[]
-  pathCourse            LearningPathCourse[]
-  portfolio             Portfolio[]
-  mentorCompetency      MentorCompetency[]
-  mentorBooking         MentorBooking[]
-  CompetencyFramework   CompetencyFramework? @relation(fields: [competencyFrameworkId], references: [id])
-  competencyFrameworkId String?              @db.Uuid
+  score               CompetencyScore[]
+  pathCourse          LearningPathCourse[]
+  portfolio           Portfolio[]
+  mentorCompetency    MentorCompetency[]
+  mentorBooking       MentorBooking[]
+  category            Category[]
+  CompetencyFramework CompetencyFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
 }
 
 model CompetencySkill {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  competencyAreaId String    @map("competency_area_id") @db.Uuid
-  name             String    @db.VarChar
-  description      String?   @db.Text
-  sfiaLevel        SFIALevel @map("sfia_level")
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId  String    @map("category_id") @db.Uuid
+  name        String    @db.VarChar
+  description String?   @db.Text
+  sfiaLevel   SFIALevel @map("sfia_level")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   question Question[]
-  area     CompetencyArea @relation(fields: [competencyAreaId], references: [id], onDelete: Cascade)
+  area     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 model CompetencyAssessment {
