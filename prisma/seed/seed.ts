@@ -1,4 +1,11 @@
-import { PrismaClient, QuestionType, MentorBookingStatus, ExamStatus, SFIALevel } from '@prisma/client';
+import {
+  PrismaClient,
+  QuestionType,
+  MentorBookingStatus,
+  ExamStatus,
+  SFIALevel,
+  CompetencyDimension,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 // If you want to run seed. Follow steps below:
@@ -472,16 +479,16 @@ async function main() {
   // 5. Create Categories (mindset, toolset, skillset)
   const categoriesData = [
     {
-      name: 'mindset',
-      description: 'Thinking frameworks and perspectives for AI readiness',
+      name: 'AI Ethics & Responsibility',
+      dimension: CompetencyDimension.MINDSET,
+      description:
+        'Ethical decision-making, bias mitigation, privacy protection, transparency, and responsible AI deployment in software systems.',
     },
     {
-      name: 'toolset',
-      description: 'Practical tools and technologies related to AI',
-    },
-    {
-      name: 'skillset',
-      description: 'Technical and non-technical skills for AI implementation',
+      dimension: CompetencyDimension.MINDSET,
+      name: 'AI Problem-Solving & Domain Application',
+      description:
+        'Systematic problem decomposition, architectural design, domain-specific AI application, and complex system optimization.',
     },
   ];
 
@@ -533,121 +540,140 @@ async function main() {
 
   const domainMap = Object.fromEntries(domains.map((d) => [d.name, d]));
 
-  // 7. Create Category-Domain relationships
-  const categoryDomains = [
-    { category: 'mindset', domain: 'General' },
-    { category: 'mindset', domain: 'Healthcare' },
-    { category: 'mindset', domain: 'Finance' },
-    { category: 'toolset', domain: 'General' },
-    { category: 'toolset', domain: 'Information Technology' },
-    { category: 'skillset', domain: 'Information Technology' },
-    { category: 'mindset', domain: 'Information Technology' },
-    { category: 'toolset', domain: 'Education' },
-    { category: 'skillset', domain: 'General' },
-    { category: 'skillset', domain: 'Finance' },
-    { category: 'skillset', domain: 'Healthcare' },
-  ];
+  const competencyFramework = [];
 
-  for (const cd of categoryDomains) {
-    await prisma.categoryDomain.upsert({
-      where: {
-        categoryId_domainId: {
-          categoryId: categoryMap[cd.category].id,
-          domainId: domainMap[cd.domain].id,
-        },
-      },
+  const competencyFrameworkName = [
+    {
+      domainName: 'Healthcare',
+      version: '1.0',
+    },
+    {
+      domainName: 'Finance',
+      version: '2.0',
+    },
+    {
+      domainName: 'Education',
+      version: '3.0',
+    },
+    {
+      domainName: 'Information Technology',
+      version: '4.0',
+    },
+    {
+      domainName: 'General',
+      version: '5.0',
+    },
+  ];
+  for (const domainNameData of competencyFrameworkName) {
+    const criterion = await prisma.competencyFramework.upsert({
+      where: { id: domainMap[domainNameData.domainName].id },
       update: {},
       create: {
-        categoryId: categoryMap[cd.category].id,
-        domainId: domainMap[cd.domain].id,
+        version: domainNameData.version,
+        mindsetWeight: 0.2,
+        toolsetWeight: 0.3,
+        skillsetWeight: 0.5,
+        domainId: domainMap[domainNameData.domainName].id,
       },
     });
+    competencyFramework.push(criterion);
   }
+
+  const competencyFrameworkMap = Object.fromEntries(competencyFramework.map((c) => [c.version, c]));
 
   // 8. Create Criteria with specified weights
-  const criteriaData = [
+  const competencyAreaDatas = [
     {
-      name: 'Kiến thức nền tảng về AI và Machine Learning',
-      description: 'Nắm chắc nền tảng, tránh dùng sai AI',
-      scoreWeight: 0.2, // 20%
-      categoryId: 'mindset',
+      name: 'MINDSET',
+      description:
+        'Psychological and cognitive foundations for AI adoption: ethics, adaptation, innovation mindset, and continuous learning capabilities.',
+      scoreWeight: 0.4,
+      dimension: CompetencyDimension.MINDSET,
+      frameworkVersion: '5.0',
     },
     {
-      name: 'Prompt Engineering và AI Tools',
-      description: 'Cốt lõi để dùng AI đúng cách và an toàn',
-      scoreWeight: 0.25, // 25%
-      categoryId: 'toolset',
+      name: 'SKILLSET',
+      description:
+        'Applied competencies for AI implementation: problem-solving, critical thinking, collaboration, and project execution skills.',
+      scoreWeight: 0.35,
+      dimension: CompetencyDimension.SKILLSET,
+      frameworkVersion: '5.0',
     },
     {
-      name: 'Phát triển phần mềm và SDLC',
-      description: 'Thực hành quan trọng, liên quan trực tiếp đến năng suất',
-      scoreWeight: 0.2, // 20%
-      categoryId: 'skillset',
-    },
-    {
-      name: 'AI trong quy trình phát triển phần mềm',
-      description: 'Tư duy chủ động, cần thiết để tránh sai lệch',
-      scoreWeight: 0.2, // 20%
-      categoryId: 'skillset',
-    },
-    {
-      name: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      description: 'Đảm bảo tính trung thực, học thuật, rõ ràng',
-      scoreWeight: 0.15, // 15%
-      categoryId: 'mindset',
+      name: 'TOOLSET',
+      description:
+        'Technical proficiency with AI tools, platforms, and implementation methodologies in production environments.',
+      scoreWeight: 0.25,
+      dimension: CompetencyDimension.TOOLSET,
+      frameworkVersion: '5.0',
     },
   ];
 
-  const criteria = [];
-  for (const critData of criteriaData) {
-    const criterion = await prisma.criteria.upsert({
-      where: { name: critData.name },
+  const competencyArea = [];
+  for (const competencyAreaData of competencyAreaDatas) {
+    const criterion = await prisma.competencyArea.upsert({
+      where: { id: '6f1e3d3c-1c5b-4d86-a3b4-2db53a7a3e8c' },
       update: {},
       create: {
-        name: critData.name,
-        description: critData.description,
-        scoreWeight: critData.scoreWeight,
-        categoryId: categoryMap[critData.categoryId].id,
+        name: competencyAreaData.name,
+        description: competencyAreaData.description,
+        weightWithinDimension: competencyAreaData.scoreWeight,
+        dimension: competencyAreaData.dimension,
+        frameworkId: competencyFrameworkMap[competencyAreaData.frameworkVersion].id,
       },
     });
-    criteria.push(criterion);
+    competencyArea.push(criterion);
   }
 
-  const criteriaMap = Object.fromEntries(criteria.map((c) => [c.name, c]));
+  const competencyAreaMap = Object.fromEntries(competencyArea.map((c) => [c.name, c]));
 
   // 9. Levels
   const levelsData = [
     {
-      name: 'LEVEL_1 - Follow',
+      name: 'LEVEL_1 - AWARENESS',
       description: 'Làm việc dưới sự hướng dẫn chặt chẽ, thực hiện các nhiệm vụ đơn giản, hỗ trợ các hoạt động cơ bản',
+      numericValue: 1,
+      sfiaLevel: SFIALevel.LEVEL_1_AWARENESS,
     },
     {
-      name: 'LEVEL_2 - Assist',
+      name: 'LEVEL_2 - FOUNDATION',
       description:
         'Thực hiện các nhiệm vụ được giao với một số tự chủ, hỗ trợ đồng nghiệp, làm việc trong quy trình đã định sẵn',
+      numericValue: 2,
+      sfiaLevel: SFIALevel.LEVEL_2_FOUNDATION,
     },
     {
-      name: 'LEVEL_3 - Apply',
+      name: 'LEVEL_3 - APPLICATION',
       description:
         'Xử lý các nhiệm vụ phức tạp hơn, áp dụng kiến thức chuyên môn, chịu trách nhiệm cho công việc cá nhân hoặc nhóm nhỏ',
+      numericValue: 3,
+      sfiaLevel: SFIALevel.LEVEL_3_APPLICATION,
     },
     {
-      name: 'LEVEL_4 - Enable',
+      name: 'LEVEL_4 - INTEGRATION',
       description:
         'Quản lý và dẫn dắt các hoạt động, chịu trách nhiệm về kết quả, hỗ trợ người khác trong công việc chuyên môn',
+      numericValue: 4,
+      sfiaLevel: SFIALevel.LEVEL_4_INTEGRATION,
     },
     {
-      name: 'LEVEL_5 - Ensure/Advise',
+      name: 'LEVEL_5 - INNOVATION',
       description: 'Lãnh đạo dự án hoặc nhóm, cung cấp tư vấn chuyên môn, đảm bảo chất lượng và hiệu quả công việc',
+      numericValue: 5,
+      sfiaLevel: SFIALevel.LEVEL_5_INNOVATION,
     },
     {
-      name: 'LEVEL_6 - Initiate/Influence',
+      name: 'LEVEL_6 - LEADERSHIP',
       description: 'Định hình chiến lược, lãnh đạo các sáng kiến lớn, tạo tác động rộng trong tổ chức hoặc ngành',
+      numericValue: 6,
+      sfiaLevel: SFIALevel.LEVEL_6_LEADERSHIP,
     },
     {
-      name: 'LEVEL_7 - Set Strategy/Inspire',
+      name: 'LEVEL_7 - MASTERY',
       description:
         'Thiết lập chiến lược cấp cao, lãnh đạo tổ chức, truyền cảm hứng và thúc đẩy thay đổi ở cấp độ ngành hoặc toàn cầu',
+      numericValue: 7,
+      sfiaLevel: SFIALevel.LEVEL_7_MASTERY,
     },
   ];
   const levels = [];
@@ -662,15 +688,83 @@ async function main() {
 
   const levelsMap = Object.fromEntries(levels.map((c) => [c.name, c]));
 
+  //CompetencySkill
+  const competencySkillData = [
+    {
+      name: 'LEVEL_1 - BASIC IT SKILLS',
+      description:
+        'Basic computer operations, using standard office software, understanding fundamental IT concepts and terminology',
+      sfiaLevel: SFIALevel.LEVEL_1_AWARENESS,
+      compatencyAreaName: CompetencyDimension.MINDSET,
+    },
+    {
+      name: 'LEVEL_2 - TECHNICAL SUPPORT',
+      description:
+        'Hardware/software troubleshooting, basic network configuration, user support, system maintenance tasks',
+      sfiaLevel: SFIALevel.LEVEL_2_FOUNDATION,
+      compatencyAreaName: CompetencyDimension.TOOLSET,
+    },
+    {
+      name: 'LEVEL_3 - SYSTEM ADMINISTRATION',
+      description:
+        'Managing servers, network infrastructure, security implementation, database administration, user management',
+      sfiaLevel: SFIALevel.LEVEL_3_APPLICATION,
+      compatencyAreaName: CompetencyDimension.MINDSET,
+    },
+    {
+      name: 'LEVEL_4 - IT PROJECT MANAGEMENT',
+      description: 'Leading IT projects, system integration, team coordination, resource planning, risk management',
+      sfiaLevel: SFIALevel.LEVEL_4_INTEGRATION,
+      compatencyAreaName: CompetencyDimension.MINDSET,
+    },
+    {
+      name: 'LEVEL_5 - IT ARCHITECTURE',
+      description:
+        'Designing enterprise solutions, technology strategy, system optimization, performance tuning, technical consulting',
+      sfiaLevel: SFIALevel.LEVEL_5_INNOVATION,
+      compatencyAreaName: CompetencyDimension.SKILLSET,
+    },
+    {
+      name: 'LEVEL_6 - IT DIRECTOR',
+      description:
+        'Digital transformation leadership, IT governance, strategic planning, enterprise architecture, vendor management',
+      sfiaLevel: SFIALevel.LEVEL_6_LEADERSHIP,
+      compatencyAreaName: CompetencyDimension.SKILLSET,
+    },
+    {
+      name: 'LEVEL_7 - CHIEF TECHNOLOGY OFFICER',
+      description:
+        'Technology vision and strategy, digital innovation, enterprise-wide IT leadership, industry thought leadership',
+      sfiaLevel: SFIALevel.LEVEL_7_MASTERY,
+      compatencyAreaName: CompetencyDimension.TOOLSET,
+    },
+  ];
+
+  const competencySkills = [];
+  for (const competentcy of competencySkillData) {
+    const competencySkill = await prisma.competencySkill.upsert({
+      where: { id: '6f1e3d3c-1c5b-4d86-a3b4-2db53a7a3e8c' },
+      update: {},
+      create: {
+        name: competentcy.name,
+        description: competentcy.description,
+        sfiaLevel: competentcy.sfiaLevel,
+        competencyAreaId: competencyAreaMap[competentcy.compatencyAreaName].id,
+      },
+    });
+    competencySkills.push(competencySkill);
+  }
+
+  const competenciesSkillMap = Object.fromEntries(competencySkills.map((c) => [c.name, c]));
+
   // 10. Create Questions
   const questionsData = [
     // Part 1
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI Generative là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Các thuật toán AI chỉ phân loại dữ liệu sẵn có', isCorrect: false },
         { content: 'Các hệ thống AI có khả năng tạo ra nội dung mới như văn bản, hình ảnh, âm thanh', isCorrect: true },
@@ -681,9 +775,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Large Language Models (LLMs) sử dụng kiến trúc cơ bản nào?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Convolutional Neural Networks', isCorrect: false },
         { content: 'Recurrent Neural Networks', isCorrect: false },
@@ -694,9 +787,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Context Window trong LLMs là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Kích thước màn hình hiển thị kết quả', isCorrect: false },
         { content: 'Số lượng token (từ/ký tự) mà mô hình có thể xử lý cùng một lúc', isCorrect: true },
@@ -707,9 +799,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khái niệm "token" trong LLMs đề cập đến:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Đơn vị tiền tệ để sử dụng dịch vụ AI', isCorrect: false },
         { content: 'Các đơn vị xử lý cơ bản (thường là từ hoặc phần của từ)', isCorrect: true },
@@ -720,9 +811,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu KHÔNG phải là một ứng dụng phổ biến của AI trong phát triển phần mềm?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Tự động sinh mã nguồn', isCorrect: false },
         { content: 'Tạo và thực thi test cases', isCorrect: false },
@@ -733,9 +823,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khái niệm "hallucination" trong LLMs đề cập đến hiện tượng gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Mô hình tạo hình ảnh không có thật', isCorrect: false },
         { content: 'Mô hình tạo ra thông tin không chính xác hoặc không tồn tại', isCorrect: true },
@@ -746,9 +835,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI Coding Assistants như GitHub Copilot được xây dựng chủ yếu dựa trên:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Expert Systems', isCorrect: false },
         { content: 'Large Language Models', isCorrect: true },
@@ -759,9 +847,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Kỹ thuật "fine-tuning" trong ngữ cảnh LLMs là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Điều chỉnh giao diện người dùng', isCorrect: false },
         { content: 'Điều chỉnh mô hình đã được pre-train để phù hợp với nhiệm vụ cụ thể', isCorrect: true },
@@ -772,9 +859,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Sự khác biệt chính giữa AI và Machine Learning là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'AI là khái niệm rộng hơn, trong khi Machine Learning là một tập con của AI', isCorrect: true },
         { content: 'Machine Learning rộng hơn, AI là một ứng dụng cụ thể', isCorrect: false },
@@ -785,9 +871,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Transfer Learning trong ngữ cảnh AI là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Kiến thức nền tảng về AI và Machine Learning',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chuyển dữ liệu giữa các thiết bị', isCorrect: false },
         { content: 'Áp dụng kiến thức đã học từ một nhiệm vụ để giải quyết nhiệm vụ khác', isCorrect: true },
@@ -799,9 +884,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Prompt Engineering là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Kỹ thuật thiết kế phần cứng cho AI', isCorrect: false },
         { content: 'Nghệ thuật viết câu lệnh để điều khiển đầu ra của mô hình AI', isCorrect: true },
@@ -812,9 +896,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Chain of Thought Prompting là kỹ thuật:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Tạo một chuỗi các prompts liên tiếp', isCorrect: false },
         { content: 'Hướng dẫn mô hình giải quyết vấn đề theo từng bước', isCorrect: true },
@@ -825,9 +908,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Few-shot Learning trong Prompt Engineering là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Học với rất ít dữ liệu huấn luyện', isCorrect: false },
         { content: 'Cung cấp một số ví dụ trong prompt để hướng dẫn mô hình', isCorrect: true },
@@ -838,9 +920,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là một nguyên tắc tốt khi viết prompt cho coding tasks?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Luôn yêu cầu AI viết càng nhiều code càng tốt', isCorrect: false },
         { content: 'Chỉ định rõ ngôn ngữ lập trình, format và các yêu cầu cụ thể', isCorrect: true },
@@ -851,9 +932,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'GitHub Copilot khác biệt với ChatGPT ở điểm nào?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Copilot không sử dụng AI', isCorrect: false },
         { content: 'Copilot được tối ưu hóa cho việc viết code và tích hợp với IDE', isCorrect: true },
@@ -864,9 +944,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI để generate code, việc nào sau đây là quan trọng nhất?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chấp nhận mọi đề xuất từ AI mà không kiểm tra', isCorrect: false },
         { content: 'Tạo càng nhiều code càng tốt trong thời gian ngắn', isCorrect: false },
@@ -877,9 +956,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'API của một LLM thường yêu cầu những thông tin gì trong một request cơ bản?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'User ID, password, và IP address', isCorrect: false },
         { content: 'Model, prompt (messages), và temperature', isCorrect: true },
@@ -890,9 +968,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Temperature parameter trong API của LLMs ảnh hưởng đến:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Thời gian xử lý của mô hình', isCorrect: false },
         { content: 'Độ sáng tạo/ngẫu nhiên trong đầu ra', isCorrect: true },
@@ -903,9 +980,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Role prompting là kỹ thuật:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Phân công vai trò cho các thành viên trong team', isCorrect: false },
         { content: 'Yêu cầu AI đóng vai một chuyên gia cụ thể khi trả lời', isCorrect: true },
@@ -916,9 +992,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu KHÔNG phải là một AI coding assistant phổ biến?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Prompt Engineering và AI Tools',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'GitHub Copilot', isCorrect: false },
         { content: 'Claude Code', isCorrect: false },
@@ -930,9 +1005,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Agile là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Một ngôn ngữ lập trình mới', isCorrect: false },
         { content: 'Một framework quản lý dự án linh hoạt, thích ứng với thay đổi', isCorrect: true },
@@ -943,9 +1017,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: '"Sprint" trong mô hình Scrum là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Một cuộc họp hàng ngày', isCorrect: false },
         { content: 'Một khoảng thời gian cố định để hoàn thành một tập hợp công việc', isCorrect: true },
@@ -956,9 +1029,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'User story trong phát triển phần mềm là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Một câu chuyện giải trí cho người dùng', isCorrect: false },
         { content: 'Mô tả không chính thức về một tính năng từ góc nhìn người dùng', isCorrect: true },
@@ -969,9 +1041,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'CI/CD đề cập đến:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Control Interface/Command Display', isCorrect: false },
         { content: 'Continuous Integration/Continuous Deployment', isCorrect: true },
@@ -982,9 +1053,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là một design pattern phổ biến trong phát triển phần mềm?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Agile Pattern', isCorrect: false },
         { content: 'Singleton Pattern', isCorrect: true },
@@ -995,9 +1065,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Technical debt trong phát triển phần mềm là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chi phí mua thiết bị kỹ thuật', isCorrect: false },
         { content: 'Số tiền công ty nợ các developer', isCorrect: false },
@@ -1008,9 +1077,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Refactoring là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Viết lại toàn bộ code từ đầu', isCorrect: false },
         { content: 'Cải thiện cấu trúc code mà không thay đổi chức năng bên ngoài', isCorrect: true },
@@ -1021,9 +1089,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Test-driven development (TDD) là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Phương pháp kiểm thử sau khi phát triển', isCorrect: false },
         { content: 'Viết test case trước khi viết code', isCorrect: true },
@@ -1034,9 +1101,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'API là viết tắt của:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Advanced Programming Interface', isCorrect: false },
         { content: 'Application Programming Interface', isCorrect: true },
@@ -1047,9 +1113,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Version control system như Git có chức năng chính là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Phát triển phần mềm và SDLC',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Kiểm soát phiên bản và quản lý thay đổi trong mã nguồn', isCorrect: true },
         { content: 'Tạo phiên bản mới của phần mềm', isCorrect: false },
@@ -1061,9 +1126,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI có thể hỗ trợ giai đoạn nào trong SDLC?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chỉ giai đoạn coding', isCorrect: false },
         { content: 'Chỉ giai đoạn testing', isCorrect: false },
@@ -1074,9 +1138,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI có thể hỗ trợ hoạt động nào sau đây trong giai đoạn Requirements Engineering?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Không thể hỗ trợ giai đoạn này', isCorrect: false },
         { content: 'Phân tích yêu cầu, tạo user stories và phát hiện mâu thuẫn', isCorrect: true },
@@ -1087,9 +1150,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong giai đoạn design, AI có thể hỗ trợ:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chỉ tạo logo và giao diện', isCorrect: false },
         { content: 'Đề xuất kiến trúc hệ thống, schema database, và thiết kế API', isCorrect: true },
@@ -1100,9 +1162,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'AI pair programming là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Hai AI làm việc cùng nhau', isCorrect: false },
         { content: 'Quá trình làm việc cùng AI như một partner trong lập trình', isCorrect: true },
@@ -1113,9 +1174,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong testing, AI có thể:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chỉ kiểm tra lỗi cú pháp', isCorrect: false },
         { content: 'Tạo test cases, tự động hóa việc testing và phát hiện lỗi', isCorrect: true },
@@ -1126,9 +1186,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI để phát triển phần mềm, vấn đề đạo đức quan trọng nhất là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Tốc độ của AI', isCorrect: false },
         { content: 'Chi phí sử dụng AI', isCorrect: false },
@@ -1139,9 +1198,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong documentation, AI có thể hỗ trợ:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chỉ tạo hình ảnh minh họa', isCorrect: false },
         { content: 'Tự động tạo và cập nhật tài liệu kỹ thuật, API docs, và hướng dẫn người dùng', isCorrect: true },
@@ -1152,9 +1210,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Benchmarking cho AI-assisted development nên tập trung vào:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Chỉ tốc độ phát triển', isCorrect: false },
         { content: 'Số lượng code được tạo ra', isCorrect: false },
@@ -1165,9 +1222,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI trong code review, best practice là:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Luôn chấp nhận mọi đề xuất của AI', isCorrect: false },
         { content: 'Sử dụng AI như một reviewer bổ sung, không thay thế human review', isCorrect: true },
@@ -1178,9 +1234,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Tương lai của phát triển phần mềm với AI có khả năng:',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'AI trong quy trình phát triển phần mềm',
-      categories: ['toolset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'AI sẽ thay thế hoàn toàn developers trong 2-3 năm tới', isCorrect: false },
         { content: 'AI sẽ làm chậm phát triển phần mềm do phức tạp hóa quy trình', isCorrect: false },
@@ -1192,9 +1247,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Theo bạn, vai trò chính của AI trong quy trình phát triển phần mềm là gì?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Thay thế hoàn toàn developer để giảm chi phí nhân sự', isCorrect: false },
         { content: 'Là công cụ hỗ trợ, tăng cường năng suất và sáng tạo của developer', isCorrect: true },
@@ -1205,9 +1259,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi AI tạo ra code có lỗi hoặc không hoạt động như mong đợi, trách nhiệm thuộc về ai?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Nhà phát triển AI vì đã tạo ra một sản phẩm không hoàn hảo', isCorrect: false },
         { content: 'Developer đã sử dụng code đó, vì đã không kiểm tra kỹ lưỡng', isCorrect: true },
@@ -1218,9 +1271,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Theo bạn, khi làm việc với AI, developers cần phát triển kỹ năng nào nhất?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['skillset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Tối ưu hóa prompt để AI tạo ra kết quả tốt hơn', isCorrect: false },
         { content: 'Đánh giá, kiểm tra và tích hợp đầu ra của AI một cách phù hợp', isCorrect: true },
@@ -1231,9 +1283,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là thách thức lớn nhất khi áp dụng AI vào quy trình phát triển phần mềm?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Khó khăn kỹ thuật khi tích hợp công cụ AI', isCorrect: false },
         { content: 'Chi phí sử dụng các công cụ AI cao', isCorrect: false },
@@ -1244,9 +1295,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi sử dụng AI để phát triển phần mềm, đâu là cách tiếp cận tốt nhất?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['skillset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Áp dụng AI vào mọi khía cạnh của dự án ngay lập tức', isCorrect: false },
         { content: 'Thử nghiệm dần dần, đánh giá hiệu quả và mở rộng áp dụng khi phù hợp', isCorrect: true },
@@ -1257,9 +1307,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Trong bối cảnh AI phát triển nhanh chóng, đâu là thái độ phù hợp nhất của một developer?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Lo lắng vì AI sẽ thay thế công việc của mình', isCorrect: false },
         { content: 'Lạc quan thái quá, tin rằng AI sẽ giải quyết mọi vấn đề', isCorrect: false },
@@ -1269,11 +1318,10 @@ async function main() {
     },
     {
       type: QuestionType.SINGLE_CHOICE,
-      level: 'LEVEL_1 - Follow',
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       content:
         'Với việc AI có thể tạo ra code nhanh chóng, điều quan trọng nhất developer cần tập trung phát triển là:',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['skillset'],
       answerOptions: [
         { content: 'Tốc độ coding để cạnh tranh với AI', isCorrect: false },
         { content: 'Kỹ năng giải quyết vấn đề, tư duy hệ thống và hiểu biết về business domain', isCorrect: true },
@@ -1284,9 +1332,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Cách nào sau đây KHÔNG phù hợp khi gặp khó khăn với AI trong phát triển phần mềm?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['skillset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Phân tích nguyên nhân và điều chỉnh cách sử dụng', isCorrect: false },
         { content: 'Từ bỏ AI hoàn toàn và quay lại phương pháp truyền thống', isCorrect: true },
@@ -1297,9 +1344,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Theo bạn, đâu là khía cạnh quan trọng nhất khi xây dựng văn hóa AI-assisted development trong team?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'Áp đặt việc sử dụng AI cho mọi thành viên', isCorrect: false },
         { content: 'Tạo không gian an toàn để thử nghiệm, chia sẻ kinh nghiệm và học hỏi lẫn nhau', isCorrect: true },
@@ -1310,9 +1356,8 @@ async function main() {
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Đâu là mindset lành mạnh nhất về vai trò của AI trong tương lai ngành phát triển phần mềm?',
-      level: 'LEVEL_1 - Follow',
-      criteria: 'Mindset khi ứng dụng AI trong phát triển phần mềm',
-      categories: ['mindset'],
+      level: 'LEVEL_1 - AWARENESS',
+      compatentcySkillName: 'LEVEL_1 - BASIC IT SKILLS',
       answerOptions: [
         { content: 'AI sẽ thay thế phần lớn developers, nên cần chuyển ngành sớm', isCorrect: false },
         { content: 'AI chỉ là công cụ tạm thời, sẽ sớm bị thay thế bởi công nghệ khác', isCorrect: false },
@@ -1330,7 +1375,7 @@ async function main() {
         type: qData.type,
         content: qData.content,
         levelId: levelsMap[qData.level].id,
-        criteriaId: criteriaMap[qData.criteria].id,
+        competencySkillId: competenciesSkillMap[qData.compatentcySkillName].id,
       },
     });
 
@@ -1355,7 +1400,7 @@ async function main() {
       description: 'A foundational course on ethical considerations in AI development and deployment',
       provider: 'Coursera',
       url: 'https://www.coursera.org/learn/ai-ethics',
-      category: 'mindset',
+      category: 'AI Ethics & Responsibility',
       domain: 'General',
     },
     {
@@ -1363,7 +1408,7 @@ async function main() {
       description: 'Learn practical machine learning techniques using Python',
       provider: 'edX',
       url: 'https://www.edx.org/learn/machine-learning',
-      category: 'toolset',
+      category: 'AI Problem-Solving & Domain Application',
       domain: 'General',
     },
     {
@@ -1371,7 +1416,7 @@ async function main() {
       description: 'Applications of AI in healthcare diagnostics and treatment',
       provider: 'Udacity',
       url: 'https://www.udacity.com/course/ai-for-healthcare',
-      category: 'skillset',
+      category: 'AI Ethics & Responsibility',
       domain: 'Healthcare',
     },
     {
@@ -1379,7 +1424,7 @@ async function main() {
       description: 'Using AI techniques for financial forecasting and analysis',
       provider: 'Udemy',
       url: 'https://www.udemy.com/course/financial-analysis-ai',
-      category: 'toolset',
+      category: 'AI Problem-Solving & Domain Application',
       domain: 'Finance',
     },
     {
@@ -1387,7 +1432,7 @@ async function main() {
       description: 'Developing critical thinking skills for evaluating AI applications',
       provider: 'LinkedIn Learning',
       url: 'https://www.linkedin.com/learning/critical-thinking-ai',
-      category: 'mindset',
+      category: 'AI Ethics & Responsibility',
       domain: 'General',
     },
     {
@@ -1395,7 +1440,7 @@ async function main() {
       description: 'Practical applications of AI in Information Technology processes',
       provider: 'Coursera',
       url: 'https://www.coursera.org/learn/ai-Information Technology',
-      category: 'toolset',
+      category: 'AI Problem-Solving & Domain Application',
       domain: 'Information Technology',
     },
   ];
@@ -1419,19 +1464,19 @@ async function main() {
       name: 'AI Foundations Assessment',
       description: 'Basic assessment of foundational AI knowledge',
       questions: [0, 2, 5, 8], // Indices from the questions array
-      domainName: 'General',
+      frameworkVersion: '5.0',
     },
     {
       name: 'AI Ethics and Impact',
       description: 'Assessment focusing on ethical considerations and societal impacts of AI',
       questions: [4, 7, 9], // Indices from the questions array
-      domainName: 'General',
+      frameworkVersion: '5.0',
     },
     {
       name: 'AI Tools and Applications',
       description: 'Assessment of practical AI tools and applications knowledge',
       questions: [1, 3, 6], // Indices from the questions array
-      domainName: 'Healthcare',
+      frameworkVersion: '5.0',
     },
     {
       name: 'AI INPUT TEST',
@@ -1441,7 +1486,7 @@ async function main() {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
         30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
       ], // All questions
-      domainName: 'General',
+      frameworkVersion: '5.0',
     },
   ];
 
@@ -1450,8 +1495,7 @@ async function main() {
       data: {
         name: examSetData.name,
         description: examSetData.description,
-        duration: 40,
-        domainId: domainMap[examSetData.domainName].id,
+        frameworkId: competencyFrameworkMap[examSetData.frameworkVersion].id,
       },
     });
 
@@ -1485,6 +1529,13 @@ async function main() {
       totalScore: 82.0,
     },
     {
+      email: 'user2@example.com',
+      examSetName: 'AI Foundations Assessment',
+      startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000), // 45 minutes after start
+      totalScore: 75.5,
+    },
+    {
       email: 'user@example.com',
       examSetName: 'AI INPUT TEST',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
@@ -1495,19 +1546,17 @@ async function main() {
 
   const examSets = await prisma.examSet.findMany();
   const examSetMap = Object.fromEntries(examSets.map((es) => [es.name, es]));
-
+  const examMap = {};
   for (const data of examData) {
-    await prisma.exam.create({
+    const exam = await prisma.exam.create({
       data: {
         userId: userMap[data.email].id,
         examSetId: examSetMap[data.examSetName].id,
         startedAt: data.startedAt,
         finishedAt: data.finishedAt,
-        totalScore: data.totalScore,
-        examStatus: Object.values(ExamStatus)[Math.floor(Math.random() * Object.values(ExamStatus).length)],
-        levelOfDomain: Object.values(SFIALevel)[Math.floor(Math.random() * Object.values(SFIALevel).length)],
       },
     });
+    examMap[`${data.email}-${data.examSetName}`] = exam;
   }
 
   // 14. Create Mentors
@@ -1603,10 +1652,10 @@ async function main() {
       data: {
         userId: userMap[mentorData.email].id,
         expertise: mentorData.expertise,
+        sfiaLevel: SFIALevel.LEVEL_7_MASTERY,
       },
     });
   }
-
   // 15. Create Mentor Bookings
   const mentors = await prisma.mentor.findMany({
     include: {
@@ -1696,7 +1745,7 @@ async function main() {
       manualScore: 19,
       autoScore: null,
       answerOptionIndex: null, // Essay doesn't have options
-      examSetName: 'AI Foundations Assessment',
+      examSetName: 'AI INPUT TEST',
     },
     {
       email: 'user@example.com',
@@ -1706,11 +1755,12 @@ async function main() {
       autoScore: 10,
       answerOptionIndex: null,
       answerOptionIndices: [0, 1, 3], // The correct options
-      examSetName: 'AI Foundations Assessment',
+      examSetName: 'AI INPUT TEST',
     },
   ];
 
   for (const answerData of sampleUserAnswers) {
+    const exam = examMap[`${answerData.email}-${answerData.examSetName}`];
     const userAnswer = await prisma.userAnswer.create({
       data: {
         userId: userMap[answerData.email].id,
@@ -1718,7 +1768,8 @@ async function main() {
         answerText: answerData.answerText,
         manualScore: answerData.manualScore,
         autoScore: answerData.autoScore,
-        examSetId: examSetMap[answerData.examSetName].id,
+        maxPossibleScore: 10,
+        examId: exam.id,
       },
     });
 
