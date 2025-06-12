@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
 
 @Injectable()
@@ -28,25 +28,24 @@ export class AnswersService {
     }
   }
 
-  async update(userId: string, examSetId: string): Promise<ResponseItem<userAnswerDto>> {
+  async update(userId: string, examId: string): Promise<ResponseItem<userAnswerDto>> {
     const existingExam = await this.prisma.exam.findFirst({
       where: {
-        userId,
-        examSetId,
+        id: examId,
       },
     });
 
-    if (existingExam.totalScore != null) {
+    if (existingExam.examStatus !== ExamStatus.IN_PROGRESS) {
       throw new BadRequestException('Bài kiểm tra này đã được nộp trước đó.');
     }
     try {
       await this.prisma.userAnswer.updateMany({
-        where: { userId, examSetId },
+        where: { userId, examId },
         data: { status: UserAnswerStatus.SUBMIT },
       });
 
       const existingAnswers = await this.prisma.userAnswer.findMany({
-        where: { userId, examSetId, status: UserAnswerStatus.SUBMIT },
+        where: { userId, examId, status: UserAnswerStatus.SUBMIT },
         select: { id: true, questionId: true },
       });
 
@@ -107,7 +106,7 @@ export class AnswersService {
           const userAnswer = await this.prisma.userAnswer.findFirst({
             where: {
               userId: userAnswerId,
-              examSetId: examSetId,
+              examId,
             },
           });
 
@@ -124,19 +123,11 @@ export class AnswersService {
 
       const totalScore = scores.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : Number(val)), 0);
 
-      const exam = await this.prisma.exam.findFirst({
-        where: {
-          userId,
-          examSetId,
-        },
-      });
-
       await this.prisma.exam.update({
-        where: { id: exam.id },
+        where: { id: examId },
         data: {
-          userId,
-          examSetId,
-          totalScore,
+          examStatus: 'SUBMITTED',
+          overallScore: totalScore,
         },
       });
 
@@ -167,6 +158,7 @@ export class AnswersService {
         answerText: essayAnswer[0],
         ...restParams,
         userId,
+        maxPossibleScore: this.configService.get<number>('EXAM_MAX_SCORE') || 10,
       },
     });
   }
@@ -201,6 +193,7 @@ export class AnswersService {
       data: {
         ...restParams,
         userId,
+        maxPossibleScore: this.configService.get<number>('EXAM_MAX_SCORE') || 10,
       },
     });
     await Promise.all(

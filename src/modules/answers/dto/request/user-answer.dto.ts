@@ -8,9 +8,9 @@ export class userAnswerDto {
   @IsString()
   @ApiProperty({
     example: 'exam-set-123',
-    description: 'ID of the exam/test set',
+    description: 'ID of the exam/test for user',
   })
-  examSetId: string;
+  examId: string;
 
   @Expose()
   @IsNotEmpty()

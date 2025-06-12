@@ -56,7 +56,7 @@ export class AnswersController {
     status: 404,
     description: 'Exam set not found or user not authorized.',
   })
-  update(@Req() req, @Param('examSetId') examSetId: string): Promise<ResponseItem<userAnswerDto>> {
-    return this.answersService.update(req.user.userId, examSetId);
+  update(@Req() req, @Param('examId') examId: string): Promise<ResponseItem<userAnswerDto>> {
+    return this.answersService.update(req.user.userId, examId);
   }
 }

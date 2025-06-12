@@ -28,13 +28,15 @@ export class MentorsService {
 
   async create(createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
     const password = generateSecurePassword();
-    const { expertise, ...userData } = createMentorDto;
+    const { expertise, sfiaLevel, maxMentees, ...userData } = createMentorDto;
     const createUser = await this.userService.create({ ...userData, password });
     try {
       const mentor = await this.prisma.mentor.create({
         data: {
           userId: createUser.id,
-          expertise: createMentorDto.expertise,
+          expertise: expertise,
+          sfiaLevel: sfiaLevel,
+          maxMentees: maxMentees ?? 5,
           isActive: false,
         },
       });
