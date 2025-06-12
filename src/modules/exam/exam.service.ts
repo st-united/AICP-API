@@ -89,7 +89,7 @@ export class ExamService {
         },
         select: {
           id: true,
-          isCompleted: true,
+          examStatus: true,
           sfiaLevel: true,
           createdAt: true,
         },

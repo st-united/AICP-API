@@ -6,7 +6,7 @@ export class HistoryExamResponseDto {
   id: string;
 
   @Expose()
-  isCompleted: boolean;
+  examStatus: ExamStatus;
 
   @Expose()
   sfiaLevel: SFIALevel;

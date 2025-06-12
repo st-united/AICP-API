@@ -268,7 +268,7 @@ model Exam {
   startedAt         DateTime?        @map("started_at") @db.Timestamptz(6)
   finishedAt        DateTime?        @map("finished_at") @db.Timestamptz(6)
   timeSpentMinutes  Int?             @map("time_spent_minutes") @db.SmallInt
-  isCompleted       Boolean          @default(false) @map("is_completed") @db.Boolean
+  examStatus        ExamStatus       @default(IN_PROGRESS) @map("exam_status")
   completionPercent Decimal?         @default(0) @map("completion_percent") @db.Decimal(3, 2)
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)

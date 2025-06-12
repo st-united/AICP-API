@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class AnswersService {
       },
     });
 
-    if (!existingExam.isCompleted) {
+    if (existingExam.examStatus !== ExamStatus.IN_PROGRESS) {
       throw new BadRequestException('Bài kiểm tra này đã được nộp trước đó.');
     }
     try {
@@ -126,7 +126,7 @@ export class AnswersService {
       await this.prisma.exam.update({
         where: { id: examId },
         data: {
-          isCompleted: true,
+          examStatus: 'SUBMITTED',
           overallScore: totalScore,
         },
       });
