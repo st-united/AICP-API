@@ -43,6 +43,27 @@ export class AuthController {
   }
 
   @Post('login-google')
+  @ApiOperation({ summary: 'Login using Google OAuth' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        idToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjY4ODMzZTg...',
+        },
+      },
+      required: ['idToken'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: `Login successful.
+
+  - If \`data.status = true\`: This is a **new user** logging in for the first time.
+  - If \`data.status = false\`: This is a **returning user**.`,
+    type: ResponseItem<TokenDto>,
+  })
   async loginWithGoogle(@Body('idToken') idToken: string) {
     if (!idToken) {
       throw new BadRequestException('idToken is required');

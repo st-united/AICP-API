@@ -143,11 +143,10 @@ export class AuthService {
         name: user.fullName,
         accessToken,
         refreshToken,
+        status: isNewUser,
       };
 
-      const message = isNewUser ? 'Chào mừng bạn đã đến với nền tảng đánh giá năng lực' : 'Chào mừng bạn đã trở lại';
-
-      return new ResponseItem(data, message);
+      return new ResponseItem(data, 'Đăng nhập thành công');
     } catch (error) {
       throw new BadRequestException(error);
     }
