@@ -99,7 +99,6 @@ export class AuthService {
     try {
       const decodedToken = await this.firebaseService.verifyIdToken(idToken);
       const { email, name, picture } = decodedToken;
-      console.log(email);
 
       const hashedPassword = await bcrypt.hash('loginWithGooogle', 10);
 
