@@ -40,3 +40,6 @@ lerna-debug.log*
 
 /etc
 /etc/secrets
+/etc/secrets/google-service-key.json
+
+google-service-key.json

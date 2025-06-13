@@ -1,4 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  PayloadTooLargeException,
+  UnauthorizedException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
@@ -23,6 +33,17 @@ import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
 import { RedisService } from '@app/modules/redis/redis.service';
+import { GetPortfolioResponseDto } from './dto/get-portfolio-response.dto';
+import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
+import { validatePortfolioFiles } from '@app/validations/portfolio.validation';
+
+const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
+const FILE_LIMITS = {
+  fileSize: 5 * 1024 * 1024,
+  files: 40,
+  maxCount: 20,
+};
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -359,7 +380,6 @@ export class UsersService {
       });
 
       if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
-
       await this.redisService.deleteValue(`reset_password:${updateForgotPasswordUserDto.token}`);
       const hashedNewPassword = await bcrypt.hash(updateForgotPasswordUserDto.password, 10);
 
@@ -379,5 +399,114 @@ export class UsersService {
       }
       throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
+  }
+
+  private async processFiles(
+    files: Express.Multer.File[],
+    basePath: string,
+    existingFiles: string[] = []
+  ): Promise<string[]> {
+    if (!files?.length) return existingFiles;
+
+    const uploadPromises = files.map(async (file) => {
+      const destPath = avtPathName(`${basePath}/`, `${uuidv4()}+${file.originalname}`);
+      try {
+        const url = await this.googleCloudStorageService.uploadFile(file, destPath);
+        if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        return url;
+      } catch (error) {
+        if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        if (error instanceof HttpException) throw error;
+        throw new BadRequestException(`Lỗi upload file ${file.originalname}: ${error.message}`);
+      }
+    });
+
+    return [...existingFiles, ...(await Promise.all(uploadPromises))];
+  }
+
+  private filterDeletedItems(items: string[] = [], deletedItems?: string[]): string[] {
+    return deletedItems?.length ? items.filter((item) => !deletedItems.includes(item)) : items;
+  }
+
+  async updatePortfolio(
+    userId: string,
+    portfolioDto: UpdatePortfolioDto
+  ): Promise<ResponseItem<GetPortfolioResponseDto>> {
+    if (!userId) {
+      throw new UnauthorizedException('Không có quyền truy cập');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { portfolio: true },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('Người dùng không tồn tại');
+    }
+
+    const uploadCertifications = portfolioDto.certifications;
+    const uploadExperiences = portfolioDto.experiences;
+
+    try {
+      validatePortfolioFiles(uploadCertifications, uploadExperiences);
+
+      const [certifications, experiences] = await Promise.all([
+        this.processFiles(
+          uploadCertifications,
+          'certifications',
+          this.filterDeletedItems(user.portfolio?.certifications, portfolioDto.deleted_certifications)
+        ),
+        this.processFiles(
+          uploadExperiences,
+          'experiences',
+          this.filterDeletedItems(user.portfolio?.experiences, portfolioDto.deleted_experiences)
+        ),
+      ]);
+
+      const portfolio = await this.prisma.portfolio.upsert({
+        where: { userId },
+        create: {
+          linkedInUrl: portfolioDto.linkedInUrl,
+          githubUrl: portfolioDto.githubUrl,
+          certifications,
+          experiences,
+          userId,
+        },
+        update: {
+          linkedInUrl: portfolioDto.linkedInUrl,
+          githubUrl: portfolioDto.githubUrl,
+          certifications,
+          experiences,
+        },
+      });
+
+      return new ResponseItem(portfolio, 'Hồ sơ cập nhật thành công', GetPortfolioResponseDto);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Cập nhật hồ sơ không thành công: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async getPortfolio(userId: string): Promise<ResponseItem<GetPortfolioResponseDto>> {
+    if (!userId) {
+      throw new UnauthorizedException('Không có quyền truy cập');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('Người dùng không tồn tại');
+    }
+
+    const portfolio = await this.prisma.portfolio.findUnique({ where: { userId } });
+
+    if (!portfolio) {
+      throw new NotFoundException('Hồ sơ không tồn tại');
+    }
+
+    return new ResponseItem(portfolio, 'Lấy hồ sơ thành công', GetPortfolioResponseDto);
   }
 }

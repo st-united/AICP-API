@@ -33,6 +33,7 @@ model User {
   exam          Exam[]
   mentor        Mentor[]
   mentorBooking MentorBooking[]
+  portfolio     Portfolio?
 }
 
 model Role {
@@ -287,6 +288,19 @@ model MentorBooking {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   mentor Mentor @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+}
+
+model Portfolio {
+  id                          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                      String   @unique @map("user_id") @db.Uuid
+  linkedInUrl                 String?  @map("linked_in_url") @db.Text
+  githubUrl                   String?  @map("github_url") @db.Text
+  certifications              String[] 
+  experiences                 String[]
+  createdAt                   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum QuestionType {
