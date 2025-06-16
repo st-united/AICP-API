@@ -4,6 +4,10 @@ import { Expose } from 'class-transformer';
 export class UserDto {
   @Expose()
   @ApiProperty()
+  id: string;
+
+  @Expose()
+  @ApiProperty()
   email: string;
 
   @Expose()

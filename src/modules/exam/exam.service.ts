@@ -26,7 +26,10 @@ export class ExamService {
   private async findExamSet(where: any) {
     try {
       const examSet = await this.prisma.examSet.findFirst({
-        where,
+        where: {
+          ...(where.id && { id: where.id }),
+          ...(where.name && { name: where.name }),
+        },
         include: {
           exams: {
             where: { userId: where.userId },
@@ -65,29 +68,37 @@ export class ExamService {
     return this.createExamResponse(examSet, exam, !!exam);
   }
 
-  async getHistoryExam(historyExam: GetHistoryExamDto): Promise<ResponseItem<HistoryExamResponseDto[]>> {
-    const where: any = { userId: historyExam.userId };
+  async getHistoryExam(
+    userId: string,
+    historyExam: GetHistoryExamDto
+  ): Promise<ResponseItem<HistoryExamResponseDto[]>> {
+    try {
+      const where: any = { userId: userId };
 
-    if (historyExam.startDate && historyExam.endDate) {
-      where.createdAt = {
-        gte: historyExam.startDate,
-        lte: historyExam.endDate,
-      };
+      if (historyExam.startDate && historyExam.endDate) {
+        where.createdAt = {
+          gte: historyExam.startDate,
+          lte: historyExam.endDate,
+        };
+      }
+
+      const exams = await this.prisma.exam.findMany({
+        where,
+        orderBy: {
+          finishedAt: 'desc',
+        },
+        select: {
+          id: true,
+          examStatus: true,
+          levelOfDomain: true,
+          createdAt: true,
+        },
+      });
+
+      return new ResponseItem<HistoryExamResponseDto[]>(exams, 'Lấy lịch sử thi thành công');
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi lấy lịch sử thi');
     }
-
-    const exams = await this.prisma.exam.findMany({
-      where,
-      orderBy: {
-        finishedAt: 'desc',
-      },
-      select: {
-        id: true,
-        examStatus: true,
-        levelOfDomain: true,
-        createdAt: true,
-      },
-    });
-
-    return new ResponseItem<HistoryExamResponseDto[]>(exams, 'Lấy lịch sử thi thành công');
   }
 }

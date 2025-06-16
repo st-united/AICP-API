@@ -4,7 +4,6 @@ import { ResponseItem } from '@app/common/dtos';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
-import { get } from 'http';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 
@@ -17,7 +16,7 @@ export class ExamController {
   @Get('taken-input-test')
   @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi Input test chưa' })
   hasTakenExamInputTest(@Req() req): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    return this.examService.hasTakenExamInputTest(req.user.id);
+    return this.examService.hasTakenExamInputTest(req.user.userId);
   }
 
   @Get('history-exam')
@@ -25,7 +24,7 @@ export class ExamController {
   @ApiQuery({ name: 'startDate', type: Date, required: false })
   @ApiQuery({ name: 'endDate', type: Date, required: false })
   getHistoryExam(@Req() req, @Query() queries: GetHistoryExamDto): Promise<ResponseItem<HistoryExamResponseDto[]>> {
-    return this.examService.getHistoryExam({ userId: req.user.id, ...queries });
+    return this.examService.getHistoryExam(req.user.userId, queries);
   }
 
   @Get('has-taken-exam/:examSetId')
@@ -36,7 +35,7 @@ export class ExamController {
     @Param('examSetId', ParseUUIDPipe) examSetId: string
   ): Promise<ResponseItem<HasTakenExamResponseDto>> {
     return this.examService.hasTakenExam({
-      userId: req.user.id,
+      userId: req.user.userId,
       examSetId,
     });
   }
