@@ -1,2 +1,2 @@
 export * from './match-password';
-export * from './portfolio.validation';
+export * from './portfolio-validation';

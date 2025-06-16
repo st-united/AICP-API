@@ -5,9 +5,7 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
-  PayloadTooLargeException,
   UnauthorizedException,
-  UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
@@ -35,7 +33,7 @@ import { convertPath } from '@app/common/utils';
 import { RedisService } from '@app/modules/redis/redis.service';
 import { GetPortfolioResponseDto } from './dto/get-portfolio-response.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
-import { validatePortfolioFiles } from '@app/validations/portfolio.validation';
+import { Response } from 'express';
 
 const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
 const FILE_LIMITS = {
@@ -401,31 +399,29 @@ export class UsersService {
     }
   }
 
-  private async processFiles(
-    files: Express.Multer.File[],
-    basePath: string,
-    existingFiles: string[] = []
-  ): Promise<string[]> {
-    if (!files?.length) return existingFiles;
+  async uploadPortfolioFiles(userId: string, file: Express.Multer.File): Promise<ResponseItem<string>> {
+    if (!userId) {
+      throw new UnauthorizedException('Không có quyền truy cập');
+    }
 
-    const uploadPromises = files.map(async (file) => {
-      const destPath = avtPathName(`${basePath}/`, `${uuidv4()}+${file.originalname}`);
-      try {
-        const url = await this.googleCloudStorageService.uploadFile(file, destPath);
-        if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        return url;
-      } catch (error) {
-        if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        if (error instanceof HttpException) throw error;
-        throw new BadRequestException(`Lỗi upload file ${file.originalname}: ${error.message}`);
-      }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    return [...existingFiles, ...(await Promise.all(uploadPromises))];
-  }
+    if (!user) {
+      throw new ForbiddenException('Người dùng không tồn tại');
+    }
 
-  private filterDeletedItems(items: string[] = [], deletedItems?: string[]): string[] {
-    return deletedItems?.length ? items.filter((item) => !deletedItems.includes(item)) : items;
+    try {
+      const destPath = avtPathName('portfolio', `${uuidv4()}+${file.originalname}`);
+      const url = await this.googleCloudStorageService.uploadFile(file, destPath);
+      if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
+      return new ResponseItem<string>(url, 'Upload file thành công');
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Upload file không thành công: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   async updatePortfolio(
@@ -445,39 +441,21 @@ export class UsersService {
       throw new ForbiddenException('Người dùng không tồn tại');
     }
 
-    const uploadCertifications = portfolioDto.certifications;
-    const uploadExperiences = portfolioDto.experiences;
-
     try {
-      validatePortfolioFiles(uploadCertifications, uploadExperiences);
-
-      const [certifications, experiences] = await Promise.all([
-        this.processFiles(
-          uploadCertifications,
-          'certifications',
-          this.filterDeletedItems(user.portfolio?.certifications, portfolioDto.deleted_certifications)
-        ),
-        this.processFiles(
-          uploadExperiences,
-          'experiences',
-          this.filterDeletedItems(user.portfolio?.experiences, portfolioDto.deleted_experiences)
-        ),
-      ]);
-
       const portfolio = await this.prisma.portfolio.upsert({
         where: { userId },
         create: {
           linkedInUrl: portfolioDto.linkedInUrl,
           githubUrl: portfolioDto.githubUrl,
-          certifications,
-          experiences,
+          certifications: portfolioDto.certifications || [],
+          experiences: portfolioDto.experiences || [],
           userId,
         },
         update: {
           linkedInUrl: portfolioDto.linkedInUrl,
           githubUrl: portfolioDto.githubUrl,
-          certifications,
-          experiences,
+          certifications: portfolioDto.certifications || [],
+          experiences: portfolioDto.experiences || [],
         },
       });
 
@@ -508,5 +486,27 @@ export class UsersService {
     }
 
     return new ResponseItem(portfolio, 'Lấy hồ sơ thành công', GetPortfolioResponseDto);
+  }
+
+  async downloadFile(url: string, filename: string, res: Response): Promise<void> {
+    if (!url || !filename) {
+      throw new BadRequestException('URL and filename are required');
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new HttpException('Failed to fetch file', HttpStatus.BAD_REQUEST);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
+      res.send(buffer);
+    } catch (error) {
+      throw new HttpException(`Error downloading file: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

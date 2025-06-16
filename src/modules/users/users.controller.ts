@@ -14,11 +14,11 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Res,
 } from '@nestjs/common';
-
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { fileOption } from '@app/config/image-multer-config';
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { GetUsersDto } from '@UsersModule/dto/get-users.dto';
 import { UpdateUserDto } from '@UsersModule/dto/update-user.dto';
 import { UpdateForgotPasswordUserDto } from '@UsersModule/dto/update-forgot-password';
@@ -35,7 +35,9 @@ import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { GetPortfolioResponseDto } from './dto/get-portfolio-response.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
-import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio.validation';
+import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio-validation';
+import { Response } from 'express';
+import { DownloadPortfolioFileDto } from './dto/download-portfolio-file.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -130,25 +132,36 @@ export class UsersController {
   }
 
   @ApiTags('users')
-  @Patch('/portfolio')
-  @ApiOperation({ summary: 'Update or create portfolio' })
-  @ApiResponse({ status: 200, description: 'Portfolio updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid portfolio data or file format' })
+  @Post('/portfolio/files')
+  @ApiOperation({ summary: 'Upload portfolio files' })
+  @ApiResponse({ status: 200, description: 'Files uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file format or size' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - User not found' })
   @ApiResponse({ status: 413, description: 'Payload too large - File size exceeds limit' })
   @ApiResponse({ status: 415, description: 'Unsupported media type - Invalid file type' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: UpdatePortfolioDto })
   @UseInterceptors(PORTFOLIO_FILE_INTERCEPTOR)
+  async uploadPortfolioFiles(
+    @Req() req,
+    @UploadedFile()
+    file: Express.Multer.File
+  ): Promise<ResponseItem<string>> {
+    return await this.usersService.uploadPortfolioFiles(req.user.userId, file);
+  }
+
+  @ApiTags('users')
+  @Patch('/portfolio')
+  @ApiOperation({ summary: 'Update portfolio information' })
+  @ApiResponse({ status: 200, description: 'Portfolio updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid portfolio data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - User not found' })
+  @ApiBody({ type: UpdatePortfolioDto })
   async updatePortfolio(
     @Req() req,
-    @Body() portfolioDto: UpdatePortfolioDto,
-    @UploadedFiles()
-    files: UpdatePortfolioDto
+    @Body() portfolioDto: UpdatePortfolioDto
   ): Promise<ResponseItem<GetPortfolioResponseDto>> {
-    return await this.usersService.updatePortfolio(req.user.userId, { ...portfolioDto, ...files });
+    return await this.usersService.updatePortfolio(req.user.userId, portfolioDto);
   }
 
   @ApiTags('users')
@@ -161,5 +174,15 @@ export class UsersController {
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async getPortfolio(@Req() req): Promise<ResponseItem<GetPortfolioResponseDto>> {
     return await this.usersService.getPortfolio(req.user.userId);
+  }
+
+  @ApiTags('users')
+  @Get('/portfolio/download')
+  @ApiOperation({ summary: 'Download portfolio file' })
+  @ApiResponse({ status: 200, description: 'File downloaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid URL or filename' })
+  @ApiResponse({ status: 500, description: 'Error downloading file' })
+  async downloadFile(@Query() query: DownloadPortfolioFileDto, @Res() res: Response): Promise<void> {
+    return await this.usersService.downloadFile(query.url, query.filename, res);
   }
 }
