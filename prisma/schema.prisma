@@ -176,7 +176,6 @@ model UserAnswer {
   userId           String           @map("user_id") @db.Uuid
   answerText       String?          @map("answer_text") @db.Text
   rawScore         Decimal?         @default(0) @map("raw_score") @db.Decimal(5, 2)
-  maxPossibleScore Decimal          @map("max_possible_score") @db.Decimal(5, 2)
   scorePercentage  Decimal?         @default(0) @map("score_percentage") @db.Decimal(3, 2)
   autoScore        Decimal?         @map("auto_score") @db.Decimal(5, 2)
   manualScore      Decimal?         @map("manual_score") @db.Decimal(5, 2)
