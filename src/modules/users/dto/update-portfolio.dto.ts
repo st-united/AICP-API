@@ -29,12 +29,12 @@ export class UpdatePortfolioDto {
   @IsArray()
   @IsString({ each: true })
   @Transform(transformArray)
-  certifications?: string[];
+  certificateFiles?: string[];
 
   @ApiProperty({ description: 'Experience file URLs', required: false, type: [String] })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @Transform(transformArray)
-  experiences?: string[];
+  experienceFiles?: string[];
 }

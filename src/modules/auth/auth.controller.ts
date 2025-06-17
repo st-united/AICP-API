@@ -27,7 +27,6 @@ export class AuthController {
     const ip = request.ip;
     const userPayloadDto: UserPayloadDto = request.user;
     const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
-    console.log(userAndSessionPayloadDto);
     return await this.authService.login(userAndSessionPayloadDto);
   }
 

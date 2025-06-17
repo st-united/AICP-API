@@ -19,11 +19,11 @@ export class GetPortfolioResponseDto {
   @ApiProperty({ type: [String], description: 'Array of certification file URLs' })
   @IsOptional()
   @IsArray()
-  certifications: string[];
+  certificateFiles: string[];
 
   @Expose()
   @ApiProperty({ type: [String], description: 'Array of experience file URLs' })
   @IsOptional()
   @IsArray()
-  experiences: string[];
+  experienceFiles: string[];
 }

@@ -432,9 +432,18 @@ export class UsersService {
       throw new UnauthorizedException('Không có quyền truy cập');
     }
 
+    if (
+      !portfolioDto.linkedInUrl &&
+      !portfolioDto.githubUrl &&
+      (!portfolioDto.certificateFiles || portfolioDto.certificateFiles.length === 0) &&
+      (!portfolioDto.experienceFiles || portfolioDto.experienceFiles.length === 0)
+    ) {
+      throw new BadRequestException('Không có thông tin gì để lưu');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { portfolio: true },
+      include: { userPortfolio: true },
     });
 
     if (!user) {
@@ -447,15 +456,15 @@ export class UsersService {
         create: {
           linkedInUrl: portfolioDto.linkedInUrl,
           githubUrl: portfolioDto.githubUrl,
-          certifications: portfolioDto.certifications || [],
-          experiences: portfolioDto.experiences || [],
+          certificateFiles: portfolioDto.certificateFiles || [],
+          experienceFiles: portfolioDto.experienceFiles || [],
           userId,
         },
         update: {
           linkedInUrl: portfolioDto.linkedInUrl,
           githubUrl: portfolioDto.githubUrl,
-          certifications: portfolioDto.certifications || [],
-          experiences: portfolioDto.experiences || [],
+          certificateFiles: portfolioDto.certificateFiles || [],
+          experienceFiles: portfolioDto.experienceFiles || [],
         },
       });
 
