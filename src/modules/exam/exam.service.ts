@@ -18,7 +18,7 @@ export class ExamService {
   private createExamResponse(examSet: ExamSet, exam: Exam, hasTaken: boolean): ResponseItem<HasTakenExamResponseDto> {
     const response: HasTakenExamResponseDto = {
       hasTakenExam: hasTaken,
-      examSetDuration: examSet.duration,
+      examSetDuration: examSet.timeLimitMinutes,
       examId: exam?.id,
     };
     return new ResponseItem(response, hasTaken ? 'Đã làm bài thi này' : 'Chưa làm bài thi này');
@@ -32,7 +32,7 @@ export class ExamService {
           ...(where.name && { name: where.name }),
         },
         include: {
-          exams: {
+          exam: {
             where: { userId: where.userId },
             take: 1,
           },
@@ -56,7 +56,7 @@ export class ExamService {
 
   async hasTakenExam(params: HasTakenExamDto): Promise<ResponseItem<HasTakenExamResponseDto>> {
     const examSet = await this.findExamSet({ id: params.examSetId, userId: params.userId });
-    const exam = examSet.exams[0];
+    const exam = examSet.exam[0];
     return this.createExamResponse(examSet, exam, !!exam);
   }
 
@@ -65,7 +65,7 @@ export class ExamService {
       name: examSetDefaultName.DEFAULT,
       userId,
     });
-    const exam = examSet.exams[0];
+    const exam = examSet.exam[0];
     return this.createExamResponse(examSet, exam, !!exam);
   }
 
@@ -95,7 +95,7 @@ export class ExamService {
         select: {
           id: true,
           examStatus: true,
-          levelOfDomain: true,
+          sfiaLevel: true,
           createdAt: true,
         },
       });

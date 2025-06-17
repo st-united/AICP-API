@@ -22,7 +22,7 @@ import { Prisma } from '@prisma/client';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
-
+import { RedisService } from '@app/modules/redis/redis.service';
 @Injectable()
 export class UsersService {
   constructor(
@@ -30,7 +30,8 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly tokenService: TokenService,
-    private readonly googleCloudStorageService: GoogleCloudStorageService
+    private readonly googleCloudStorageService: GoogleCloudStorageService,
+    private readonly redisService: RedisService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -241,6 +242,7 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
+    const { email, referralCode, ...updateData } = updateUserDto;
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
@@ -248,7 +250,7 @@ export class UsersService {
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data: updateData,
     });
 
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
@@ -328,18 +330,26 @@ export class UsersService {
 
       const token: string = this.tokenService.generateAccessToken(payload);
 
+      const ttl = parseInt(this.configService.get<string>('JWT_EXPIRED_TIME'));
+      await this.redisService.setValue(`reset_password:${token}`, 'pending', ttl);
+
       await this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
 
       return new ResponseItem(true, 'Gửi email thành công');
     } catch (error) {
-      throw new BadRequestException('Cauth a error: ', { cause: error });
+      throw new BadRequestException('Có lỗi xảy ra: ', { cause: error });
     }
   }
 
   async updateNewPassword(updateForgotPasswordUserDto: UpdateForgotPasswordUserDto): Promise<ResponseItem<boolean>> {
     try {
-      const verifiedToken = this.tokenService.verifyAccessToken(updateForgotPasswordUserDto.token);
+      const tokenStatus = await this.redisService.getValue(`reset_password:${updateForgotPasswordUserDto.token}`);
 
+      if (!tokenStatus) {
+        throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+      }
+
+      const verifiedToken = this.tokenService.verifyAccessToken(updateForgotPasswordUserDto.token);
       const userId = verifiedToken.sub;
 
       const foundUser = await this.prisma.user.findUnique({
@@ -350,6 +360,7 @@ export class UsersService {
 
       if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
 
+      await this.redisService.deleteValue(`reset_password:${updateForgotPasswordUserDto.token}`);
       const hashedNewPassword = await bcrypt.hash(updateForgotPasswordUserDto.password, 10);
 
       await this.prisma.user.update({
@@ -363,7 +374,10 @@ export class UsersService {
 
       return new ResponseItem(true, 'Đổi mật khẩu thành công!');
     } catch (error) {
-      throw new BadRequestException('Invalid or expired token', { cause: error });
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.');
+      }
+      throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
   }
 }

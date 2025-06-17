@@ -3,6 +3,7 @@ import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { Expose, Transform } from 'class-transformer';
 import { UserRoleEnum } from '@Constant/enums';
+import { SFIALevel } from '@prisma/client';
 
 export class CreateMentorDto extends OmitType(RegisterUserDto, ['password', 'role']) {
   @IsEnum(UserRoleEnum)
@@ -29,4 +30,23 @@ export class CreateMentorDto extends OmitType(RegisterUserDto, ['password', 'rol
   })
   @IsOptional()
   dob?: Date;
+
+  @Expose()
+  @ApiProperty({
+    description: 'SFIA Level of the mentor',
+    enum: SFIALevel,
+    required: true,
+  })
+  @IsEnum(SFIALevel)
+  sfiaLevel: SFIALevel;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Maximum number of mentees',
+    type: Number,
+    required: false,
+    default: 5,
+  })
+  @IsOptional()
+  maxMentees?: number;
 }
