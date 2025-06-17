@@ -2,8 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UpdateStatusSubmitDto } from './dto/request/update-status-submit-answer.dto';
-import { UserAnswerStatus } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus } from '@prisma/client';
+import { ResponseItem } from '@app/common/dtos';
 
 @Injectable()
 export class AnswersService {
@@ -11,42 +11,41 @@ export class AnswersService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService
   ) {}
-  async create(params: userAnswerDto): Promise<string> {
+  async create(userId, params: userAnswerDto): Promise<ResponseItem<userAnswerDto>> {
     try {
       if (!params.answers || params.answers.length === 0) {
-        throw new Error('No answers provided');
+        throw new Error('Không có câu trả lời nào được cung cấp');
       }
       if (params.type === 'ESSAY') {
-        await this.handleEssayAnswer(params);
+        await this.handleEssayAnswer(userId, params);
       } else {
-        await this.handleSelectionAnswers(params);
+        await this.handleSelectionAnswers(userId, params);
       }
 
-      return 'Answer created successfully';
+      return new ResponseItem(null, 'Lưu câu trả lời thành công');
     } catch (error) {
-      throw new Error('Failed to create answer');
+      throw new Error('Không tạo được câu trả lời');
     }
   }
 
-  async update(userId: string, examSetId: string, params: UpdateStatusSubmitDto): Promise<string> {
+  async update(userId: string, examId: string): Promise<ResponseItem<userAnswerDto>> {
     const existingExam = await this.prisma.exam.findFirst({
       where: {
-        userId,
-        examSetId,
+        id: examId,
       },
     });
 
-    if (existingExam) {
-      throw new BadRequestException('This exam has already been submitted.');
+    if (existingExam.examStatus !== ExamStatus.IN_PROGRESS) {
+      throw new BadRequestException('Bài kiểm tra này đã được nộp trước đó.');
     }
     try {
       await this.prisma.userAnswer.updateMany({
-        where: { userId, examSetId },
+        where: { userId, examId },
         data: { status: UserAnswerStatus.SUBMIT },
       });
 
       const existingAnswers = await this.prisma.userAnswer.findMany({
-        where: { userId, examSetId, status: UserAnswerStatus.SUBMIT },
+        where: { userId, examId, status: UserAnswerStatus.SUBMIT },
         select: { id: true, questionId: true },
       });
 
@@ -104,10 +103,19 @@ export class AnswersService {
 
           const score = parseFloat(rawScore.toFixed(2));
 
-          await this.prisma.userAnswer.update({
-            where: { id: userAnswerId, examSetId: examSetId },
-            data: { autoScore: score },
+          const userAnswer = await this.prisma.userAnswer.findFirst({
+            where: {
+              userId: userAnswerId,
+              examId,
+            },
           });
+
+          if (userAnswer) {
+            await this.prisma.userAnswer.update({
+              where: { id: userAnswer.id },
+              data: { autoScore: score },
+            });
+          }
 
           return [userAnswerId, score];
         })
@@ -115,28 +123,26 @@ export class AnswersService {
 
       const totalScore = scores.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : Number(val)), 0);
 
-      await this.prisma.exam.create({
+      await this.prisma.exam.update({
+        where: { id: examId },
         data: {
-          userId,
-          examSetId,
-          startedAt: new Date(params.timeStart),
-          finishedAt: new Date(params.timeEnd),
-          totalScore,
+          examStatus: 'SUBMITTED',
+          overallScore: totalScore,
         },
       });
 
-      return 'Submit successfully';
+      return new ResponseItem(null, 'Đã nộp bài thành công');
     } catch (error) {
-      throw new Error('Failed to update answers and calculate scores');
+      throw new Error('Không cập nhật được câu trả lời và tính điểm');
     }
   }
 
-  private async handleEssayAnswer(params: userAnswerDto) {
+  private async handleEssayAnswer(userId, params: userAnswerDto) {
     const [essayAnswer] = params.answers;
     const { answers, type, ...restParams } = params;
 
     const existingAnswers = await this.prisma.userAnswer.findMany({
-      where: { ...restParams },
+      where: { userId, ...restParams },
       select: { id: true },
     });
 
@@ -149,18 +155,21 @@ export class AnswersService {
 
     await this.prisma.userAnswer.create({
       data: {
-        answerText: essayAnswer.answer,
+        answerText: essayAnswer[0],
         ...restParams,
+        userId,
+        maxPossibleScore: this.configService.get<number>('EXAM_MAX_SCORE') || 10,
       },
     });
   }
 
-  private async handleSelectionAnswers(params: userAnswerDto) {
+  private async handleSelectionAnswers(userId, params: userAnswerDto) {
     const { answers, type, ...restParams } = params;
 
     const existingAnswers = await this.prisma.userAnswer.findMany({
       where: {
         ...restParams,
+        userId,
       },
       select: { id: true },
     });
@@ -183,13 +192,15 @@ export class AnswersService {
     const createdAnswer = await this.prisma.userAnswer.create({
       data: {
         ...restParams,
+        userId,
+        maxPossibleScore: this.configService.get<number>('EXAM_MAX_SCORE') || 10,
       },
     });
     await Promise.all(
       params.answers.map(async (answer) => {
         await this.prisma.userAnswerSelection.create({
           data: {
-            answerOptionId: answer.answerId,
+            answerOptionId: answer,
             userAnswerId: createdAnswer.id,
           },
         });

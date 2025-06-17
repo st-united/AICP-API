@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '@UsersModule/dto/request/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { UserDto } from './dto/user.dto';
-import { avtPathName } from '@Constant/url';
+import { avtPathName, baseImageUrl } from '@Constant/url';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
@@ -19,7 +19,10 @@ import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
-
+import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
+import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
+import { convertPath } from '@app/common/utils';
+import { RedisService } from '@app/modules/redis/redis.service';
 @Injectable()
 export class UsersService {
   constructor(
@@ -27,7 +30,8 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly tokenService: TokenService,
-    private readonly googleCloudStorageService: GoogleCloudStorageService
+    private readonly googleCloudStorageService: GoogleCloudStorageService,
+    private readonly redisService: RedisService
   ) {}
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
@@ -57,7 +61,9 @@ export class UsersService {
       email: params.email,
       fullName: params.fullName,
       phoneNumber: params.phoneNumber,
+      dob: params.dob,
       password: hashedPassword,
+      status: defaultRole.name === UserRoleEnum.MENTOR ? true : false,
     };
 
     const user = await this.prisma.user.create({
@@ -122,6 +128,113 @@ export class UsersService {
     return new ResponseItem(user, 'Thay đổi mật khẩu thành công');
   }
 
+  async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    const where: Prisma.UserWhereInput = {
+      ...(queries.search && {
+        fullName: {
+          contains: queries.search,
+          mode: 'insensitive',
+        },
+      }),
+      status: queries.status,
+      ...(queries.job && {
+        job: queries.job,
+      }),
+      ...(queries.province && {
+        province: queries.province,
+      }),
+      createdAt: {
+        gte: queries.startDate ? new Date(queries.startDate) : undefined,
+        lte: queries.endDate ? new Date(queries.endDate) : undefined,
+      },
+      roles: {
+        some: {
+          role: {
+            name: 'user',
+          },
+        },
+      },
+    };
+
+    const [result, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          phoneNumber: true,
+          email: true,
+          fullName: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          province: true,
+          country: true,
+          dob: true,
+          job: true,
+          referralCode: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: queries.skip,
+        take: queries.take,
+      }),
+      this.prisma.user.count({
+        where,
+      }),
+    ]);
+
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
+
+    return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách người dùng thành công');
+  }
+
+  async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
+    const where: Prisma.UserWhereInput = {
+      roles: {
+        some: {
+          role: {
+            name: 'user',
+          },
+        },
+      },
+    };
+
+    const [users, statusCounts] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.groupBy({
+        by: ['status'],
+        _count: {
+          status: true,
+        },
+      }) as any,
+    ]);
+
+    const activates = statusCounts.find((item: { status: boolean }) => item.status === true)?._count?.status || 0;
+    const unactivates = statusCounts.find((item: { status: boolean }) => item.status === false)?._count?.status || 0;
+
+    const data = {
+      users,
+      activates,
+      unactivates,
+    };
+
+    return new ResponseItem(data);
+  }
+
+  async getUser(id: string): Promise<ResponseItem<UserDto>> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { roles: true },
+    });
+    if (!user) throw new BadRequestException('Nhân viên không tồn tại');
+
+    return new ResponseItem(
+      { ...user, avatarUrl: user.avatarUrl ? baseImageUrl + convertPath(user.avatarUrl) : null },
+      'Thành công'
+    );
+  }
+
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
@@ -129,6 +242,7 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
+    const { email, referralCode, ...updateData } = updateUserDto;
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
@@ -136,7 +250,7 @@ export class UsersService {
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data: updateData,
     });
 
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
@@ -216,18 +330,26 @@ export class UsersService {
 
       const token: string = this.tokenService.generateAccessToken(payload);
 
+      const ttl = parseInt(this.configService.get<string>('JWT_EXPIRED_TIME'));
+      await this.redisService.setValue(`reset_password:${token}`, 'pending', ttl);
+
       await this.emailService.sendForgotPasswordEmail(user.fullName, user.email, token);
 
       return new ResponseItem(true, 'Gửi email thành công');
     } catch (error) {
-      throw new BadRequestException('Cauth a error: ', { cause: error });
+      throw new BadRequestException('Có lỗi xảy ra: ', { cause: error });
     }
   }
 
   async updateNewPassword(updateForgotPasswordUserDto: UpdateForgotPasswordUserDto): Promise<ResponseItem<boolean>> {
     try {
-      const verifiedToken = this.tokenService.verifyAccessToken(updateForgotPasswordUserDto.token);
+      const tokenStatus = await this.redisService.getValue(`reset_password:${updateForgotPasswordUserDto.token}`);
 
+      if (!tokenStatus) {
+        throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+      }
+
+      const verifiedToken = this.tokenService.verifyAccessToken(updateForgotPasswordUserDto.token);
       const userId = verifiedToken.sub;
 
       const foundUser = await this.prisma.user.findUnique({
@@ -238,6 +360,7 @@ export class UsersService {
 
       if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
 
+      await this.redisService.deleteValue(`reset_password:${updateForgotPasswordUserDto.token}`);
       const hashedNewPassword = await bcrypt.hash(updateForgotPasswordUserDto.password, 10);
 
       await this.prisma.user.update({
@@ -251,7 +374,10 @@ export class UsersService {
 
       return new ResponseItem(true, 'Đổi mật khẩu thành công!');
     } catch (error) {
-      throw new BadRequestException('Invalid or expired token', { cause: error });
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.');
+      }
+      throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
   }
 }

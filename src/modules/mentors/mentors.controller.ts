@@ -8,6 +8,10 @@ import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { GetMenteesDto } from './dto/request/get-mentees.dto';
 import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
+import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
+import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
+import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
+import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 
 @Controller('mentors')
 export class MentorsController {
@@ -18,9 +22,24 @@ export class MentorsController {
     return await this.mentorsService.create(createMentorDto);
   }
 
+  @Post('create-scheduler')
+  async createScheduler(@Body() dto: CreateMentorBookingDto): Promise<SimpleResponse<MentorBookingResponseDto>> {
+    return await this.mentorsService.createScheduler(dto);
+  }
+
   @Get()
   async findAll(@Query() getMentors: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
     return await this.mentorsService.getMentors(getMentors);
+  }
+
+  @Get('available')
+  getAvailableMentors(@Query() query: GetAvailableMentorsDto) {
+    return this.mentorsService.getAvailableMentors(query);
+  }
+
+  @Get('booked-slots')
+  async getBookedSlotsByMentor(@Query('mentorId') mentorId: string) {
+    return this.mentorsService.getGroupedBookedSlotsByMentor(mentorId);
   }
 
   @Get('/stats')
@@ -41,6 +60,11 @@ export class MentorsController {
   @Patch(':id')
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateMentorDto: UpdateMentorDto) {
     return await this.mentorsService.updateMentor(id, updateMentorDto);
+  }
+
+  @Patch('/activate/:id')
+  async activateMentorAccount(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.mentorsService.activateMentorAccount(id);
   }
 
   @Delete(':id')

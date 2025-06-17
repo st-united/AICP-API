@@ -1,32 +1,42 @@
 import { Expose, Type } from 'class-transformer';
-import { IsNotEmpty, ValidateNested, IsString, IsArray } from 'class-validator';
-import { AnswerItem } from './answer-item.dto';
+import { IsNotEmpty, ValidateNested, IsArray, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
 export class userAnswerDto {
   @Expose()
   @IsNotEmpty()
-  @ApiProperty()
-  examSetId: string;
+  @IsString()
+  @ApiProperty({
+    example: 'exam-set-123',
+    description: 'ID of the exam/test for user',
+  })
+  examId: string;
 
   @Expose()
   @IsNotEmpty()
-  @ApiProperty()
-  userId: string;
-
-  @Expose()
-  @IsNotEmpty()
-  @ApiProperty()
+  @IsString()
+  @ApiProperty({
+    example: 'question-456',
+    description: 'ID of the question being answered',
+  })
   questionId: string;
 
   @Expose()
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => AnswerItem)
-  @ApiProperty()
-  answers: AnswerItem[];
+  @IsString({ each: true })
+  @ApiProperty({
+    type: [String],
+    example: ['answer-1', 'answer-2'],
+    description: 'List of answer IDs.',
+  })
+  answers: string[];
 
   @Expose()
   @IsNotEmpty()
-  @ApiProperty()
+  @IsString()
+  @ApiProperty({
+    example: 'MULTIPLE_CHOICE',
+    description: 'Type of the question (e.g. "MULTIPLE_CHOICE", "SINGLE_CHOICE", "TRUE_FALSE", "ESSAY")',
+  })
   type: string;
 }

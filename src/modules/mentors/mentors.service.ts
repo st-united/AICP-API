@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
@@ -12,9 +12,14 @@ import { MentorBookingStatus, Prisma } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
 import { GetMenteesDto } from './dto/request/get-mentees.dto';
+import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
+import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
+import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
+import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 
 @Injectable()
 export class MentorsService {
+  private readonly logger = new Logger(MentorsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
@@ -22,14 +27,17 @@ export class MentorsService {
   ) {}
 
   async create(createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
+    const password = generateSecurePassword();
+    const { expertise, sfiaLevel, maxMentees, ...userData } = createMentorDto;
+    const createUser = await this.userService.create({ ...userData, password });
     try {
-      const password = generateSecurePassword();
-      const { expertise, ...userData } = createMentorDto;
-      const createUser = await this.userService.create({ ...userData, password });
       const mentor = await this.prisma.mentor.create({
         data: {
           userId: createUser.id,
-          expertise: createMentorDto.expertise,
+          expertise: expertise,
+          sfiaLevel: sfiaLevel,
+          maxMentees: maxMentees ?? 5,
+          isActive: false,
         },
       });
 
@@ -211,6 +219,7 @@ export class MentorsService {
           fullName: updateMentorDto.fullName,
           phoneNumber: updateMentorDto.phoneNumber,
           avatarUrl: updateMentorDto.avatarUrl,
+          dob: updateMentorDto.dob,
         };
 
         await transactionClient.user.update({
@@ -236,25 +245,198 @@ export class MentorsService {
     }
   }
 
-  async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
-    try {
-      const existingMentor = await this.prisma.mentor.findFirst({
-        where: { id },
-      });
-      if (!existingMentor) {
-        throw new NotFoundException('Không tìm thấy mentor');
-      }
+  private async toggleMentorAccountStatus(id: string, activate: boolean): Promise<ResponseItem<null>> {
+    const existingMentor = await this.prisma.mentor.findFirst({
+      where: { id },
+      include: {
+        user: true,
+      },
+    });
 
+    if (!existingMentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
+    if (existingMentor.isActive === activate) {
+      throw new ConflictException(`Mentor đã ${activate ? 'được kích hoạt' : 'bị vô hiệu hóa'}`);
+    }
+
+    try {
       await this.prisma.mentor.update({
         where: { id },
         data: {
-          isActive: false,
+          isActive: activate,
         },
       });
 
-      return new ResponseItem(null, 'Xóa mentor thành công');
+      const emailContent = {
+        fullName: existingMentor.user.fullName,
+        email: existingMentor.user.email,
+      };
+
+      if (activate) {
+        await this.emailService.sendEmailActivateMentorAccount(emailContent);
+        return new ResponseItem(null, 'Kích hoạt tài khoản mentor thành công');
+      } else {
+        await this.emailService.sendEmailDeactivateMentorAccount(emailContent);
+        return new ResponseItem(null, 'Xóa mentor thành công');
+      }
     } catch (error) {
-      throw new BadRequestException('Lỗi khi xóa mentor');
+      this.logger.error(error);
+      throw new BadRequestException(`Lỗi khi ${activate ? 'kích hoạt' : 'xóa'} mentor`);
+    }
+  }
+
+  async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
+    return this.toggleMentorAccountStatus(id, false);
+  }
+
+  async activateMentorAccount(id: string): Promise<ResponseItem<null>> {
+    return this.toggleMentorAccountStatus(id, true);
+  }
+
+  async getAvailableMentors(dto: GetAvailableMentorsDto) {
+    try {
+      const { search, scheduledDate, timeSlot, take, skip } = dto;
+
+      const whereClause: Prisma.MentorWhereInput = {
+        isActive: true,
+        user: {
+          deletedAt: { equals: null },
+          ...(search
+            ? {
+                fullName: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              }
+            : {}),
+        },
+        ...(scheduledDate && timeSlot
+          ? {
+              bookings: {
+                none: {
+                  scheduledAt: new Date(scheduledDate),
+                  timeSlot: timeSlot,
+                },
+              },
+            }
+          : {}),
+      };
+
+      const [mentors, total] = await this.prisma.$transaction([
+        this.prisma.mentor.findMany({
+          where: whereClause,
+          include: {
+            user: { select: { fullName: true, avatarUrl: true, id: true } },
+          },
+          take: parseInt(take),
+          skip: parseInt(skip),
+        }),
+        this.prisma.mentor.count({ where: whereClause }),
+      ]);
+
+      return { data: mentors, total };
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  async getGroupedBookedSlotsByMentor(mentorId: string) {
+    try {
+      const bookings = await this.prisma.mentorBooking.findMany({
+        where: {
+          mentorId,
+          status: { in: ['PENDING', 'ACCEPTED', 'COMPLETED'] },
+        },
+        select: {
+          scheduledAt: true,
+          timeSlot: true,
+        },
+      });
+
+      const grouped = bookings.reduce<Record<string, string[]>>((acc, { scheduledAt, timeSlot }) => {
+        if (!timeSlot) return acc;
+        const date = scheduledAt.toISOString().split('T')[0];
+        acc[date] = acc[date] || [];
+        acc[date].push(timeSlot);
+        return acc;
+      }, {});
+
+      return new SimpleResponse(grouped, 'Lấy dữ liệu thành công');
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  async createScheduler(dto: CreateMentorBookingDto): Promise<SimpleResponse<MentorBookingResponseDto>> {
+    try {
+      const { mentorId, scheduledAt, timeSlot } = dto;
+
+      // Get mentor details first
+      const mentor = await this.prisma.mentor.findUnique({
+        where: { id: mentorId },
+        include: {
+          user: {
+            select: {
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      });
+
+      if (!mentor) {
+        throw new NotFoundException('Không tìm thấy mentor');
+      }
+
+      // Check for existing booking conflict
+      const existing = await this.prisma.mentorBooking.findFirst({
+        where: {
+          mentorId,
+          scheduledAt: new Date(scheduledAt),
+          timeSlot,
+          status: { in: ['PENDING', 'ACCEPTED'] },
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException('Khung giờ này đã được đặt.');
+      }
+
+      const booking = await this.prisma.mentorBooking.create({
+        data: {
+          ...dto,
+          scheduledAt: new Date(dto.scheduledAt),
+        },
+      });
+
+      const generateBookingCode = (): string => {
+        const date = new Date();
+        const timestamp = date.getTime();
+        return `AICP${timestamp}`;
+      };
+
+      const result = {
+        ...booking,
+        codeOrder: generateBookingCode(),
+        mentor: {
+          id: mentor.id,
+          fullName: mentor.user.fullName,
+          email: mentor.user.email,
+          avatarUrl: mentor.user.avatarUrl,
+          expertise: mentor.expertise,
+        },
+      };
+
+      return new SimpleResponse(result, 'Đặt lịch thành công!');
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error);
     }
   }
 }
