@@ -37,7 +37,7 @@ model User {
   assessorAssessment CompetencyAssessment[] @relation("AssessorAssessment")
   learningPath       LearningPath[]
   userProgress       UserLearningProgress[]
-  userPortfolio      Portfolio[]            @relation("UserPortfolio")
+  userPortfolio      Portfolio?             @relation("UserPortfolio")
   verifierPortfolio  Portfolio[]            @relation("VerifierPortfolio")
   mentor             Mentor[]
   mentorBooking      MentorBooking[]
@@ -481,7 +481,7 @@ model UserLearningProgress {
 
 model Portfolio {
   id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String     @map("user_id") @db.Uuid
+  userId           String     @unique @map("user_id") @db.Uuid
   linkedInUrl      String?    @map("linked_in_url") @db.Text
   githubUrl        String?    @map("github_url") @db.Text
   certificateFiles String[]   @default([])
