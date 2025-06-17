@@ -34,9 +34,13 @@ export class EmailService {
   }
 
   async sendEmailNewMentor(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const loginLink = `${this.configService.get('FE_APP_URL')}/login`;
+    const activationLink = `${this.configService.get('FE_APP_URL')}/mentor-activation/${emailContent.token}`;
 
-    const template = this.generateMentorAccountEmailTemplate(emailContent.fullName, loginLink, emailContent.password);
+    const template = this.generateMentorAccountEmailTemplate(
+      emailContent.fullName,
+      activationLink,
+      emailContent.password
+    );
     await this.sendEmail(emailContent.email, 'Kích hoạt tài khoản Mentor DevPlus', template);
   }
 
@@ -168,11 +172,11 @@ export class EmailService {
         <div class="header">Thông tin tài khoản Mentor của bạn</div>
         <div class="content">
           <div class="hello">Xin chào ${fullName},</div>
-          <p>Bạn đã được mời tham gia nền tảng của chúng tôi với vai trò <strong>Mentor</strong>.</p>
+          <p>Bạn đã được mời tham gia nền tảng của chúng tôi với vai trò <strong>Mentor</strong>.</p>       
+          <p>Để bảo mật, vui lòng kích hoạt tài khoản để đăng nhập và đổi mật khẩu.</p>
+          <a href="${loginLink}" class="btn">Kích hoạt tài khoản</a>
           <p>Đây là mật khẩu tạm thời để đăng nhập:</p>
           <p class="highlight">${password}</p>
-          <p>Để bảo mật, vui lòng kích hoạt tài khoản và đổi mật khẩu sau khi đăng nhập.</p>
-          <a href="${loginLink}" class="btn">Kích hoạt tài khoản</a>
           <p>Nếu bạn không mong đợi email này, vui lòng bỏ qua hoặc liên hệ với chúng tôi.</p>
           <p>Chúng tôi rất mong được hợp tác cùng bạn!<br>Trân trọng,<br>Đội ngũ DevPlus</p>
         </div>
