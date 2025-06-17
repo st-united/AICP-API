@@ -9,7 +9,7 @@ export class HistoryExamResponseDto {
   examStatus: ExamStatus;
 
   @Expose()
-  levelOfDomain: SFIALevel;
+  sfiaLevel: SFIALevel;
 
   @Expose()
   createdAt: Date;
