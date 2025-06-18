@@ -9,6 +9,7 @@ import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { UserAndSessionPayloadDto, UserPayloadDto } from './dto/user-payload.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -22,13 +23,17 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiBody({ type: LoginDto })
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
-    return this.authService.login(request.user);
+    const userAgent = request.headers['user-agent'];
+    const ip = request.ip;
+    const userPayloadDto: UserPayloadDto = request.user;
+    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
+    return await this.authService.login(userAndSessionPayloadDto);
   }
 
   @UseGuards(JwtAccessTokenGuard)
   @Get('logout')
   async logout(@Req() request) {
-    return this.authService.logout(request.user.userId);
+    return this.authService.handleLogout(request.user.userId);
   }
 
   @UseGuards(JwtRefreshTokenGuard)

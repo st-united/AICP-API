@@ -9,6 +9,11 @@ import { XMLMiddleware } from './common/middleware/xml.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { EmailModule } from './modules/email/email.module';
+import { RedisModule } from './modules/redis/redis.module';
+import { MentorsModule } from './modules/mentors/mentors.module';
+import { AnswersModule } from '@AnswersModule/answers.module';
+import { ExamSetsModule } from './modules/exam-sets/exam-sets.module';
+import { ExamModule } from './modules/exam/exam.module';
 
 @Module({
   imports: [
@@ -28,12 +33,26 @@ import { EmailModule } from './modules/email/email.module';
         JWT_ACCESS_EXPIRES: Joi.string().required(),
         JWT_REFRESH_SECRETKEY: Joi.string().required(),
         JWT_REFRESH_EXPIRES: Joi.string().required(),
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().required(),
+        REDIS_SESSION_EXPIRES_IN: Joi.string().required(),
+        REDIS_SCAN_COUNT: Joi.number().required(),
+        GOOGLE_CLOUD_KEY_FILE: Joi.string().required(),
+        GOOGLE_CLOUD_STORAGE_BUCKET_NAME: Joi.string().required(),
+        GOOGLE_CLOUD_STORAGE_PUBLIC_URL: Joi.string().required(),
+        GOOGLE_CLOUD_STORAGE_CACHE_MAX_AGE: Joi.number().required(),
       }),
     }),
     UsersModule,
     AuthModule,
     PrismaModule,
     EmailModule,
+    RedisModule,
+    MentorsModule,
+    AnswersModule,
+    ExamSetsModule,
+    ExamModule,
   ],
   providers: [
     {
