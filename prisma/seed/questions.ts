@@ -1,4 +1,4 @@
-import { PrismaClient, QuestionType, Level, CompetencySkill } from '@prisma/client';
+import { PrismaClient, QuestionType, Level, CompetencySkill, SFIALevel } from '@prisma/client';
 
 export async function seedQuestions(prisma: PrismaClient, levels: Level[], competencySkills: CompetencySkill[]) {
   const levelsMap = Object.fromEntries(levels.map((c) => [c.sfiaLevel, c]));
@@ -9,7 +9,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Thiên lệch AI (AI bias) là gì?',
-      level: 'LEVEL_1_AWARENESS',
+      level: SFIALevel.LEVEL_1_AWARENESS,
       compatentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 1)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
@@ -27,7 +27,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang sử dụng ChatGPT để hỗ trợ viết bài luận cho trường. Cách tiếp cận phù hợp nhất về tính chính trực học thuật (academic integrity) là gì?',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -45,7 +45,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.MULTIPLE_CHOICE,
       content:
         'Nhóm của bạn phát hiện công cụ AI tuyển dụng có thiên lệch với ứng viên từ một số nhóm dân tộc nhất định. Hành động nào thể hiện thực hành AI đạo đức? (Chọn tất cả phương án phù hợp)',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 3)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -64,7 +64,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang phát triển hệ thống AI cho chẩn đoán y tế. Hệ thống đạt độ chính xác 94% tổng thể nhưng chỉ 78% cho bệnh nhân cao tuổi. Nhóm y tế muốn triển khai ngay lập tức do áp lực chi phí. Phản ứng của bạn?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -89,7 +89,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang lãnh đạo bộ phận đạo đức AI cho một tập đoàn đa quốc gia phát triển xe tự lái. Các quốc gia khác nhau có giá trị văn hóa khác nhau về việc ra quyết định trong các tình huống tai nạn không thể tránh khỏi. Bạn tiếp cận thiết kế khung đạo đức này như thế nào?',
-      level: 'LEVEL_5_INNOVATION',
+      level: SFIALevel.LEVEL_5_INNOVATION,
       compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 5,
@@ -107,7 +107,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Với tư cách Giám đốc AI, bạn phải thiết lập quản trị AI (AI governance) trên toàn tổ chức 50.000 nhân viên với các đơn vị kinh doanh đa dạng. Chiến lược quản trị của bạn?',
-      level: 'LEVEL_6_LEADERSHIP',
+      level: SFIALevel.LEVEL_6_LEADERSHIP,
       compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 6,
@@ -126,7 +126,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Tại sao học tập liên tục quan trọng trong AI?',
-      level: 'LEVEL_1_AWARENESS',
+      level: SFIALevel.LEVEL_1_AWARENESS,
       compatentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 1)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
@@ -143,7 +143,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content: 'Bạn muốn cập nhật các phát triển AI với tư cách sinh viên. Cách tiếp cận nào bền vững?',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -158,7 +158,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Mô hình machine learning đầu tiên của bạn chỉ đạt độ chính xác 55%. Tư duy hiệu quả nhất là gì?',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -176,7 +176,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Tổ chức của bạn muốn áp dụng GPT-4 cho dịch vụ khách hàng. Bạn có 3 tháng để chuẩn bị. Chiến lược học tập của bạn?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -195,7 +195,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn được giao nhiệm vụ chuẩn bị tổ chức cho thế hệ công nghệ AI tiếp theo. Làm thế nào để xây dựng năng lực học tập thích ứng?',
-      level: 'LEVEL_5_INNOVATION',
+      level: SFIALevel.LEVEL_5_INNOVATION,
       compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 5,
@@ -214,7 +214,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Khi AI cung cấp thông tin cho bạn, bạn nên làm gì?',
-      level: 'LEVEL_1_AWARENESS',
+      level: SFIALevel.LEVEL_1_AWARENESS,
       compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
@@ -229,7 +229,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'ChatGPT cung cấp dữ liệu thống kê về "việc áp dụng AI trong các công ty Việt Nam" cho bài tập của bạn. Bước đầu tiên để xác minh là gì?',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -244,7 +244,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.MULTIPLE_CHOICE,
       content:
         'Startup của bạn phụ thuộc nhiều vào OpenAI API cho các tính năng sản phẩm cốt lõi. Rủi ro liên tục kinh doanh nào nên xem xét? (Chọn tất cả mối quan tâm hợp lệ)',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -260,7 +260,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Mô hình AI của bạn cho thấy các chỉ số kỹ thuật tuyệt vời (độ chính xác 95%, độ trễ 12ms, thời gian hoạt động 94%) nhưng kết quả kinh doanh đáng thất vọng (tương tác người dùng giảm 12%). Cách tiếp cận phân tích phù hợp nhất là gì?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -275,7 +275,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang đánh giá việc xây dựng giải pháp AI tùy chỉnh so với sử dụng API bên thứ ba cho ứng dụng quan trọng nhiệm vụ với yêu cầu nghiêm ngặt về độ trễ, bảo mật và độ tin cậy. Khung quyết định của bạn?',
-      level: 'LEVEL_5_INNOVATION',
+      level: SFIALevel.LEVEL_5_INNOVATION,
       compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 5,
@@ -294,7 +294,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang dẫn dắt phát triển tiêu chuẩn ngành cho an toàn AI trong hệ thống tự động. Nhiều bên liên quan (công ty công nghệ, chính phủ, tổ chức an toàn, nhóm lợi ích công cộng) có ưu tiên xung đột. Cách tiếp cận xây dựng đồng thuận của bạn?',
-      level: 'LEVEL_6_LEADERSHIP',
+      level: SFIALevel.LEVEL_6_LEADERSHIP,
       compatentcySkillName: 'Tầm Nhìn & Định Hướng AI (Level 7)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 6,
@@ -314,7 +314,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Khi làm việc trong nhóm mà một số người biết về AI nhiều hơn những người khác, cách tiếp cận tốt nhất là gì?',
-      level: 'LEVEL_1_AWARENESS',
+      level: SFIALevel.LEVEL_1_AWARENESS,
       compatentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 1)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
@@ -329,7 +329,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Một bạn cùng lớp nhờ phản hồi về dự án AI của họ. Code hoạt động nhưng sử dụng cách tiếp cận không hiệu quả. Phản hồi mang tính xây dựng nhất là gì?',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -344,7 +344,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.MULTIPLE_CHOICE,
       content:
         'Nhóm 5 người của bạn có kinh nghiệm AI hỗn hợp: 2 người dùng nâng cao, 2 người mới bắt đầu, 1 thành viên hoài nghi AI. Chiến lược nào thúc đẩy hợp tác hiệu quả? (Chọn các cách tiếp cận mang tính xây dựng)',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -360,7 +360,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang trình bày kết quả dự án AI cho ban điều hành. Kỹ thuật: độ chính xác 87%, độ trễ 12ms. Kinh doanh: cải thiện hiệu quả 15%, tiết kiệm 200.000 USD. Nguyên tắc giao tiếp nào?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -379,7 +379,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang lãnh đạo một liên minh các đối thủ cạnh tranh để thiết lập tiêu chuẩn đạo đức AI toàn cầu. Người tham gia gồm công ty công nghệ lớn, startup, học giả, cơ quan quản lý và nhóm xã hội dân sự với giá trị và động cơ khác biệt. Cách tiếp cận lãnh đạo của bạn?',
-      level: 'LEVEL_7_MASTERY',
+      level: SFIALevel.LEVEL_7_MASTERY,
       compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
       estimatedTimeMinutes: 6,
       difficultyWeight: 7,
@@ -399,7 +399,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Tình huống: Bạn cần ChatGPT giúp lên ý tưởng bài luận về biến đổi khí hậu. Prompt nào có khả năng cho kết quả hữu ích nhất?',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -418,7 +418,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.MULTIPLE_CHOICE,
       content:
         'Câu Hỏi Kỹ Thuật: Kỹ thuật nào cải thiện chất lượng tạo code từ LLM? (Chọn tất cả cách tiếp cận hiệu quả)',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -437,7 +437,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Thách Thức Tích Hợp: Bạn đang xây dựng chatbot dịch vụ khách hàng phải xử lý thông tin nhạy cảm một cách an toàn. Biện pháp bảo mật prompt nào là thiết yếu?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -456,7 +456,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Kiến Trúc Nâng Cao: Bạn đang thiết kế hệ thống RAG (Retrieval-Augmented Generation - Tạo Sinh Tăng Cường Truy Xuất) cho kiến thức nội bộ công ty. Thành phần nào là thiết yếu cho triển khai hiệu quả?',
-      level: 'LEVEL_5_INNOVATION',
+      level: SFIALevel.LEVEL_5_INNOVATION,
       compatentcySkillName: 'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Level 5)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 5,
@@ -475,7 +475,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Điều gì ảnh hưởng đến chi phí sử dụng API AI như OpenAI?',
-      level: 'LEVEL_1_AWARENESS',
+      level: SFIALevel.LEVEL_1_AWARENESS,
       compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
@@ -489,7 +489,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Cho dự án machine learning của bạn, bạn cần dataset về hiệu suất học sinh. Nguồn phù hợp nhất là gì?',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -503,7 +503,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content: 'Bạn tải dataset cho machine learning. Kiểm tra chất lượng nào là thiết yếu? (Chọn các bước quan trọng)',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -519,7 +519,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Mô hình phân loại của bạn cho độ chính xác 95%, nhưng dataset có 95% mẫu từ một lớp. Tình huống thực sự là gì?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -538,7 +538,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Mô hình machine learning của bạn cần sức mạnh tính toán nhiều hơn laptop có thể cung cấp. Giải pháp thân thiện với sinh viên tốt nhất là gì?',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -559,7 +559,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Bạn đang xây dựng hệ thống gợi ý cho dự án thương mại điện tử. Cách tiếp cận thực tế nhất cho nhóm sinh viên là gì?',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -580,7 +580,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Ứng dụng web được hỗ trợ AI của bạn hoạt động hoàn hảo trong phát triển nhưng thất bại ngẫu nhiên trong sản xuất với người dùng thực. Cách tiếp cận debug có hệ thống của bạn?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -605,7 +605,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Tổ chức của bạn cần quyết định giữa fine-tuning mô hình độc quyền vs. sử dụng foundation model với RAG cho ứng dụng cụ thể lĩnh vực. Nhiều đơn vị kinh doanh có yêu cầu, ngân sách và timeline khác nhau. Khung chiến lược của bạn?',
-      level: 'LEVEL_6_LEADERSHIP',
+      level: SFIALevel.LEVEL_6_LEADERSHIP,
       compatentcySkillName: 'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Level 5)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 6,
@@ -633,7 +633,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Nếu bạn muốn thử AI miễn phí với tư cách sinh viên, đâu là lựa chọn khởi đầu tốt?',
-      level: 'LEVEL_1_AWARENESS',
+      level: SFIALevel.LEVEL_1_AWARENESS,
       compatentcySkillName: 'Nhập Môn Công Cụ AI (Level 1)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
@@ -648,7 +648,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.MULTIPLE_CHOICE,
       content:
         'Với tư cách sinh viên có ngân sách hạn chế, công cụ AI nào mang lại giá trị học tập cao nhất? (Chọn các phương án dễ tiếp cận)',
-      level: 'LEVEL_2_FOUNDATION',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
       compatentcySkillName: 'Nền Tảng Công Cụ AI (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
@@ -664,7 +664,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Nhóm của bạn đang đánh giá GitHub Copilot cho 20 lập trình viên với giá 20 USD/tháng/người. Yếu tố ROI nào biện minh cho khoản đầu tư?',
-      level: 'LEVEL_3_APPLICATION',
+      level: SFIALevel.LEVEL_3_APPLICATION,
       compatentcySkillName: 'Ứng Dụng Công Cụ AI (Level 3)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
@@ -683,7 +683,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Ứng dụng của bạn thực hiện 10.000 lệnh gọi API hàng ngày đến OpenAI với chi phí tăng. Chiến lược tối ưu hóa nào duy trì chất lượng trong khi giảm chi phí?',
-      level: 'LEVEL_4_INTEGRATION',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
       compatentcySkillName: 'Tích Hợp Công Cụ AI (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
@@ -702,7 +702,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Ngành của bạn không có giải pháp AI hiện có cho use case cụ thể của bạn. Bạn phải chọn giữa xây dựng giải pháp tùy chỉnh vs. điều chỉnh công cụ hiện có. Khung quyết định của bạn?',
-      level: 'LEVEL_5_INNOVATION',
+      level: SFIALevel.LEVEL_5_INNOVATION,
       compatentcySkillName: 'Tích Hợp & Thiết Kế Quy Trình (Level 6)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 5,
@@ -721,7 +721,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       type: QuestionType.SINGLE_CHOICE,
       content:
         'Công cụ AI phát triển nhanh chóng - công nghệ tiên tiến hôm nay trở thành chuẩn mực ngày mai. Bạn chịu trách nhiệm về chiến lược AI doanh nghiệp trên nhiều đơn vị kinh doanh trong công ty Fortune 500. Cách tiếp cận của bạn cho lợi thế cạnh tranh bền vững?',
-      level: 'LEVEL_7_MASTERY',
+      level: SFIALevel.LEVEL_7_MASTERY,
       compatentcySkillName: 'Đổi Mới & Phát Triển Tùy Chỉnh (Level 7)',
       estimatedTimeMinutes: 6,
       difficultyWeight: 7,
@@ -752,7 +752,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
   });
 
   const createdQuestions = await prisma.question.findMany({
-    orderBy: { id: 'asc' },
+    orderBy: { sequence: 'asc' },
   });
 
   await prisma.answerOption.createMany({
