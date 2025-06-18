@@ -201,12 +201,13 @@ export class UsersService {
     };
 
     const [users, statusCounts] = await this.prisma.$transaction([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
       this.prisma.user.groupBy({
         by: ['status'],
         _count: {
           status: true,
         },
+        where,
       }) as any,
     ]);
 
