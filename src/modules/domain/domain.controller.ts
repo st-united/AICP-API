@@ -9,7 +9,7 @@ import { DomainNamesDto } from './dto/domain-names.dto';
 @ApiTags('domains')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
-@Controller('domain')
+@Controller('domains')
 export class DomainController {
   constructor(private readonly domainService: DomainService) {}
 
