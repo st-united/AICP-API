@@ -158,7 +158,6 @@ export class AnswersService {
         answerText: essayAnswer[0],
         ...restParams,
         userId,
-        maxPossibleScore: this.configService.get<number>('EXAM_MAX_SCORE') || 10,
       },
     });
   }
@@ -193,7 +192,6 @@ export class AnswersService {
       data: {
         ...restParams,
         userId,
-        maxPossibleScore: this.configService.get<number>('EXAM_MAX_SCORE') || 10,
       },
     });
     await Promise.all(
