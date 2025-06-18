@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus, ExamStatus } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus, CompetencyDimension } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
 import { log } from 'console';
 
@@ -58,9 +58,36 @@ export class AnswersService {
         include: { userAnswer: { select: { id: true, questionId: true } } },
       });
 
+      // const answerOptions = await this.prisma.answerOption.findMany({
+      //   where: { questionId: { in: questionIds } },
+      //   select: { id: true, content: true, isCorrect: true, questionId: true },
+      // });
+
       const answerOptions = await this.prisma.answerOption.findMany({
         where: { questionId: { in: questionIds } },
-        select: { id: true, content: true, isCorrect: true, questionId: true },
+        select: {
+          id: true,
+          content: true,
+          isCorrect: true,
+          questionId: true,
+          question: {
+            select: {
+              skill: {
+                select: {
+                  aspect: {
+                    select: {
+                      competencyPillar: {
+                        select: {
+                          name: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
 
       const groupedSelections = matchingSelections.reduce(
@@ -79,20 +106,30 @@ export class AnswersService {
 
       const groupedByQuestion = answerOptions.reduce(
         (acc, curr) => {
-          const { questionId, id, content, isCorrect } = curr;
+          const { questionId, id, content, isCorrect, question } = curr;
+
+          const pillarName = question?.skill?.aspect?.competencyPillar?.name || null;
+
           if (!acc[questionId]) {
-            acc[questionId] = { questionId, options: [] };
+            acc[questionId] = { questionId, pillarName, options: [] };
           }
           acc[questionId].options.push({ id, content, isCorrect });
           return acc;
         },
-        {} as Record<string, { questionId: string; options: { id: string; content: string; isCorrect: boolean }[] }>
+        {} as Record<
+          string,
+          { questionId: string; pillarName: string; options: { id: string; content: string; isCorrect: boolean }[] }
+        >
       );
-      const classificationResult: Record<string, { TP: string[]; FP: string[]; FN: string[]; TN: string[] }> = {};
+      const classificationResult: Record<
+        string,
+        { TP: string[]; FP: string[]; FN: string[]; TN: string[]; pillarName: string | null }
+      > = {};
 
       for (const userAnswerId in groupedSelections) {
         const { questionId, answerOptionIds: selectedIds } = groupedSelections[userAnswerId];
         const options = groupedByQuestion[questionId]?.options || [];
+        const pillarName = groupedByQuestion[questionId]?.pillarName || null;
 
         const TP: string[] = [];
         const FP: string[] = [];
@@ -113,7 +150,7 @@ export class AnswersService {
           }
         }
 
-        classificationResult[userAnswerId] = { TP, FP, FN, TN };
+        classificationResult[userAnswerId] = { TP, FP, FN, TN, pillarName };
       }
 
       const maxScorePerQuestion = 4;
@@ -127,8 +164,12 @@ export class AnswersService {
         }
       > = {};
 
+      let totalMindsetScore = 0;
+      let totalSkillsetScore = 0;
+      let totalToolsetScore = 0;
+
       for (const userAnswerId in classificationResult) {
-        const { TP, FP, FN } = classificationResult[userAnswerId];
+        const { TP, FP, FN, pillarName } = classificationResult[userAnswerId];
 
         const tp = TP.length;
         const fp = FP.length;
@@ -138,6 +179,14 @@ export class AnswersService {
         const recall = tp + fn === 0 ? 0 : tp / (tp + fn);
         const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
         const finalScore = f1 * maxScorePerQuestion;
+
+        if (pillarName === CompetencyDimension.MINDSET) {
+          totalMindsetScore += finalScore;
+        } else if (pillarName === CompetencyDimension.SKILLSET) {
+          totalSkillsetScore += finalScore;
+        } else if (pillarName === CompetencyDimension.TOOLSET) {
+          totalToolsetScore += finalScore;
+        }
 
         await this.prisma.userAnswer.update({
           where: { id: userAnswerId },
@@ -153,6 +202,23 @@ export class AnswersService {
       }
 
       const totalScore = Object.values(scorePerQuestion).reduce((sum, curr) => sum + curr.finalScore, 0);
+
+      const mindScore = (totalMindsetScore / 78) * 7;
+      const skillScore = (totalSkillsetScore / 42) * 7;
+      const toolScore = (totalToolsetScore / 21) * 7;
+
+      const finalScore = mindScore * 0.55 + skillScore * 0.3 + toolScore * 0.15;
+
+      await this.prisma.exam.update({
+        where: { id: examId },
+        data: {
+          mindsetScore: mindScore,
+          skillsetScore: skillScore,
+          toolsetScore: toolScore,
+          overallScore: finalScore,
+          examStatus: ExamStatus.SUBMITTED,
+        },
+      });
 
       log('Score Per Question:', scorePerQuestion);
       log('Tổng điểm toàn bài:', totalScore);
