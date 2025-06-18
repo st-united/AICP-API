@@ -11,6 +11,9 @@ export class AnswerOptionDto {
   isCorrect: boolean;
 
   @Expose()
+  explanation?: string;
+
+  @Expose()
   selected?: boolean;
 }
 
@@ -52,7 +55,7 @@ export class GetExamSetDto {
   description: string;
 
   @Expose()
-  duration: number;
+  timeLimitMinutes: number;
 
   @Expose()
   @Type(() => QuestionDto)
