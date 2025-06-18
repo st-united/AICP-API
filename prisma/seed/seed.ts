@@ -1771,7 +1771,6 @@ async function main() {
         answerText: answerData.answerText,
         manualScore: answerData.manualScore,
         autoScore: answerData.autoScore,
-        maxPossibleScore: 10,
         examId: exam.id,
       },
     });

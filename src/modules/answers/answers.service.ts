@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
 import { UserAnswerStatus, ExamStatus } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
+import { log } from 'console';
 
 @Injectable()
 export class AnswersService {
@@ -58,7 +59,7 @@ export class AnswersService {
       });
 
       const answerOptions = await this.prisma.answerOption.findMany({
-        where: { questionId: { in: questionIds }, isCorrect: true },
+        where: { questionId: { in: questionIds } },
         select: { id: true, content: true, isCorrect: true, questionId: true },
       });
 
@@ -87,49 +88,120 @@ export class AnswersService {
         },
         {} as Record<string, { questionId: string; options: { id: string; content: string; isCorrect: boolean }[] }>
       );
+      const classificationResult: Record<string, { TP: string[]; FP: string[]; FN: string[]; TN: string[] }> = {};
 
-      const scores = await Promise.all(
-        Object.entries(groupedSelections).map(async ([userAnswerId, { questionId, answerOptionIds }]) => {
-          const questionData = groupedByQuestion[questionId];
-          if (!questionData) return [userAnswerId, 0];
+      for (const userAnswerId in groupedSelections) {
+        const { questionId, answerOptionIds: selectedIds } = groupedSelections[userAnswerId];
+        const options = groupedByQuestion[questionId]?.options || [];
 
-          const correctOptionIds = questionData.options.filter((opt) => opt.isCorrect).map((opt) => opt.id);
+        const TP: string[] = [];
+        const FP: string[] = [];
+        const FN: string[] = [];
+        const TN: string[] = [];
 
-          const totalCorrect = correctOptionIds.length;
+        const selectedSet = new Set(selectedIds);
 
-          const matchedCorrect = answerOptionIds.filter((id) => correctOptionIds.includes(id)).length;
+        for (const option of options) {
+          const isSelected = selectedSet.has(option.id);
 
-          const rawScore = matchedCorrect / totalCorrect;
-
-          const score = parseFloat(rawScore.toFixed(2));
-
-          const userAnswer = await this.prisma.userAnswer.findFirst({
-            where: {
-              userId: userAnswerId,
-              examId,
-            },
-          });
-
-          if (userAnswer) {
-            await this.prisma.userAnswer.update({
-              where: { id: userAnswer.id },
-              data: { autoScore: score },
-            });
+          if (option.isCorrect) {
+            if (isSelected) TP.push(option.id);
+            else FN.push(option.id);
+          } else {
+            if (isSelected) FP.push(option.id);
+            else TN.push(option.id);
           }
+        }
 
-          return [userAnswerId, score];
-        })
-      );
+        classificationResult[userAnswerId] = { TP, FP, FN, TN };
+      }
 
-      const totalScore = scores.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : Number(val)), 0);
+      const maxScorePerQuestion = 4;
+      const scorePerQuestion: Record<
+        string,
+        {
+          precision: number;
+          recall: number;
+          f1: number;
+          finalScore: number;
+        }
+      > = {};
 
-      await this.prisma.exam.update({
-        where: { id: examId },
-        data: {
-          examStatus: 'SUBMITTED',
-          overallScore: totalScore,
-        },
-      });
+      for (const userAnswerId in classificationResult) {
+        const { TP, FP, FN } = classificationResult[userAnswerId];
+
+        const tp = TP.length;
+        const fp = FP.length;
+        const fn = FN.length;
+
+        const precision = tp + fp === 0 ? 0 : tp / (tp + fp);
+        const recall = tp + fn === 0 ? 0 : tp / (tp + fn);
+        const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+        const finalScore = f1 * maxScorePerQuestion;
+
+        await this.prisma.userAnswer.update({
+          where: { id: userAnswerId },
+          data: { autoScore: finalScore },
+        });
+
+        scorePerQuestion[userAnswerId] = {
+          precision: +precision.toFixed(3),
+          recall: +recall.toFixed(3),
+          f1: +f1.toFixed(3),
+          finalScore: +finalScore.toFixed(2),
+        };
+      }
+
+      const totalScore = Object.values(scorePerQuestion).reduce((sum, curr) => sum + curr.finalScore, 0);
+
+      log('Score Per Question:', scorePerQuestion);
+      log('Tổng điểm toàn bài:', totalScore);
+      log('Classification Result:', JSON.stringify(classificationResult, null, 2));
+      log('Grouped Selections:', groupedSelections);
+      log('Grouped By Question:', JSON.stringify(groupedByQuestion, null, 2));
+
+      // const scores = await Promise.all(
+      //   Object.entries(groupedSelections).map(async ([userAnswerId, { questionId, answerOptionIds }]) => {
+      //     const questionData = groupedByQuestion[questionId];
+      //     if (!questionData) return [userAnswerId, 0];
+
+      //     const correctOptionIds = questionData.options.filter((opt) => opt.isCorrect).map((opt) => opt.id);
+
+      //     const totalCorrect = correctOptionIds.length;
+
+      //     const matchedCorrect = answerOptionIds.filter((id) => correctOptionIds.includes(id)).length;
+
+      //     const rawScore = matchedCorrect / totalCorrect;
+
+      //     const score = parseFloat(rawScore.toFixed(2));
+
+      //     const userAnswer = await this.prisma.userAnswer.findFirst({
+      //       where: {
+      //         userId: userAnswerId,
+      //         examId,
+      //       },
+      //     });
+
+      //     if (userAnswer) {
+      //       await this.prisma.userAnswer.update({
+      //         where: { id: userAnswer.id },
+      //         data: { autoScore: score },
+      //       });
+      //     }
+
+      //     return [userAnswerId, score];
+      //   })
+      // );
+
+      // const totalScore = scores.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : Number(val)), 0);
+
+      // await this.prisma.exam.update({
+      //   where: { id: examId },
+      //   data: {
+      //     examStatus: 'SUBMITTED',
+      //     overallScore: totalScore,
+      //   },
+      // });
 
       return new ResponseItem(null, 'Đã nộp bài thành công');
     } catch (error) {
