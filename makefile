@@ -6,7 +6,7 @@ ZONE=asia-southeast1-a
 
 REPOSITORY=aicp
 IMAGE_NAME=aicp-api
-VERSION=0.1.3
+VERSION=0.1.5
 ARTIFACT_REGISTRY_NAME=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME):$(VERSION)
 
 
@@ -109,7 +109,7 @@ exec-api:
 	kubectl exec -it pod/aicp-api-0 -n devplus-aicp -- sh
 
 apply:
-	kubectl apply -k ./k8s
+	kubectl apply -k ./k8s/services
 
 get-pods:
 	kubectl get all -n devplus-aicp
