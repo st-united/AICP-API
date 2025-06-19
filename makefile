@@ -1,4 +1,4 @@
-TTLX_TC_BE_DEV_REPO:= 902637028063.dkr.ecr.ap-southeast-1.amazonaws.com/aicp-tc-be:0.0.24
+AICP_API_DEV_REPO:= 902637028063.dkr.ecr.ap-southeast-1.amazonaws.com/aicp-tc-be:0.0.24
 PROJECT_ID=enspara
 PROJECT_NUMBER=288271283983
 REGION=asia-southeast1
@@ -98,3 +98,24 @@ manual-db-setup:
 			--env-from=secret/aicp-api-env \
 			--command -- /bin/sh -c "yarn db:migrate && yarn db:seed" \
 			--namespace=devplus-aicp
+
+map-db:
+	kubectl -n devplus-aicp port-forward pod/postgres-aicp-postgresql-0 5432:5432
+
+map-redis:
+	kubectl -n devplus-aicp port-forward pod/redis-aicp-0 6379:6379
+
+exec-api:
+	kubectl exec -it pod/aicp-api-0 -n devplus-aicp -- sh
+
+apply:
+	kubectl apply -k ./k8s
+
+get-pods:
+	kubectl get all -n devplus-aicp
+
+logs:
+	kubectl logs -n devplus-aicp pod/aicp-api-0
+
+restart-api:
+	kubectl rollout restart statefulset aicp-api -n devplus-aicp

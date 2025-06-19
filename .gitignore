@@ -40,6 +40,8 @@ lerna-debug.log*
 
 /etc
 /etc/secrets
+/k8s/postgres/values.yaml
+/k8s/redis/values.yaml
 
 # k8s
 
