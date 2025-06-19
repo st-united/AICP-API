@@ -145,7 +145,7 @@ export async function seedCompetencySkills(prisma: PrismaClient, aspects: Compet
       name: competency.name,
       description: competency.description,
       sfiaLevel: competency.sfiaLevel,
-      categoryId: competencyAspectMap[competency.compatencyAreaName].id,
+      aspectId: competencyAspectMap[competency.compatencyAreaName].id,
     })),
     skipDuplicates: false,
   });
