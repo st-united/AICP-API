@@ -49,6 +49,9 @@ export class GetExamSetDto {
   id: string;
 
   @Expose()
+  examId: string;
+
+  @Expose()
   name: string;
 
   @Expose()
