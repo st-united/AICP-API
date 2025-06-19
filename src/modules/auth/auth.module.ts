@@ -13,7 +13,6 @@ import { UsersModule } from '@UsersModule/users.module';
 import { ActivationTokenStrategy } from './strategies/activation-token.strategy';
 import { EmailModule } from '../email/email.module';
 import { RedisModule } from '../redis/redis.module';
-import { TokenService } from './services/token.service';
 import { FirebaseModule } from '../firebase/firebase.module';
 
 @Module({
@@ -41,7 +40,6 @@ import { FirebaseModule } from '../firebase/firebase.module';
     ActivationTokenStrategy,
     ConfigService,
     PrismaService,
-    TokenService,
   ],
   exports: [AuthService],
 })
