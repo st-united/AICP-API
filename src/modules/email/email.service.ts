@@ -34,12 +34,12 @@ export class EmailService {
   }
 
   async sendEmailNewMentor(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const loginLink = `${this.configService.get('FE_APP_URL')}/login`;
+    const activationLink = `${this.configService.get('FE_APP_URL')}/mentor-activation/${emailContent.token}`;
 
     const template = this.generateMentorAccountEmailTemplate(
       emailContent.email,
       emailContent.fullName,
-      loginLink,
+      activationLink,
       emailContent.password
     );
     await this.sendEmail(
@@ -204,10 +204,10 @@ export class EmailService {
                   </table>
 
                 <div style="text-align: center; margin: 20px 0;">
-                  <a href="${loginLink}" style="background-color: #1a73e8; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Đăng nhập ngay</a>
+                  <a href="${loginLink}" style="background-color: #1a73e8; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Kích hoạt tài khoản</a>
                 </div>
 
-                  <p>Vui lòng đăng nhập và hoàn thiện hồ sơ cá nhân để các mentee dễ dàng tìm thấy và kết nối với bạn.</p>
+                  <p>Vui lòng kích hoạt tài khoản để đăng nhập và hoàn thiện hồ sơ cá nhân để các mentee dễ dàng tìm thấy và kết nối với bạn.</p>
 
                   <p>Nếu bạn cần hỗ trợ, vui lòng liên hệ với chúng tôi qua email: <a href="mailto:hello@devplus.edu.vn">hello@devplus.edu.vn</a></p>
 

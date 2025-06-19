@@ -16,6 +16,8 @@ import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto'
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
+import { RedisService } from '../redis/redis.service';
+import { TokenService } from '../auth/services/token.service';
 
 @Injectable()
 export class MentorsService {
@@ -23,7 +25,9 @@ export class MentorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly redisService: RedisService,
+    private readonly tokenService: TokenService
   ) {}
 
   async create(createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
@@ -40,13 +44,14 @@ export class MentorsService {
           isActive: false,
         },
       });
-
+      const token = this.tokenService.generateActivationToken(mentor.id);
       const emailContent = {
         fullName: createUser.fullName,
         email: createUser.email,
         password,
+        token,
       };
-
+      await this.redisService.setValue(`active_mentor:${emailContent.token}`, 'true');
       this.emailService.sendEmailNewMentor(emailContent);
 
       return new ResponseItem(mentor, 'Tạo mentor thành công', MentorResponseDto);
@@ -437,6 +442,32 @@ export class MentorsService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException(error);
+    }
+  }
+  async activateAccountByMentor(token: string): Promise<ResponseItem<null>> {
+    try {
+      const redisToken = await this.redisService.getValue(`active_mentor:${token}`);
+      if (!redisToken) {
+        throw new BadRequestException('Link kích hoạt không hợp lệ hoặc đã hết hạn');
+      }
+
+      const mentorId = this.tokenService.verifyActivationToken(token);
+
+      const foundMentor = await this.prisma.mentor.findUnique({
+        where: {
+          id: mentorId,
+        },
+      });
+
+      if (!foundMentor) {
+        throw new BadRequestException('Cố vấn không tồn tại');
+      }
+
+      await this.activateMentorAccount(mentorId);
+      await this.redisService.deleteValue(`active_mentor:${token}`);
+      return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
+    } catch (error) {
+      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn', error.message);
     }
   }
 }
