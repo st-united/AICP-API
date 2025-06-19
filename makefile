@@ -6,7 +6,7 @@ ZONE=asia-southeast1-a
 
 REPOSITORY=aicp
 IMAGE_NAME=aicp-api
-VERSION=0.0.4
+VERSION=0.1.3
 ARTIFACT_REGISTRY_NAME=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME):$(VERSION)
 
 
@@ -90,3 +90,11 @@ helm-redis:
 			--create-namespace \
 			--namespace devplus-aicp \
 			-f ./k8s/redis/values.yaml
+
+manual-db-setup:
+	kubectl run aicp-db-setup-manual \
+			--image=asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.3 \
+			--restart=Never \
+			--env-from=secret/aicp-api-env \
+			--command -- /bin/sh -c "yarn db:migrate && yarn db:seed" \
+			--namespace=devplus-aicp

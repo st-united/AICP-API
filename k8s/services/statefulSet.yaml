@@ -18,9 +18,16 @@ spec:
         runAsNonRoot: true
         runAsGroup: 1000
         runAsUser: 1000
+      initContainers:
+        - name: db-migration
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.3
+          command: ['yarn', 'db:migrate']
+          envFrom:
+            - secretRef:
+                name: aicp-api-env
       containers:
         - name: aicp-api
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.0.4
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.3
           ports:
             - containerPort: 6002
           envFrom:
