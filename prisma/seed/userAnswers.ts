@@ -1,4 +1,4 @@
-import { PrismaClient, Question } from '@prisma/client';
+import { PrismaClient, Question, UserAnswerStatus } from '@prisma/client';
 
 export async function seedUserAnswers(
   prisma: PrismaClient,
@@ -6,37 +6,41 @@ export async function seedUserAnswers(
   questions: Question[],
   examMap: { [key: string]: { id: string } }
 ) {
-  const sampleUserAnswers = [
-    {
-      email: 'user1@example.com',
-      questionIndex: 0,
-      answerText: 'Các hệ thống AI có khả năng tạo ra nội dung mới như văn bản, hình ảnh, âm thanh',
-      manualScore: null,
-      autoScore: 10,
-      answerOptionIndex: 1,
-      examSetName: 'AI Foundations Assessment',
-    },
-    {
-      email: 'user2@example.com',
-      questionIndex: 1,
-      answerText: 'Transformer Architecture',
-      manualScore: null,
-      autoScore: 10,
-      answerOptionIndex: 2,
-      examSetName: 'AI Ethics and Impact',
-    },
-  ];
+  const userEmail = 'user@example.com';
+  const examSetName = 'AI INPUT TEST';
 
-  for (const answerData of sampleUserAnswers) {
+  const answerOptions = await prisma.answerOption.findMany({
+    where: {
+      questionId: { in: questions.map((q) => q.id) },
+    },
+  });
+
+  const userAnswersData = questions.map((question, index) => {
+    const questionAnswerOptions = answerOptions.filter((ao) => ao.questionId === question.id);
+    const correctOptions = questionAnswerOptions.filter((ao) => ao.isCorrect);
+    const selectedOption = correctOptions.length > 0 ? correctOptions[0] : questionAnswerOptions[0];
+
+    return {
+      email: userEmail,
+      questionIndex: index,
+      answerText: selectedOption ? selectedOption.content : 'Sample answer for open-ended question',
+      answerOptionIndex: selectedOption ? questionAnswerOptions.findIndex((ao) => ao.id === selectedOption.id) : null,
+      examSetName,
+    };
+  });
+
+  for (const answerData of userAnswersData) {
     const exam = examMap[`${answerData.email}-${answerData.examSetName}`];
     const userAnswer = await prisma.userAnswer.create({
       data: {
         userId: userMap[answerData.email].id,
         questionId: questions[answerData.questionIndex].id,
         answerText: answerData.answerText,
-        manualScore: answerData.manualScore,
-        autoScore: answerData.autoScore,
         examId: exam.id,
+        timeSpentSeconds: Math.floor(Math.random() * 60) + 30,
+        attemptCount: 1,
+        confidenceLevel: Math.floor(Math.random() * 7) + 1,
+        status: UserAnswerStatus.SUBMIT,
       },
     });
 

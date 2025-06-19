@@ -40,3 +40,4 @@ lerna-debug.log*
 
 /etc
 /etc/secrets
+etc/secrets/firebase-service-key.json

@@ -380,4 +380,31 @@ export class UsersService {
       throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
   }
+
+  async checkResetToken(token: string): Promise<ResponseItem<boolean>> {
+    try {
+      const tokenStatus = await this.redisService.getValue(`reset_password:${token}`);
+      if (!tokenStatus) {
+        throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+      }
+
+      const verifiedToken = this.tokenService.verifyAccessToken(token);
+      const userId = verifiedToken.sub;
+
+      const foundUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!foundUser) {
+        throw new BadRequestException('Người dùng không tồn tại');
+      }
+
+      return new ResponseItem(true, 'Link còn hiệu lực');
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token đã hết hạn');
+      }
+      throw new BadRequestException('Token không hợp lệ', { cause: error });
+    }
+  }
 }
