@@ -129,6 +129,8 @@ export class UsersService {
   }
 
   async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    const jobFilter = queries['job[]'];
+    const provinceFilter = queries['province[]'];
     const where: Prisma.UserWhereInput = {
       ...(queries.search && {
         fullName: {
@@ -137,12 +139,18 @@ export class UsersService {
         },
       }),
       status: queries.status,
-      ...(queries.job && {
-        job: queries.job,
-      }),
-      ...(queries.province && {
-        province: queries.province,
-      }),
+      ...(jobFilter &&
+        jobFilter.length > 0 && {
+          job: {
+            in: jobFilter,
+          },
+        }),
+      ...(provinceFilter &&
+        provinceFilter.length > 0 && {
+          province: {
+            in: provinceFilter,
+          },
+        }),
       createdAt: {
         gte: queries.startDate ? new Date(queries.startDate) : undefined,
         lte: queries.endDate ? new Date(queries.endDate) : undefined,
@@ -201,12 +209,13 @@ export class UsersService {
     };
 
     const [users, statusCounts] = await this.prisma.$transaction([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
       this.prisma.user.groupBy({
         by: ['status'],
         _count: {
           status: true,
         },
+        where,
       }) as any,
     ]);
 
@@ -242,6 +251,7 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
+    const { email, referralCode, ...updateData } = updateUserDto;
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
@@ -249,7 +259,7 @@ export class UsersService {
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data: updateData,
     });
 
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
@@ -375,6 +385,33 @@ export class UsersService {
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         throw new BadRequestException('Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.');
+      }
+      throw new BadRequestException('Token không hợp lệ', { cause: error });
+    }
+  }
+
+  async checkResetToken(token: string): Promise<ResponseItem<boolean>> {
+    try {
+      const tokenStatus = await this.redisService.getValue(`reset_password:${token}`);
+      if (!tokenStatus) {
+        throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+      }
+
+      const verifiedToken = this.tokenService.verifyAccessToken(token);
+      const userId = verifiedToken.sub;
+
+      const foundUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!foundUser) {
+        throw new BadRequestException('Người dùng không tồn tại');
+      }
+
+      return new ResponseItem(true, 'Link còn hiệu lực');
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token đã hết hạn');
       }
       throw new BadRequestException('Token không hợp lệ', { cause: error });
     }

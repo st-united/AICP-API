@@ -7,6 +7,7 @@ import { Exam, ExamSet } from '@prisma/client';
 import { examSetDefaultName } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
+import { DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
 
 @Injectable()
 export class ExamService {
@@ -17,7 +18,7 @@ export class ExamService {
   private createExamResponse(examSet: ExamSet, exam: Exam, hasTaken: boolean): ResponseItem<HasTakenExamResponseDto> {
     const response: HasTakenExamResponseDto = {
       hasTakenExam: hasTaken,
-      examSetDuration: examSet.duration,
+      examSetDuration: examSet.timeLimitMinutes,
       examId: exam?.id,
     };
     return new ResponseItem(response, hasTaken ? 'Đã làm bài thi này' : 'Chưa làm bài thi này');
@@ -31,7 +32,7 @@ export class ExamService {
           ...(where.name && { name: where.name }),
         },
         include: {
-          exams: {
+          exam: {
             where: { userId: where.userId },
             take: 1,
           },
@@ -55,7 +56,7 @@ export class ExamService {
 
   async hasTakenExam(params: HasTakenExamDto): Promise<ResponseItem<HasTakenExamResponseDto>> {
     const examSet = await this.findExamSet({ id: params.examSetId, userId: params.userId });
-    const exam = examSet.exams[0];
+    const exam = examSet.exam[0];
     return this.createExamResponse(examSet, exam, !!exam);
   }
 
@@ -64,7 +65,7 @@ export class ExamService {
       name: examSetDefaultName.DEFAULT,
       userId,
     });
-    const exam = examSet.exams[0];
+    const exam = examSet.exam[0];
     return this.createExamResponse(examSet, exam, !!exam);
   }
 
@@ -90,7 +91,7 @@ export class ExamService {
         select: {
           id: true,
           examStatus: true,
-          levelOfDomain: true,
+          sfiaLevel: true,
           createdAt: true,
         },
       });
@@ -99,6 +100,51 @@ export class ExamService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi lấy lịch sử thi');
+    }
+  }
+
+  async getDetailExam(examId: string): Promise<ResponseItem<DetailExamResponseDto>> {
+    try {
+      const exam = await this.prisma.exam.findUnique({
+        where: { id: examId },
+        select: {
+          id: true,
+          startedAt: true,
+          sfiaLevel: true,
+          mindsetScore: true,
+          skillsetScore: true,
+          toolsetScore: true,
+          overallScore: true,
+          examStatus: true,
+          createdAt: true,
+          examSet: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!exam) {
+        throw new NotFoundException('Bài thi không tồn tại');
+      }
+
+      const response: DetailExamResponseDto = {
+        ...exam,
+        overallScore: Number(exam.overallScore),
+        mindsetScore: Number(exam.mindsetScore),
+        skillsetScore: Number(exam.skillsetScore),
+        toolsetScore: Number(exam.toolsetScore),
+      };
+
+      return new ResponseItem<DetailExamResponseDto>(response, 'Lấy chi tiết bài thi thành công');
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
     }
   }
 }
