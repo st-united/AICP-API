@@ -57,7 +57,7 @@ async function main() {
   const levels = await prisma.level.findMany();
 
   // 10. Competency Skills
-  await seedCompetencySkills(prisma, aspects, levels);
+  await seedCompetencySkills(prisma, aspects);
   const competencySkills = await prisma.competencySkill.findMany();
 
   // 11. Questions
