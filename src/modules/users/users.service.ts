@@ -129,6 +129,8 @@ export class UsersService {
   }
 
   async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    const jobFilter = queries['job[]'];
+    const provinceFilter = queries['province[]'];
     const where: Prisma.UserWhereInput = {
       ...(queries.search && {
         fullName: {
@@ -137,12 +139,18 @@ export class UsersService {
         },
       }),
       status: queries.status,
-      ...(queries.job && {
-        job: queries.job,
-      }),
-      ...(queries.province && {
-        province: queries.province,
-      }),
+      ...(jobFilter &&
+        jobFilter.length > 0 && {
+          job: {
+            in: jobFilter,
+          },
+        }),
+      ...(provinceFilter &&
+        provinceFilter.length > 0 && {
+          province: {
+            in: provinceFilter,
+          },
+        }),
       createdAt: {
         gte: queries.startDate ? new Date(queries.startDate) : undefined,
         lte: queries.endDate ? new Date(queries.endDate) : undefined,
@@ -201,12 +209,13 @@ export class UsersService {
     };
 
     const [users, statusCounts] = await this.prisma.$transaction([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
       this.prisma.user.groupBy({
         by: ['status'],
         _count: {
           status: true,
         },
+        where,
       }) as any,
     ]);
 
