@@ -1,4 +1,18 @@
-redis:
+auth:
   enabled: true
-  auth:
-    password: rb4eyAH97hFimV4SVg1zDQ==
+  password: 'rb4eyAH97hFimV4SVg1zDQ=='
+
+architecture: standalone
+
+master:
+  persistence:
+    enabled: true
+    size: 8Gi
+
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 100m
+  limits:
+    memory: 512Mi
+    cpu: 200m
