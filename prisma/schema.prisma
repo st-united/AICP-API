@@ -144,7 +144,7 @@ model Course {
   courseType      String?    @default("ONLINE") @map("course_type") @db.VarChar
   durationHours   Int?       @map("duration_hours") @db.SmallInt
   difficultyLevel SFIALevel? @map("difficulty_level")
-  aspectId        String     @map("category_id") @db.Uuid
+  aspectId        String     @map("aspect_id") @db.Uuid
   domainId        String?    @db.Uuid
   isActive        Boolean    @default(true) @map("is_active") @db.Boolean
   createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -222,7 +222,7 @@ model Domain {
 
 model CompetencyAspect {
   id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String              @map("competency_area_id") @db.Uuid
+  pillarId              String              @map("pillar_id") @db.Uuid
   name                  String              @unique @db.VarChar
   description           String              @db.Text
   weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
@@ -313,7 +313,7 @@ model Mentor {
 
 model MentorCompetency {
   mentorId  String    @map("mentor_id") @db.Uuid
-  pillarId  String    @map("competency_area_id") @db.Uuid
+  pillarId  String    @map("pillar_id") @db.Uuid
   sfiaLevel SFIALevel @map("sfia_level")
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
@@ -378,7 +378,7 @@ model CompetencyPillar {
 
 model CompetencySkill {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  categoryId  String    @map("category_id") @db.Uuid
+  aspectId    String    @map("aspect_id") @db.Uuid
   name        String    @db.VarChar
   description String?   @db.Text
   sfiaLevel   SFIALevel @map("sfia_level")
@@ -386,7 +386,7 @@ model CompetencySkill {
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   question Question[]
-  aspect   CompetencyAspect @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  aspect   CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
 }
 
 model CompetencyAssessment {
@@ -418,7 +418,7 @@ model CompetencyAssessment {
 model CompetencyScore {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   assessmentId  String    @map("assessment_id") @db.Uuid
-  pillarId      String    @map("competency_area_id") @db.Uuid
+  pillarId      String    @map("pillar_id") @db.Uuid
   sfiaLevel     SFIALevel @map("sfia_level")
   evidenceCount Int?      @default(0) @map("evidence_count") @db.SmallInt
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -451,7 +451,7 @@ model LearningPathCourse {
   courseId       String   @map("course_id") @db.Uuid
   orderIndex     Int      @map("order_index") @db.SmallInt
   isRequired     Boolean  @default(true) @map("is_required") @db.Boolean
-  pillarId       String?  @map("competency_area_id") @db.Uuid
+  pillarId       String?  @map("pillar_id") @db.Uuid
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   learningPath LearningPath      @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
@@ -488,7 +488,7 @@ model Portfolio {
   githubUrl        String?    @map("github_url") @db.Text
   certificateFiles String[]   @default([])
   experienceFiles  String[]   @default([])
-  pillarId         String?    @map("competency_area_id") @db.Uuid
+  pillarId         String?    @map("pillar_id") @db.Uuid
   sfiaLevelClaimed SFIALevel? @map("sfia_level_claimed")
   isVerified       Boolean    @default(false) @map("is_verified")
   verifiedBy       String?    @map("verified_by") @db.Uuid
