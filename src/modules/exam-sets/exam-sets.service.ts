@@ -119,7 +119,7 @@ export class ExamSetsService {
     examSet: ExamSetWithQuestions
   ): Promise<ResponseItem<GetExamSetDto>> {
     const userAnswers = await this.findUserAnswers(userId, exam.id);
-    const examSetData = this.buildExamSetData(examSet, userAnswers);
+    const examSetData = this.buildExamSetData(examSet, userAnswers, exam.id);
 
     const message =
       exam.examStatus === 'IN_PROGRESS'
@@ -144,13 +144,14 @@ export class ExamSetsService {
       },
     });
 
-    const examSetData = this.buildExamSetData(examSet, []);
+    const examSetData = this.buildExamSetData(examSet, [], newExam.id);
     return new ResponseItem(examSetData, 'Bài kiểm tra mới đã được tạo', GetExamSetDto);
   }
 
-  private buildExamSetData(examSet: ExamSetWithQuestions, userAnswers: UserAnswer[]): GetExamSetDto {
+  private buildExamSetData(examSet: ExamSetWithQuestions, userAnswers: UserAnswer[], examId: string): GetExamSetDto {
     return {
       id: examSet.id,
+      examId: examId,
       name: examSet.name,
       description: examSet.description ?? null,
       timeLimitMinutes: examSet.timeLimitMinutes,
