@@ -1,0 +1,112 @@
+import { PrismaClient, CompetencyDimension, CompetencyPillar } from '@prisma/client';
+
+export async function seedAspects(prisma: PrismaClient, pillar: CompetencyPillar[]) {
+  const pillarMap = Object.fromEntries(pillar.map((c) => [c.name, c]));
+
+  const aspectData = [
+    // Mindset
+    {
+      name: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
+      dimension: CompetencyDimension.MINDSET,
+      weightWithinDimension: 0.25,
+      description: 'Ability to adapt to changes and maintain a growth mindset in the context of AI evolution.',
+    },
+    {
+      name: 'Tự Học & Cải Tiến Liên Tục (Self-Learning & Continuous Improvement)',
+      dimension: CompetencyDimension.MINDSET,
+      weightWithinDimension: 0.2,
+      description: 'Commitment to continuous learning and self-improvement in AI-related knowledge and skills.',
+    },
+    {
+      name: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Critical Thinking & Ethical Reasoning)',
+      dimension: CompetencyDimension.MINDSET,
+      weightWithinDimension: 0.25,
+      description: 'Ability to think critically and make ethical decisions in AI development and implementation.',
+    },
+    {
+      name: 'Trí Tuệ Ranh Giới Con Người-AI (Human-AI Boundary Intelligence)',
+      dimension: CompetencyDimension.MINDSET,
+      weightWithinDimension: 0.15,
+      description:
+        'Understanding the boundaries and relationships between human intelligence and artificial intelligence.',
+    },
+    {
+      name: 'Nhận Thức Rủi Ro & Quản Trị AI (AI Risk Awareness & Governance)',
+      dimension: CompetencyDimension.MINDSET,
+      weightWithinDimension: 0.15,
+      description: 'Understanding and managing risks associated with AI implementation and governance.',
+    },
+    //Skillset
+    {
+      name: 'Giao Tiếp AI & Prompt Engineering (AI Communication & Prompt Engineering)',
+      dimension: CompetencyDimension.SKILLSET,
+      weightWithinDimension: 0.25,
+      description: 'Ability to effectively communicate with AI systems and design prompts for optimal results.',
+    },
+    {
+      name: 'Nghiên Cứu & Tổng Hợp Thông Tin (Research & Information Synthesis)',
+      dimension: CompetencyDimension.SKILLSET,
+      weightWithinDimension: 0.2,
+      description: 'Skills in researching and synthesizing information related to AI technologies and applications.',
+    },
+    {
+      name: 'Làm Việc Nhóm & Hợp Tác AI-Con Người (Teamwork & Human-AI Collaboration)',
+      dimension: CompetencyDimension.SKILLSET,
+      weightWithinDimension: 0.15,
+      description: 'Ability to work effectively in teams and facilitate collaboration between humans and AI systems.',
+    },
+    {
+      name: 'Hiểu Biết Dữ Liệu & Xác Thực (Data Understanding & Validation)',
+      dimension: CompetencyDimension.SKILLSET,
+      weightWithinDimension: 0.15,
+      description: 'Skills in understanding and validating data used in AI systems.',
+    },
+    {
+      name: 'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Problem Decomposition & AI Scoping)',
+      dimension: CompetencyDimension.SKILLSET,
+      weightWithinDimension: 0.15,
+      description: 'Ability to break down problems and determine appropriate AI application scope.',
+    },
+    {
+      name: 'Năng Lực Bảo Mật & Quyền Riêng Tư (Security & Privacy Competency)',
+      dimension: CompetencyDimension.SKILLSET,
+      weightWithinDimension: 0.1,
+      description: 'Understanding and implementing security and privacy measures in AI systems.',
+    },
+    // Toolset
+    {
+      name: 'Thành Thạo Công Cụ AI Cốt Lõi (Core AI Tools Mastery)',
+      dimension: CompetencyDimension.TOOLSET,
+      weightWithinDimension: 0.4,
+      description: 'Proficiency in using core AI tools and platforms.',
+    },
+    {
+      name: 'Đánh Giá & Lựa Chọn Công Cụ (Tool Evaluation & Selection)',
+      dimension: CompetencyDimension.TOOLSET,
+      weightWithinDimension: 0.25,
+      description: 'Ability to evaluate and select appropriate AI tools for specific tasks.',
+    },
+    {
+      name: 'Tích Hợp & Thiết Kế Quy Trình (Integration & Workflow Design)',
+      dimension: CompetencyDimension.TOOLSET,
+      weightWithinDimension: 0.25,
+      description: 'Skills in integrating AI tools and designing effective workflows.',
+    },
+    {
+      name: 'Đổi Mới & Phát Triển Tùy Chỉnh (Innovation & Custom Development)',
+      dimension: CompetencyDimension.TOOLSET,
+      weightWithinDimension: 0.1,
+      description: 'Ability to innovate and develop custom AI solutions.',
+    },
+  ];
+  await prisma.competencyAspect.createMany({
+    data: aspectData.map((catData) => ({
+      name: catData.name,
+      description: catData.description,
+      dimension: catData.dimension,
+      weightWithinDimension: catData.weightWithinDimension,
+      pillarId: pillarMap[catData.dimension].id,
+    })),
+    skipDuplicates: false,
+  });
+}
