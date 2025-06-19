@@ -16,6 +16,7 @@ import { RedisService } from '../redis/redis.service';
 import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
 import { FirebaseService } from '../firebase/firebase.service';
+import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
 
 @Injectable()
 export class AuthService {
@@ -95,8 +96,12 @@ export class AuthService {
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
 
-  async loginWithGoogle(idToken: string): Promise<ResponseItem<TokenDto>> {
+  async loginWithGoogle(
+    UserAndSessionPayloadDto: UserAndSessionPayloadDto,
+    idToken: string
+  ): Promise<ResponseItem<TokenDto>> {
     try {
+      const { userPayloadDto, userAgent, ip } = UserAndSessionPayloadDto;
       const decodedToken = await this.firebaseService.verifyIdToken(idToken);
       const { email, name, picture } = decodedToken;
 
@@ -117,38 +122,43 @@ export class AuthService {
         },
       });
 
-      const isNewUser = !user.refreshToken;
-      const payload: JwtPayload = { sub: user.id, email: user.email };
-      let refreshToken = user.refreshToken;
+      const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
 
-      if (!refreshToken || this.tokenService.checkExpiredToken(refreshToken, 'refresh')) {
-        refreshToken = this.tokenService.generateRefreshToken(payload);
-        await this.prisma.user.update({
-          where: { id: user.id },
-          data: { refreshToken },
-        });
-      }
-
-      const accessToken = this.tokenService.generateAccessToken(payload);
-
-      const sessionDto: SessionDto = {
-        userId: user.id,
-        userAgent: 'google-login',
-        ip: '',
-      };
-      await this.redisService.saveSessionToRedis(sessionDto);
-
-      const data: TokenDto = {
-        name: user.fullName,
-        accessToken,
-        refreshToken,
-        status: isNewUser,
-      };
-
-      return new ResponseItem(data, 'Đăng nhập thành công');
+      return new ResponseItem(tokenData, 'Đăng nhập thành công');
     } catch (error) {
       throw new BadRequestException(error);
     }
+  }
+
+  private async generateTokensAndSession(
+    user: UserTokenPayloadDto,
+    name: string,
+    userAgent: string,
+    ip: string,
+    isNewUser: boolean = false
+  ): Promise<TokenDto> {
+    const payload: JwtPayload = { sub: user.id, email: user.email };
+    let refreshToken = user.refreshToken;
+
+    if (!refreshToken || this.tokenService.checkExpiredToken(refreshToken, 'refresh')) {
+      refreshToken = this.tokenService.generateRefreshToken(payload);
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
+    }
+
+    const accessToken = this.tokenService.generateAccessToken(payload);
+
+    const sessionDto: SessionDto = { userId: user.id, userAgent, ip };
+    await this.redisService.saveSessionToRedis(sessionDto);
+
+    return {
+      name,
+      accessToken,
+      refreshToken,
+      status: isNewUser,
+    };
   }
 
   async handleLogout(userId: string): Promise<ResponseItem<string>> {
