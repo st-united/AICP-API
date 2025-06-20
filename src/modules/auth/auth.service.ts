@@ -15,6 +15,8 @@ import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
+import { FirebaseService } from '../firebase/firebase.service';
+import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +25,8 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
     private readonly redisService: RedisService,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
@@ -89,6 +92,71 @@ export class AuthService {
     await this.redisService.saveSessionToRedis(sessionDto);
 
     return new ResponseItem(data, 'Đăng nhập thành công');
+  }
+
+  async loginWithGoogle(
+    UserAndSessionPayloadDto: UserAndSessionPayloadDto,
+    idToken: string
+  ): Promise<ResponseItem<TokenDto>> {
+    try {
+      const { userPayloadDto, userAgent, ip } = UserAndSessionPayloadDto;
+      const decodedToken = await this.firebaseService.verifyIdToken(idToken);
+      const { email, name, picture } = decodedToken;
+
+      const hashedPassword = await bcrypt.hash('loginWithGooogle', 10);
+
+      const user = await this.prisma.user.upsert({
+        where: { email },
+        update: {
+          fullName: name,
+          avatarUrl: picture,
+        },
+        create: {
+          email,
+          fullName: name,
+          avatarUrl: picture,
+          password: hashedPassword,
+          phoneNumber: null,
+        },
+      });
+
+      const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+
+      return new ResponseItem(tokenData, 'Đăng nhập thành công');
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
+
+  private async generateTokensAndSession(
+    user: UserTokenPayloadDto,
+    name: string,
+    userAgent: string,
+    ip: string,
+    isNewUser: boolean = false
+  ): Promise<TokenDto> {
+    const payload: JwtPayload = { sub: user.id, email: user.email };
+    let refreshToken = user.refreshToken;
+
+    if (!refreshToken || this.tokenService.checkExpiredToken(refreshToken, 'refresh')) {
+      refreshToken = this.tokenService.generateRefreshToken(payload);
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
+    }
+
+    const accessToken = this.tokenService.generateAccessToken(payload);
+
+    const sessionDto: SessionDto = { userId: user.id, userAgent, ip };
+    await this.redisService.saveSessionToRedis(sessionDto);
+
+    return {
+      name,
+      accessToken,
+      refreshToken,
+      status: isNewUser,
+    };
   }
 
   async handleLogout(userId: string): Promise<ResponseItem<string>> {

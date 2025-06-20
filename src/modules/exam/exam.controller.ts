@@ -27,6 +27,12 @@ export class ExamController {
     return this.examService.getHistoryExam(req.user.userId, queries);
   }
 
+  @Get(':id')
+  @ApiParam({ name: 'id', type: String, description: 'ID của bài thi user' })
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.examService.getDetailExam(id);
+  }
+
   @Get('has-taken-exam/:examSetId')
   @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi chưa' })
   @ApiParam({ name: 'examSetId', type: String, description: 'ID bộ đề' })

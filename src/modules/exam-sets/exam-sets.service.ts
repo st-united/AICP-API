@@ -4,10 +4,14 @@ import { UpdateExamSetDto } from './dto/update-exam-set.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GetExamSetDto } from './dto/get-exam-set.dto';
 import { ResponseItem } from '@app/common/dtos';
-import { userAnswerDto } from '@AnswersModule/dto/request/user-answer.dto';
+import { ExamSetWithQuestions, UserExam, UserAnswer } from './interface/exam-sets.interface';
+import { ExamStatus } from '@prisma/client';
 
 @Injectable()
 export class ExamSetsService {
+  private static readonly EXAM_SET_NAME = 'AI INPUT TEST';
+  private static readonly DEFAULT_EXAM_DURATION_MINUTES = 40;
+
   constructor(private readonly prisma: PrismaService) {}
 
   create(createExamSetDto: CreateExamSetDto) {
@@ -34,38 +38,38 @@ export class ExamSetsService {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
 
-    const [existingExam, userAnswers] = await Promise.all([
-      this.findUserExam(userId, examSet.id),
-      this.findUserAnswers(userId, examSet.id),
-    ]);
-
-    const now = new Date();
-
-    if (existingExam && existingExam.startedAt <= now && existingExam.finishedAt > now) {
-      const examSetData = this.buildExamSetData(examSet, userAnswers);
-      return new ResponseItem(examSetData, 'Bài kiểm tra chưa hoàn thành, bạn có muốn tiếp tục?', GetExamSetDto);
-    } else if (existingExam && now > existingExam.finishedAt) {
-      return new ResponseItem(null, 'Bạn đã làm bài AI INPUT TEST, không thể làm lại.', GetExamSetDto);
+    const existingExam = await this.findUserExam(userId, examSet.id);
+    if (!existingExam) {
+      return await this.createNewExam(userId, examSet);
     }
 
-    await this.createNewExam(userId, examSet.id);
+    const examStatus = this.determineExamStatus(existingExam);
 
-    const examSetData = await this.buildExamSetData(examSet, userAnswers);
-    return new ResponseItem(examSetData, 'Thành công nhận bộ đề thi', GetExamSetDto);
+    switch (examStatus) {
+      case 'IN_PROGRESS':
+        return await this.handleInProgressExam(userId, existingExam, examSet);
+      case 'SUBMITTED':
+        return new ResponseItem(
+          null,
+          `Bạn đã làm bài ${ExamSetsService.EXAM_SET_NAME}, không thể làm lại.`,
+          GetExamSetDto
+        );
+      default:
+        throw new NotFoundException('Trạng thái bài kiểm tra không hợp lệ');
+    }
   }
 
-  private async findExamSetWithQuestions() {
-    const EXAM_SET_NAME = 'AI INPUT TEST';
+  private async findExamSetWithQuestions(): Promise<ExamSetWithQuestions | null> {
     return this.prisma.examSet.findFirst({
-      where: { name: EXAM_SET_NAME },
+      where: { name: ExamSetsService.EXAM_SET_NAME },
       include: {
-        exams: true,
-        questions: {
+        exam: true,
+        setQuestion: {
           include: {
             question: {
               include: {
                 answerOptions: true,
-                criteria: true,
+                skill: true,
                 level: true,
               },
             },
@@ -80,7 +84,7 @@ export class ExamSetsService {
     });
   }
 
-  private async findUserExam(userId: string, examSetId: string) {
+  private async findUserExam(userId: string, examSetId: string): Promise<UserExam | null> {
     return this.prisma.exam.findFirst({
       where: {
         userId: userId,
@@ -89,11 +93,11 @@ export class ExamSetsService {
     });
   }
 
-  private async findUserAnswers(userId: string, examSetId: string) {
+  private async findUserAnswers(userId: string, examId: string): Promise<UserAnswer[]> {
     return this.prisma.userAnswer.findMany({
       where: {
         userId: userId,
-        examSetId: examSetId,
+        examId: examId,
       },
       include: {
         selections: true,
@@ -101,30 +105,57 @@ export class ExamSetsService {
     });
   }
 
-  private async createNewExam(userId: string, examSetId: string, duration?: number) {
-    const examDuration = duration ?? 40;
+  private determineExamStatus(exam: UserExam): ExamStatus {
+    const now = new Date();
+    if (exam.examStatus === 'IN_PROGRESS' && now < exam.finishedAt) {
+      return 'IN_PROGRESS';
+    }
+    return 'SUBMITTED';
+  }
+
+  private async handleInProgressExam(
+    userId: string,
+    exam: UserExam,
+    examSet: ExamSetWithQuestions
+  ): Promise<ResponseItem<GetExamSetDto>> {
+    const userAnswers = await this.findUserAnswers(userId, exam.id);
+    const examSetData = this.buildExamSetData(examSet, userAnswers, exam.id);
+
+    const message =
+      exam.examStatus === 'IN_PROGRESS'
+        ? 'Bài kiểm tra chưa hoàn thành, bạn có muốn tiếp tục?'
+        : 'Thành công nhận bộ đề thi';
+
+    return new ResponseItem(examSetData, message, GetExamSetDto);
+  }
+
+  private async createNewExam(userId: string, examSet: ExamSetWithQuestions): Promise<ResponseItem<GetExamSetDto>> {
+    const examDuration = examSet.timeLimitMinutes ?? ExamSetsService.DEFAULT_EXAM_DURATION_MINUTES;
     const startedAt = new Date();
     const finishedAt = new Date(startedAt.getTime() + examDuration * 60 * 1000);
 
     const newExam = await this.prisma.exam.create({
       data: {
         userId,
-        examSetId,
+        examSetId: examSet.id,
         startedAt,
         finishedAt,
+        examStatus: 'IN_PROGRESS',
       },
     });
 
-    return newExam;
+    const examSetData = this.buildExamSetData(examSet, [], newExam.id);
+    return new ResponseItem(examSetData, 'Bài kiểm tra mới đã được tạo', GetExamSetDto);
   }
 
-  private buildExamSetData(examSet: any, userAnswers: any[]) {
+  private buildExamSetData(examSet: ExamSetWithQuestions, userAnswers: UserAnswer[], examId: string): GetExamSetDto {
     return {
       id: examSet.id,
+      examId: examId,
       name: examSet.name,
-      description: examSet.description,
-      duration: examSet.duration,
-      questions: examSet.questions.map((qSet: any) => {
+      description: examSet.description ?? null,
+      timeLimitMinutes: examSet.timeLimitMinutes,
+      questions: examSet.setQuestion.map((qSet: any) => {
         const q = qSet.question;
         const userAnswer = userAnswers.find((ans) => ans.questionId === q.id);
 
@@ -132,13 +163,14 @@ export class ExamSetsService {
           id: q.id,
           type: q.type,
           content: q.content,
-          subcontent: q.subcontent,
-          image: q.image,
-          sequence: q.sequence,
+          subcontent: q.subcontent ?? null,
+          image: q.image ?? null,
+          sequence: q.sequence ?? null,
           answerOptions: q.answerOptions.map((a: any) => ({
             id: a.id,
             content: a.content,
             isCorrect: a.isCorrect,
+            explanation: a.explanation ?? null,
             selected: userAnswer ? userAnswer.selections.some((sel: any) => sel.answerOptionId === a.id) : false,
           })),
           userAnswerText: userAnswer?.answerText ?? null,
