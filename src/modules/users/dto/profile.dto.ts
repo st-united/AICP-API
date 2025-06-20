@@ -5,9 +5,6 @@ export class ProfileDto {
   id: string;
 
   @Expose()
-  userName: string;
-
-  @Expose()
   email: string;
 
   @Expose()
@@ -17,10 +14,28 @@ export class ProfileDto {
   avatarUrl?: string;
 
   @Expose()
+  phoneNumber?: string;
+
+  @Expose()
   provider?: string;
 
   @Expose()
   status?: boolean;
+
+  @Expose()
+  dob?: Date;
+
+  @Expose()
+  country?: string;
+
+  @Expose()
+  province?: string;
+
+  @Expose()
+  job?: string;
+
+  @Expose()
+  referralCode?: string;
 
   @Expose()
   createdAt?: Date;

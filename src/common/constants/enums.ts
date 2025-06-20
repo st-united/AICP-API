@@ -25,3 +25,7 @@ export enum UserRoleEnum {
   MENTOR = 'mentor',
   SUPER_ADMIN = 'super_admin',
 }
+
+export enum examSetDefaultName {
+  DEFAULT = 'AI INPUT TEST',
+}

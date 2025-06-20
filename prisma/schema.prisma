@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  //directUrl = env("DIRECT_URL") // If using Supabase, uncoment this line
 }
 
 model User {
@@ -21,11 +22,17 @@ model User {
   deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken String?   @unique @map("refresh_token") @db.VarChar
 
-  roles          UserRole[]
-  userAnswer     UserAnswer[]
-  exam           Exam[]
-  mentor         Mentor[]
-  mentor_booking MentorBooking[]
+  dob          DateTime? @map("dob") @db.Timestamptz(6)
+  country      String?   @db.VarChar
+  province     String?   @db.VarChar
+  job          String?   @db.VarChar
+  referralCode String?   @unique @map("referral_code") @db.VarChar
+
+  roles         UserRole[]
+  userAnswer    UserAnswer[]
+  exam          Exam[]
+  mentor        Mentor[]
+  mentorBooking MentorBooking[]
 }
 
 model Role {
@@ -76,23 +83,32 @@ model RolePermission {
 }
 
 model Question {
-  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type            QuestionType    @default(SINGLE_CHOICE)
-  content         String          @db.Text
-  subcontent      String?         @db.Text
-  image           String?         @db.Text
-  sequence        Int?            @db.SmallInt
-  parentId        String?         @map("parent_id") @db.Uuid
-  criteriaId      String?         @db.Uuid
-  difficultyLevel DifficultyLevel @default(L1) @map("difficulty_level")
-  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type       QuestionType @default(SINGLE_CHOICE)
+  content    String       @db.Text
+  subcontent String?      @db.Text
+  image      String?      @db.Text
+  sequence   Int?         @db.SmallInt
+  parentId   String?      @map("parent_id") @db.Uuid
+  criteriaId String       @map("criteria_id") @db.Uuid
+  levelId    String       @map("level_id") @db.Uuid
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  category        QuestionCategory[]
   answerOptions   AnswerOption[]
   userAnswers     UserAnswer[]
-  criteria        Criteria?          @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+  criteria        Criteria          @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+  level           Level             @relation(fields: [levelId], references: [id], onDelete: Cascade)
   examSetQuestion ExamSetQuestion[]
+}
+
+model Level {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String     @unique @db.VarChar
+  description String     @db.Text
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Question    Question[]
 }
 
 model Category {
@@ -102,22 +118,9 @@ model Category {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  questions        QuestionCategory[]
-  courses          Course[]
-  criteriaCategory CriteriaCategory[]
-  categoryDomain   CategoryDomain[]
-}
-
-model QuestionCategory {
-  questionId String   @map("question_id") @db.Uuid
-  categoryId String   @map("category_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([questionId, categoryId])
+  courses        Course[]
+  categoryDomain CategoryDomain[]
+  Criteria       Criteria[]
 }
 
 model Course {
@@ -148,16 +151,19 @@ model AnswerOption {
 }
 
 model UserAnswer {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  answerText  String   @map("answer_text") @db.Text
-  manualScore Int?     @map("manual_score") @db.SmallInt
-  autoScore   Int?     @map("auto_score") @db.SmallInt
-  questionId  String   @map("question_id") @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  answerText  String?          @map("answer_text") @db.Text
+  manualScore Float?           @map("manual_score") @db.Real
+  autoScore   Float?           @map("auto_score") @db.Real
+  questionId  String           @map("question_id") @db.Uuid
+  userId      String           @map("user_id") @db.Uuid
+  examSetId   String           @map("exam_set_id") @db.Uuid
+  status      UserAnswerStatus @default(DRAFT)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  examSet    ExamSet               @relation(fields: [examSetId], references: [id], onDelete: Cascade)
   user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   selections UserAnswerSelection[]
 }
@@ -179,23 +185,12 @@ model Criteria {
   name        String   @unique @db.VarChar
   description String?  @db.Text
   scoreWeight Float    @map("score_weight") @db.Real
+  categoryId  String   @map("category_id") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  questions  Question[]
-  categories CriteriaCategory[]
-}
-
-model CriteriaCategory {
-  criteriaId String   @map("criteria_id") @db.Uuid
-  categoryId String   @map("category_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  criteria Criteria @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([categoryId, criteriaId])
+  questions Question[]
+  category  Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 }
 
 model Domain {
@@ -207,6 +202,7 @@ model Domain {
 
   courses    Course[]
   categories CategoryDomain[]
+  examSet    ExamSet[]
 }
 
 model CategoryDomain {
@@ -223,27 +219,34 @@ model CategoryDomain {
 
 model ExamSet {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domainId    String   @map("domain_id") @db.Uuid
   name        String   @db.VarChar
   description String?  @db.Text
+  duration    Int      @db.SmallInt
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   exams     Exam[]
   questions ExamSetQuestion[]
+
+  UserAnswer UserAnswer[]
+  domain     Domain       @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model Exam {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  examSetId  String?   @map("exam_set_id") @db.Uuid
-  startedAt  DateTime? @map("started_at") @db.Timestamptz(6)
-  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
-  totalScore Float?    @map("total_score") @db.Real
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String      @map("user_id") @db.Uuid
+  examSetId     String      @map("exam_set_id") @db.Uuid
+  startedAt     DateTime?   @map("started_at") @db.Timestamptz(6)
+  finishedAt    DateTime?   @map("finished_at") @db.Timestamptz(6)
+  totalScore    Float?      @map("total_score") @db.Real
+  examStatus    ExamStatus? @map("exam_status")
+  levelOfDomain SFIALevel?  @map("level_of_domain")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  examSet ExamSet? @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examSet ExamSet @relation(fields: [examSetId], references: [id], onDelete: Cascade)
 }
 
 model ExamSetQuestion {
@@ -293,22 +296,31 @@ enum QuestionType {
   ESSAY
 }
 
-enum DifficultyLevel {
-  L1
-  L2
-  L3
-  L4
-  L5
-  L6
-  L7
-}
-
 enum MentorBookingStatus {
   PENDING
   ACCEPTED
   REJECTED
   CANCELLED
   COMPLETED
+}
+
+enum UserAnswerStatus {
+  DRAFT
+  SUBMIT
+}
+
+enum ExamStatus {
+  IN_PROGRESS
+  SUBMITTED
+  WAITING_FOR_REVIEW
+  GRADED
+}
+
+enum SFIALevel {
+  FOUNDATION_L1_L2
+  INTERMEDIATE_L3_L4
+  ADVANCED_L5_L6
+  EXPERT_L7
 }
 
 enum TimeSlotBooking {
