@@ -28,14 +28,13 @@ export class MentorsService {
 
   async create(createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
     const password = generateSecurePassword();
-    const { expertise, sfiaLevel, maxMentees, ...userData } = createMentorDto;
+    const { expertise, maxMentees, ...userData } = createMentorDto;
     const createUser = await this.userService.create({ ...userData, password });
     try {
       const mentor = await this.prisma.mentor.create({
         data: {
           userId: createUser.id,
           expertise: expertise,
-          sfiaLevel: sfiaLevel,
           maxMentees: maxMentees ?? 5,
           isActive: false,
         },
@@ -149,6 +148,9 @@ export class MentorsService {
             scheduledAt: {
               gt: new Date(),
             },
+            status: {
+              in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+            },
           },
           select: {
             scheduledAt: true,
@@ -246,10 +248,23 @@ export class MentorsService {
   }
 
   private async toggleMentorAccountStatus(id: string, activate: boolean): Promise<ResponseItem<null>> {
-    const existingMentor = await this.prisma.mentor.findFirst({
+    const existingMentor = await this.prisma.mentor.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        isActive: true,
         user: true,
+        _count: {
+          select: {
+            bookings: {
+              where: {
+                status: {
+                  in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -259,6 +274,10 @@ export class MentorsService {
 
     if (existingMentor.isActive === activate) {
       throw new ConflictException(`Mentor đã ${activate ? 'được kích hoạt' : 'bị vô hiệu hóa'}`);
+    }
+
+    if (!activate && existingMentor._count.bookings > 0) {
+      throw new ConflictException('Không thể  vô hiệu hóa tài khoản mentor đã có lịch hẹn');
     }
 
     try {
