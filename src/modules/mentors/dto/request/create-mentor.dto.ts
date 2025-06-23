@@ -33,15 +33,6 @@ export class CreateMentorDto extends OmitType(RegisterUserDto, ['password', 'rol
 
   @Expose()
   @ApiProperty({
-    description: 'SFIA Level of the mentor',
-    enum: SFIALevel,
-    required: true,
-  })
-  @IsEnum(SFIALevel)
-  sfiaLevel: SFIALevel;
-
-  @Expose()
-  @ApiProperty({
     description: 'Maximum number of mentees',
     type: Number,
     required: false,
