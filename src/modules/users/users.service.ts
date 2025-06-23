@@ -236,9 +236,31 @@ export class UsersService {
   }
 
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        roles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-    return new ResponseItem(user, 'Thành công', ProfileDto);
+    const mappedUser = {
+      ...user,
+      roles: user.roles.map(({ role }) => ({
+        id: role.id,
+        name: role.name,
+      })),
+    };
+
+    return new ResponseItem(mappedUser, 'Thành công', ProfileDto);
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
