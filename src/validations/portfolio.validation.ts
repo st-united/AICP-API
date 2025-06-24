@@ -2,74 +2,121 @@ import { BadRequestException, PayloadTooLargeException, UnsupportedMediaTypeExce
 import { Express } from 'express';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
-export const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
+// File type constants
+export const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'] as const;
+export const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+] as const;
+
 export const FILE_LIMITS = {
   fileSize: 5 * 1024 * 1024,
-  files: 40,
-  maxCount: 20,
+  totalSize: 200 * 1024 * 1024,
+  maxCountPerCategory: 20,
+  maxTotalFiles: 40,
+} as const;
+
+const getFileExtension = (filename: string): string => {
+  return filename.split('.').pop()?.toLowerCase() || '';
 };
 
-export const validatePortfolioFiles = (certifications?: Express.Multer.File[], experiences?: Express.Multer.File[]) => {
-  if (certifications?.length > FILE_LIMITS.maxCount) {
-    throw new BadRequestException(`Số lượng file certification không được vượt quá ${FILE_LIMITS.maxCount}`);
-  }
-  if (experiences?.length > FILE_LIMITS.maxCount) {
-    throw new BadRequestException(`Số lượng file experience không được vượt quá ${FILE_LIMITS.maxCount}`);
+const isValidFileExtension = (filename: string): boolean => {
+  const ext = getFileExtension(filename);
+  return ALLOWED_EXTENSIONS.includes(ext as any);
+};
+
+const isValidFileSize = (size: number): boolean => {
+  return size > 0 && size <= FILE_LIMITS.fileSize;
+};
+
+const calculateTotalSize = (files: Express.Multer.File[]): number => {
+  return files.reduce((acc, file) => acc + file.size, 0);
+};
+
+export const validatePortfolioFiles = (
+  certificateFiles?: Express.Multer.File[],
+  experienceFiles?: Express.Multer.File[]
+): void => {
+  if (!certificateFiles?.length && !experienceFiles?.length) {
+    return;
   }
 
-  const totalFiles = [...(certifications || []), ...(experiences || [])];
-  const totalSize = totalFiles.reduce((acc, file) => acc + file.size, 0);
+  const certFiles = certificateFiles || [];
+  const expFiles = experienceFiles || [];
 
-  if (totalSize > FILE_LIMITS.fileSize * FILE_LIMITS.files) {
-    throw new PayloadTooLargeException('Tổng kích thước file vượt quá giới hạn cho phép');
+  if (certFiles.length > FILE_LIMITS.maxCountPerCategory) {
+    throw new BadRequestException(`Số lượng file certification không được vượt quá ${FILE_LIMITS.maxCountPerCategory}`);
   }
 
-  const invalidFiles = totalFiles.filter((file) => {
-    const ext = file.originalname.split('.').pop()?.toLowerCase();
-    return !ALLOWED_EXTENSIONS.includes(ext);
-  });
+  if (expFiles.length > FILE_LIMITS.maxTotalFiles) {
+    throw new BadRequestException(`Số lượng file experience không được vượt quá ${FILE_LIMITS.maxCountPerCategory}`);
+  }
+
+  const totalFileCount = certFiles.length + expFiles.length;
+  if (totalFileCount > FILE_LIMITS.maxTotalFiles) {
+    throw new BadRequestException(`Tổng số file không được vượt quá ${FILE_LIMITS.maxTotalFiles}`);
+  }
+
+  const totalSize = calculateTotalSize([...certFiles, ...expFiles]);
+  if (totalSize > FILE_LIMITS.totalSize) {
+    throw new PayloadTooLargeException(
+      `Tổng kích thước file vượt quá giới hạn ${FILE_LIMITS.totalSize / 1024 / 1024}MB`
+    );
+  }
+
+  const invalidFiles: string[] = [];
+  const oversizedFiles: string[] = [];
+
+  for (const file of [...certFiles, ...expFiles]) {
+    if (!file || typeof file.size !== 'number') {
+      throw new BadRequestException(`File object không hợp lệ: ${file?.originalname || 'unknown'}`);
+    }
+
+    if (!isValidFileExtension(file.originalname)) {
+      invalidFiles.push(file.originalname);
+    }
+    if (!isValidFileSize(file.size)) {
+      oversizedFiles.push(file.originalname);
+    }
+  }
 
   if (invalidFiles.length > 0) {
-    throw new UnsupportedMediaTypeException(
-      `Các file sau có định dạng không được hỗ trợ: ${invalidFiles.map((f) => f.originalname).join(', ')}`
+    throw new UnsupportedMediaTypeException(`Các file sau có định dạng không được hỗ trợ: ${invalidFiles.join(', ')}`);
+  }
+
+  if (oversizedFiles.length > 0) {
+    throw new PayloadTooLargeException(
+      `Các file sau vượt quá kích thước ${FILE_LIMITS.fileSize / 1024 / 1024}MB: ${oversizedFiles.join(', ')}`
     );
   }
 };
 
-export const validateFileExtension = (file: Express.Multer.File) => {
-  const fileExt = file.originalname.split('.').pop()?.toLowerCase();
-  if (!fileExt || !ALLOWED_EXTENSIONS.includes(fileExt)) {
+export const validateFileExtension = (file: Express.Multer.File): boolean => {
+  if (!isValidFileExtension(file.originalname)) {
     throw new BadRequestException(
-      `File extension ${fileExt} is not allowed. Allowed extensions: ${ALLOWED_EXTENSIONS.join(', ')}`
+      `Định dạng file ${getFileExtension(file.originalname)} không được hỗ trợ. Định dạng được phép: ${ALLOWED_EXTENSIONS.join(', ')}`
     );
   }
   return true;
 };
 
-export const validateFileSize = (file: Express.Multer.File) => {
-  if (file.size > FILE_LIMITS.fileSize) {
-    throw new BadRequestException(`File size exceeds limit of ${FILE_LIMITS.fileSize / 1024 / 1024}MB`);
-  }
-  return true;
-};
-
-export const validateFileCount = (files: Express.Multer.File[]) => {
-  if (files.length > FILE_LIMITS.files) {
-    throw new BadRequestException(`Maximum ${FILE_LIMITS.files} files allowed`);
+export const validateFileCount = (files: Express.Multer.File[]): boolean => {
+  if (files.length > FILE_LIMITS.maxTotalFiles) {
+    throw new BadRequestException(`Tối đa ${FILE_LIMITS.maxTotalFiles} file được phép`);
   }
   return true;
 };
 
 export const PORTFOLIO_FILE_INTERCEPTOR = FileFieldsInterceptor(
   [
-    { name: 'certifications', maxCount: FILE_LIMITS.maxCount },
-    { name: 'experiences', maxCount: FILE_LIMITS.maxCount },
+    { name: 'certificateFiles', maxCount: FILE_LIMITS.maxCountPerCategory },
+    { name: 'experienceFiles', maxCount: FILE_LIMITS.maxCountPerCategory },
   ],
   {
-    limits: {
-      fileSize: FILE_LIMITS.fileSize,
-      files: FILE_LIMITS.files,
-    },
     fileFilter: (req, file: Express.Multer.File, callback) => {
       try {
         validateFileExtension(file);
@@ -80,3 +127,43 @@ export const PORTFOLIO_FILE_INTERCEPTOR = FileFieldsInterceptor(
     },
   }
 );
+
+export const validatePortfolioRequest = (
+  certificateFiles?: Express.Multer.File[],
+  experienceFiles?: Express.Multer.File[],
+  deletedCertifications?: string[],
+  deletedExperiences?: string[],
+  linkedInUrl?: string,
+  githubUrl?: string
+): void => {
+  const hasFiles = (certificateFiles?.length || 0) + (experienceFiles?.length || 0) > 0;
+  const hasDeletions = (deletedCertifications?.length || 0) + (deletedExperiences?.length || 0) > 0;
+  const hasUrlUpdates = linkedInUrl !== undefined || githubUrl !== undefined;
+
+  if (!hasFiles && !hasDeletions && !hasUrlUpdates) {
+    throw new BadRequestException('Yêu cầu phải chứa ít nhất một thay đổi: file mới, xóa file, hoặc cập nhật URL');
+  }
+};
+
+export const validateDeletedFiles = (
+  deletedCertifications: string[],
+  deletedExperiences: string[],
+  currentCertFiles: string[],
+  currentExpFiles: string[]
+): void => {
+  const invalidCertDeletions = deletedCertifications.filter((file) => !currentCertFiles.includes(file));
+
+  const invalidExpDeletions = deletedExperiences.filter((file) => !currentExpFiles.includes(file));
+
+  if (invalidCertDeletions.length > 0) {
+    throw new BadRequestException(
+      `Các file certification sau không tồn tại trong portfolio: ${invalidCertDeletions.join(', ')}`
+    );
+  }
+
+  if (invalidExpDeletions.length > 0) {
+    throw new BadRequestException(
+      `Các file experience sau không tồn tại trong portfolio: ${invalidExpDeletions.join(', ')}`
+    );
+  }
+};

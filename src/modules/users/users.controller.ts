@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -36,7 +37,8 @@ import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { GetPortfolioResponseDto } from './dto/get-portfolio-response.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio.validation';
-
+import { DownloadPortfolioFileDto } from './dto/dowload-portfolio-file.dto';
+import { Response } from 'express';
 @ApiTags('users')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -161,5 +163,15 @@ export class UsersController {
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async getPortfolio(@Req() req): Promise<ResponseItem<GetPortfolioResponseDto>> {
     return await this.usersService.getPortfolio(req.user.userId);
+  }
+
+  @ApiTags('users')
+  @Get('/portfolio/download')
+  @ApiOperation({ summary: 'Download portfolio file' })
+  @ApiResponse({ status: 200, description: 'File downloaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid URL or filename' })
+  @ApiResponse({ status: 500, description: 'Error downloading file' })
+  async downloadFile(@Query() query: DownloadPortfolioFileDto, @Res() res: Response): Promise<void> {
+    return await this.usersService.downloadFile(query.url, query.filename, res);
   }
 }

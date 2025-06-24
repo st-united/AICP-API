@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsOptional, IsString, IsUrl } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Express } from 'express';
-import { validateFileExtension, validateFileSize, validateFileCount } from '@app/validations/portfolio.validation';
 
 const transformArray = ({ value }) => {
   if (typeof value === 'string') {
@@ -33,20 +32,7 @@ export class UpdatePortfolioDto {
     items: { type: 'string', format: 'binary' },
   })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (value) {
-      if (Array.isArray(value)) {
-        validateFileCount(value);
-        value.forEach((file) => {
-          validateFileExtension(file);
-          validateFileSize(file);
-        });
-      }
-      return value;
-    }
-    return undefined;
-  })
-  certifications?: Express.Multer.File[];
+  certificateFiles?: Express.Multer.File[];
 
   @ApiProperty({
     description: 'Experiences',
@@ -55,20 +41,7 @@ export class UpdatePortfolioDto {
     items: { type: 'string', format: 'binary' },
   })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (value) {
-      if (Array.isArray(value)) {
-        validateFileCount(value);
-        value.forEach((file) => {
-          validateFileExtension(file);
-          validateFileSize(file);
-        });
-      }
-      return value;
-    }
-    return undefined;
-  })
-  experiences?: Express.Multer.File[];
+  experienceFiles?: Express.Multer.File[];
 
   @ApiProperty({ description: 'Deleted Certifications', required: false })
   @IsOptional()
