@@ -36,8 +36,8 @@ import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { GetPortfolioResponseDto } from './dto/get-portfolio-response.dto';
 import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
-import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio.validation';
-import { DownloadPortfolioFileDto } from './dto/dowload-portfolio-file.dto';
+import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio-validation';
+import { DownloadPortfolioFileDto } from './dto/download-portfolio-file.dto';
 import { Response } from 'express';
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -120,6 +120,15 @@ export class UsersController {
   @Post('/forgot-password')
   async forgotPassword(@Body('email') email: string): Promise<ResponseItem<boolean>> {
     return await this.usersService.sendForgotPassword(email);
+  }
+
+  @Public()
+  @Post('/check-reset-token')
+  @ApiOperation({ summary: 'Check reset password token' })
+  @ApiResponse({ status: 200, description: 'Token is valid' })
+  @ApiResponse({ status: 400, description: 'Token is invalid or expired' })
+  async checkResetToken(@Body('token') token: string): Promise<ResponseItem<boolean>> {
+    return await this.usersService.checkResetToken(token);
   }
 
   @ApiTags('users')
