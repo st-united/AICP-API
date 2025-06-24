@@ -41,7 +41,7 @@ model User {
   userProgress       UserLearningProgress[]
   userPortfolio      Portfolio?             @relation("UserPortfolio")
   verifierPortfolio  Portfolio[]            @relation("VerifierPortfolio")
-  mentor             Mentor[]
+  mentor             Mentor?
   mentorBooking      MentorBooking[]
 }
 
@@ -300,14 +300,14 @@ model ExamSetQuestion {
 }
 
 model Mentor {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String    @unique @map("user_id") @db.Uuid
-  expertise  String?   @db.VarChar
-  sfiaLevel  SFIALevel @map("sfia_level")
-  maxMentees Int?      @default(5) @map("max_mentees") @db.SmallInt
-  isActive   Boolean   @default(true) @map("is_active") @db.Boolean
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String     @unique @map("user_id") @db.Uuid
+  expertise  String?    @db.VarChar
+  sfiaLevel  SFIALevel? @map("sfia_level")
+  maxMentees Int?       @default(5) @map("max_mentees") @db.SmallInt
+  isActive   Boolean    @default(true) @map("is_active") @db.Boolean
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   bookings         MentorBooking[]
   mentorCompetency MentorCompetency[]

@@ -5,735 +5,911 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
   const competenciesSkillMap = Object.fromEntries(competencySkills.map((c) => [c.name, c]));
 
   const questionsData = [
-    // ĐẠO ĐỨC & TRÁCH NHIỆM AI (AI Ethics & Responsibility)
+    // A1. KHẢ NĂNG THÍCH ỨNG & TƯ DUY PHÁT TRIỂN
     {
       type: QuestionType.SINGLE_CHOICE,
-      content: 'Thiên lệch AI (AI bias) là gì?',
+      content: 'AI đang thay đổi thế giới công việc. Cách tiếp cận hiệu quả nhất cho người mới bắt đầu là gì?',
       level: SFIALevel.LEVEL_1_AWARENESS,
-      compatentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 1)',
+      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 1)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
       answerOptions: [
-        { content: 'Hệ thống AI ưa thích một số thương hiệu nhất định', isCorrect: false },
         {
-          content: 'AI đưa ra quyết định bất công dựa trên dữ liệu đào tạo thiên lệch (biased training data)',
+          content: 'Tập trung vào việc nâng cao kỹ năng chuyên môn hiện tại vì AI chỉ là công cụ hỗ trợ',
+          isCorrect: false,
+        },
+        {
+          content: 'Bắt đầu tìm hiểu các công cụ AI cơ bản để hiểu cách chúng có thể tăng cường công việc',
           isCorrect: true,
         },
-        { content: 'AI hoạt động nhanh hơn cho một số người dùng', isCorrect: false },
-        { content: 'AI tốn kém khi sử dụng', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Bạn đang sử dụng ChatGPT để hỗ trợ viết bài luận cho trường. Cách tiếp cận phù hợp nhất về tính chính trực học thuật (academic integrity) là gì?',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        { content: 'Sao chép trực tiếp nội dung ChatGPT tạo ra và nộp bài', isCorrect: false },
-        {
-          content: 'Sử dụng ChatGPT để lên ý tưởng (brainstorming), sau đó viết nội dung gốc với ghi nguồn rõ ràng',
-          isCorrect: true,
-        },
-        { content: 'Diễn đạt lại nội dung ChatGPT mà không đề cập đến việc sử dụng AI', isCorrect: false },
-        { content: 'Sử dụng ChatGPT nhưng không nói với ai', isCorrect: false },
+        { content: 'Theo dõi xu hướng AI qua các nguồn tin tức và chờ đợi hướng dẫn từ tổ chức', isCorrect: false },
+        { content: 'Nghiên cứu kỹ về lý thuyết AI trước khi thử nghiệm bất kỳ ứng dụng nào', isCorrect: false },
       ],
     },
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content:
-        'Nhóm của bạn phát hiện công cụ AI tuyển dụng có thiên lệch với ứng viên từ một số nhóm dân tộc nhất định. Hành động nào thể hiện thực hành AI đạo đức? (Chọn tất cả phương án phù hợp)',
+        'Công ty bạn vừa triển khai Claude cho toàn bộ nhân viên. Một số đồng nghiệp lo lắng AI sẽ thay thế họ. Là người đã có kinh nghiệm AI, bạn sẽ làm gì? (Chọn các hành động tích cực)',
       level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 3)',
+      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 3)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
       answerOptions: [
-        { content: 'Ngay lập tức tạm dừng sử dụng công cụ trong quyết định tuyển dụng', isCorrect: true },
-        { content: 'Điều tra dữ liệu đào tạo để tìm nguồn gốc thiên lệch', isCorrect: true },
-        { content: 'Tiếp tục sử dụng vì về mặt pháp lý là hợp lệ', isCorrect: false },
         {
-          content: 'Phát triển giao thức kiểm tra thiên lệch (bias testing protocols) cho các công cụ AI tương lai',
+          content: 'Tổ chức buổi thảo luận để nghe lo ngại và cùng nghiên cứu về tác động AI trong ngành',
           isCorrect: true,
         },
-        { content: 'Thông báo cho các ứng viên bị ảnh hưởng về tình trạng thiên lệch', isCorrect: true },
+        {
+          content:
+            'Hướng dẫn đồng nghiệp sử dụng Claude để nâng cao công việc hiện tại và thử nghiệm các trường hợp sử dụng mới',
+          isCorrect: true,
+        },
+        {
+          content:
+            'Chia sẻ các nghiên cứu tình huống (case studies) và thực hành tốt nhất từ các công ty đã thành công với chuyển đổi AI',
+          isCorrect: false,
+        },
+        {
+          content: 'Đề xuất với ban quản lý tổ chức chương trình đào tạo toàn diện về AI cho toàn đội',
+          isCorrect: true,
+        },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Bạn đang phát triển hệ thống AI cho chẩn đoán y tế. Hệ thống đạt độ chính xác 94% tổng thể nhưng chỉ 78% cho bệnh nhân cao tuổi. Nhóm y tế muốn triển khai ngay lập tức do áp lực chi phí. Phản ứng của bạn?',
+        'Bạn là Giám đốc Đổi mới của công ty 5000 nhân viên. Ban lãnh đạo muốn "chuyển đổi AI" nhưng chưa có định hướng chiến lược. Phương pháp tiếp cận của bạn?',
+      level: SFIALevel.LEVEL_5_INNOVATION,
+      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 5)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 5,
+      answerOptions: [
+        {
+          content: 'Triển khai các công cụ AI quy mô rộng và đo lường chỉ số áp dụng để chứng minh giá trị',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Phát triển chiến lược AI toàn diện: đánh giá hiện trạng, phân loại ưu tiên các trường hợp sử dụng, trung tâm xuất sắc, quản lý thay đổi có cấu trúc',
+          isCorrect: true,
+        },
+        {
+          content:
+            'Hợp tác với các nhà cung cấp AI hàng đầu để triển khai các giải pháp đã được chứng minh từ những công ty dẫn đầu ngành',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Tập trung vào các dự án thử nghiệm có tác động cao để chứng minh lợi tức đầu tư (ROI) trước khi mở rộng toàn tổ chức',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Với tư cách là người dẫn dắt tư tưởng về chuyển đổi AI trong ngành logistics Việt Nam, bạn thấy các công ty đang áp dụng AI một cách phân mảnh và không hiệu quả. Chiến lược để định hình sự thích ứng toàn ngành?',
+      level: SFIALevel.LEVEL_7_MASTERY,
+      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 7)',
+      estimatedTimeMinutes: 6,
+      difficultyWeight: 7,
+      answerOptions: [
+        {
+          content:
+            'Thiết lập vị thế dẫn dắt tư tưởng qua các ấn phẩm và hoạt động diễn thuyết để tác động đến định hướng thị trường',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Xây dựng liên minh ngành, phát triển khung chuyển đổi chung, tạo ra các tiêu chuẩn, hợp tác với chính phủ và các trường đại học để phát triển hệ sinh thái',
+          isCorrect: true,
+        },
+        {
+          content: 'Khởi động dịch vụ tư vấn để hỗ trợ trực tiếp các công ty với các phương pháp đã được chứng minh',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Hợp tác với các nhà cung cấp công nghệ để tạo ra các giải pháp chuyên biệt cho ngành và chiến lược tiếp cận thị trường',
+          isCorrect: false,
+        },
+      ],
+    },
+    // A2. TỰ HỌC & CẢI TIẾN LIÊN TỤC
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Tại sao việc cập nhật kiến thức về AI quan trọng đối với các chuyên gia?',
+      level: SFIALevel.LEVEL_1_AWARENESS,
+      competentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 1)',
+      estimatedTimeMinutes: 1,
+      difficultyWeight: 1,
+      answerOptions: [
+        {
+          content: 'Công nghệ AI phát triển nhanh chóng và tác động đến hầu hết các ngành và chức năng công việc',
+          isCorrect: true,
+        },
+        {
+          content: 'Các công ty ngày càng kỳ vọng nhân viên có hiểu biết cơ bản về các công cụ hiện đại',
+          isCorrect: false,
+        },
+        {
+          content: 'Kiến thức AI đang trở thành yêu cầu tiêu chuẩn cho các cơ hội thăng tiến nghề nghiệp',
+          isCorrect: false,
+        },
+        { content: 'Xu hướng công nghệ luôn có tính chu kỳ nên quan trọng để đi trước đường cong', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.MULTIPLE_CHOICE,
+      content:
+        'Bạn muốn cập nhật các phát triển AI với tư cách sinh viên. Phương pháp bền vững nào? (Chọn các phương án thực tế)',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 2)',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        { content: 'Đăng ký 2-3 bản tin AI chất lượng cao và các nguồn nội dung được tuyển chọn', isCorrect: true },
+        { content: 'Tham gia các cộng đồng AI để tham gia thảo luận và học hỏi từ đồng nghiệp', isCorrect: true },
+        { content: 'Phân bổ thời gian hàng tuần để thử nghiệm với các công cụ và tính năng AI mới', isCorrect: true },
+        {
+          content:
+            'Theo dõi các nhà nghiên cứu và thực hành AI trên mạng xã hội để có thông tin chi tiết thời gian thực',
+          isCorrect: true,
+        },
+        { content: 'Tập trung độc quyền vào các bài báo học thuật để đảm bảo hiểu biết nghiêm ngặt', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Đội cần triển khai GPT-4 cho dịch vụ khách hàng, nhưng chỉ có kinh nghiệm với chatbot cơ bản. Có 3 tháng chuẩn bị. Chiến lược học tập?',
       level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
+      competentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 4)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 4,
+      answerOptions: [
+        { content: 'Tập trung chuyên sâu vào tài liệu GPT-4 và thông số kỹ thuật', isCorrect: false },
+        {
+          content: 'Lộ trình học có cấu trúc: Nền tảng LLM → kỹ thuật tạo lệnh → mẫu tích hợp → thử nghiệm thí điểm',
+          isCorrect: true,
+        },
+        {
+          content: 'Thuê các chuyên gia tư vấn bên ngoài để xử lý việc triển khai trong khi đội quan sát',
+          isCorrect: false,
+        },
+        { content: 'Bắt đầu triển khai ngay lập tức với phương pháp học qua thực hành và lặp lại', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Giám đốc Học tập cần tạo ra văn hóa học tập AI cho 10.000 nhân viên đa dạng. Phương pháp tiếp cận?',
+      level: SFIALevel.LEVEL_6_LEADERSHIP,
+      competentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 6)',
+      estimatedTimeMinutes: 5,
+      difficultyWeight: 6,
+      answerOptions: [
+        {
+          content:
+            'Triển khai nền tảng học trực tuyến toàn diện với chương trình giảng dạy AI tiêu chuẩn cho tất cả vai trò',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Thiết lập Hệ sinh thái Học tập AI: lộ trình theo vai trò, cộng đồng thực hành, văn hóa thử nghiệm, chương trình cố vấn, đo lường tác động',
+          isCorrect: true,
+        },
+        { content: 'Tập trung vào đào tạo lãnh đạo để truyền tải kiến thức AI qua hệ thống quản lý', isCorrect: false },
+        {
+          content:
+            'Tạo ra các trung tâm xuất sắc trong các phòng ban chính để thúc đẩy việc áp dụng AI một cách tự nhiên',
+          isCorrect: false,
+        },
+      ],
+    },
+    // A3. TƯ DUY PHẢN BIỆN & LÝ LUẬN ĐẠO ĐỨC
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Khi các hệ thống AI đưa ra quyết định bất công, nguyên nhân gốc thường là gì?',
+      level: SFIALevel.LEVEL_1_AWARENESS,
+      competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 1)',
+      estimatedTimeMinutes: 1,
+      difficultyWeight: 1,
+      answerOptions: [
+        { content: 'Dữ liệu huấn luyện phản ánh sự bất bình đẳng lịch sử và các mẫu xã hội', isCorrect: true },
+        {
+          content: 'Các thuật toán AI được thiết kế với sở thích cố hữu cho một số kết quả nhất định',
+          isCorrect: false,
+        },
+        { content: 'Sức mạnh xử lý máy tính không đủ để xử lý việc ra quyết định phức tạp', isCorrect: false },
+        { content: 'Các hệ thống AI thiếu bối cảnh thế giới thực về sự tinh tế xã hội và văn hóa', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Sử dụng ChatGPT để hỗ trợ viết luận cho bài tập học thuật. Phương pháp phù hợp?',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        {
+          content:
+            'Sử dụng ChatGPT cho ý tưởng và nghiên cứu, viết nội dung gốc với việc công bố rõ ràng việc sử dụng AI',
+          isCorrect: true,
+        },
+        {
+          content:
+            'Tạo bản thảo ban đầu với sự hỗ trợ của AI, chỉnh sửa đáng kể với những hiểu biết cá nhân và trích dẫn đóng góp AI',
+          isCorrect: false,
+        },
+        {
+          content: 'Sử dụng ChatGPT hoàn toàn để kiểm tra ngữ pháp và cải thiện cấu trúc của nội dung tự viết',
+          isCorrect: false,
+        },
+        {
+          content: 'Hợp tác với ChatGPT như một đồng tác giả, thừa nhận đóng góp trong thư mục tham khảo',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.MULTIPLE_CHOICE,
+      content:
+        'Công cụ tuyển dụng AI thể hiện thiên kiến chống lại ứng viên từ một số nhóm dân tộc nhất định. Phản ứng đạo đức? (Chọn các hành động phù hợp)',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 3)',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content:
+            'Ngay lập tức tạm dừng sử dụng công cụ cho quyết định tuyển dụng và tiến hành kiểm toán thiên kiến toàn diện',
+          isCorrect: true,
+        },
+        { content: 'Điều tra các nguồn dữ liệu huấn luyện và quy trình ra quyết định thuật toán', isCorrect: true },
+        {
+          content: 'Phát triển các quy trình phát hiện thiên kiến cho việc triển khai công cụ AI trong tương lai',
+          isCorrect: true,
+        },
+        {
+          content: 'Tiếp tục sử dụng nhưng thêm lớp xem xét thủ công cho các nhóm nhân khẩu học bị ảnh hưởng',
+          isCorrect: false,
+        },
+        { content: 'Ghi chép các phát hiện và chia sẻ với các ứng viên bị ảnh hưởng khi thích hợp', isCorrect: true },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Hệ thống chẩn đoán AI: độ chính xác tổng thể 94% nhưng 78% cho bệnh nhân cao tuổi. Đội ngũ y tế muốn triển khai ngay lập tức do áp lực chi phí. Phản ứng?',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
+      competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
       answerOptions: [
         {
-          content: 'Triển khai ngay lập tức vì độ chính xác 94% tổng thể vượt mức cơ sở của con người',
-          isCorrect: false,
-        },
-        {
-          content: 'Từ chối triển khai cho đến khi độ chính xác cho bệnh nhân cao tuổi được cải thiện',
+          content: 'Triển khai với tài liệu toàn diện về các hạn chế và xem xét bắt buộc của bác sĩ',
           isCorrect: false,
         },
         {
           content:
-            'Triển khai với tài liệu rõ ràng về hạn chế và giám sát bắt buộc của con người cho bệnh nhân cao tuổi',
+            'Triển khai theo giai đoạn với giám sát của con người được tăng cường cho bệnh nhân cao tuổi và giám sát liên tục',
           isCorrect: true,
         },
-        { content: 'Chỉ triển khai cho bệnh nhân không cao tuổi ban đầu', isCorrect: false },
+        {
+          content:
+            'Trì hoãn triển khai cho đến khi đạt được sự ngang bằng độ chính xác trên tất cả các nhóm nhân khẩu học',
+          isCorrect: false,
+        },
+        {
+          content: 'Triển khai cho bệnh nhân không cao tuổi ban đầu với việc mở rộng dần dần khi hệ thống cải thiện',
+          isCorrect: false,
+        },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Bạn đang lãnh đạo bộ phận đạo đức AI cho một tập đoàn đa quốc gia phát triển xe tự lái. Các quốc gia khác nhau có giá trị văn hóa khác nhau về việc ra quyết định trong các tình huống tai nạn không thể tránh khỏi. Bạn tiếp cận thiết kế khung đạo đức này như thế nào?',
+        'Lãnh đạo đạo đức AI cho công ty xe tự lái đa quốc gia. Các quốc gia khác nhau có các giá trị văn hóa khác nhau về việc ra quyết định tai nạn. Phương pháp khung đạo đức?',
       level: SFIALevel.LEVEL_5_INNOVATION,
-      compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
+      competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 5)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 5,
       answerOptions: [
-        { content: 'Thực hiện các nguyên tắc đạo đức phổ quát bất kể văn hóa địa phương', isCorrect: false },
         {
-          content: 'Thiết kế khung đạo đức thích ứng văn hóa trong khi duy trì các nguyên tắc an toàn cốt lõi',
+          content: 'Triển khai các nguyên tắc đạo đức phổ quát bất kể các biến thể văn hóa địa phương',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Thiết kế các khung thích ứng văn hóa duy trì các nguyên tắc an toàn cốt lõi với sự tham gia của các bên liên quan',
           isCorrect: true,
         },
-        { content: 'Để mỗi nhóm quốc gia tự quyết định đạo đức riêng của họ', isCorrect: false },
-        { content: 'Chỉ tập trung vào an toàn kỹ thuật, tránh lập trình đạo đức', isCorrect: false },
+        {
+          content: 'Cho phép các đội khu vực phát triển các hướng dẫn đạo đức độc lập dựa trên các giá trị địa phương',
+          isCorrect: false,
+        },
+        { content: 'Tập trung độc quyền vào tối ưu hóa an toàn kỹ thuật, tránh lập trình đạo đức', isCorrect: false },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Với tư cách Giám đốc AI, bạn phải thiết lập quản trị AI (AI governance) trên toàn tổ chức 50.000 nhân viên với các đơn vị kinh doanh đa dạng. Chiến lược quản trị của bạn?',
+        'Giám đốc AI thiết lập quản trị AI trên toàn tổ chức 50.000 nhân viên với các đơn vị kinh doanh đa dạng (chăm sóc sức khỏe, tài chính, sản phẩm tiêu dùng). Lợi ích của các bên liên quan mâu thuẫn. Chiến lược quản trị?',
       level: SFIALevel.LEVEL_6_LEADERSHIP,
-      compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
+      competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 6)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 6,
       answerOptions: [
-        { content: 'Thực hiện chính sách thống nhất trên tất cả các đơn vị kinh doanh', isCorrect: false },
         {
           content:
-            'Tạo khung quản trị thích ứng với các nguyên tắc cốt lõi, hướng dẫn cụ thể theo lĩnh vực và cơ chế đại diện bên liên quan',
+            'Triển khai các chính sách thống nhất trên tất cả các đơn vị kinh doanh với các yêu cầu tuân thủ rõ ràng',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Tạo ra khung quản trị thích ứng với các nguyên tắc cốt lõi, hướng dẫn riêng cho từng lĩnh vực, và cơ chế đại diện của các bên liên quan',
           isCorrect: true,
         },
-        { content: 'Để mỗi đơn vị kinh doanh tự quản lý dựa trên tiêu chuẩn ngành của họ', isCorrect: false },
+        {
+          content: 'Cho phép các đơn vị kinh doanh tự điều chỉnh dựa trên các tiêu chuẩn ngành tương ứng của họ',
+          isCorrect: false,
+        },
         { content: 'Tập trung chủ yếu vào tuân thủ quy định để giảm thiểu rủi ro pháp lý', isCorrect: false },
       ],
     },
-    // HỌC TẬP & THÍCH ỨNG (Learning & Adaptation)
+    // A4. TRÍ TUỆ RANH GIỚI CON NGƯỜI-AI
     {
       type: QuestionType.SINGLE_CHOICE,
-      content: 'Tại sao học tập liên tục quan trọng trong AI?',
+      content:
+        'Trong bối cảnh kinh doanh, khi nào việc giám sát của con người đối với các quyết định AI quan trọng nhất?',
       level: SFIALevel.LEVEL_1_AWARENESS,
-      compatentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 1)',
+      competentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 1)',
       estimatedTimeMinutes: 1,
       difficultyWeight: 1,
       answerOptions: [
-        { content: 'Công nghệ AI không bao giờ thay đổi', isCorrect: false },
         {
-          content: 'Công nghệ AI phát triển nhanh chóng và đòi hỏi cập nhật liên tục',
+          content: 'Khi các quyết định có tác động đáng kể đến phúc lợi, an toàn hoặc cơ hội sống của con người',
           isCorrect: true,
         },
-        { content: 'Chỉ các chuyên gia mới cần học về AI', isCorrect: false },
-        { content: 'Học về AI là tùy chọn', isCorrect: false },
+        { content: 'Khi điểm tin cậy AI giảm xuống dưới ngưỡng được xác định trước', isCorrect: false },
+        {
+          content: 'Khi xử lý các giao dịch tài chính có giá trị cao hoặc quyết định kinh doanh chiến lược',
+          isCorrect: false,
+        },
+        {
+          content: 'Khi các hệ thống AI mới được triển khai và chưa có hồ sơ theo dõi đã được chứng minh',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'ChatGPT khuyến nghị quyết định tài chính lớn cho công ty khởi nghiệp (đầu tư marketing 500 triệu VNĐ). Phương pháp phù hợp?',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 2)',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        {
+          content: 'Triển khai khuyến nghị sau khi xác thực các nguồn dữ liệu và phương pháp lý luận của AI',
+          isCorrect: false,
+        },
+        {
+          content: 'Sử dụng như đầu vào phân tích để đánh giá thêm với các chuyên gia lĩnh vực và cố vấn tài chính',
+          isCorrect: true,
+        },
+        {
+          content: 'Yêu cầu AI cung cấp phân tích chi phí-lợi ích chi tiết trước khi đưa ra quyết định cuối cùng',
+          isCorrect: false,
+        },
+        {
+          content: 'Kết hợp khuyến nghị AI với nghiên cứu thị trường bổ sung và tham vấn các bên liên quan',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Hệ thống HR AI đề xuất từ chối tất cả ứng viên từ một trường đại học cụ thể dựa trên "dữ liệu hiệu suất lịch sử." Với tư cách quản lý tuyển dụng, phản ứng?',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 3)',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Tin tưởng phân tích AI vì các quyết định dựa trên dữ liệu loại bỏ thiên kiến của con người',
+          isCorrect: false,
+        },
+        {
+          content: 'Điều tra lý luận đằng sau khuyến nghị, kiểm toán thiên kiến tiềm ẩn, đánh giá công đức cá nhân',
+          isCorrect: true,
+        },
+        { content: 'Ghi đè khuyến nghị AI và phỏng vấn ứng viên để đưa ra đánh giá độc lập', isCorrect: false },
+        { content: 'Yêu cầu thêm các chỉ số hiệu suất để xác thực kết luận phân tích của AI', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Thiết kế hệ thống AI cho phê duyệt khoản vay ngân hàng (100 triệu - 10 tỷ VNĐ). Thiết lập ranh giới hiệu quả giữa con người và AI?',
+      level: SFIALevel.LEVEL_5_INNOVATION,
+      competentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 5)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 5,
+      answerOptions: [
+        {
+          content: 'AI xử lý tất cả quyết định với việc xem xét của con người chỉ cho các trường hợp tranh chấp',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Khung quyết định phân tầng rủi ro: AI tự động phê duyệt cho các trường hợp rủi ro thấp/tin cậy cao, xem xét của con người cho các trường hợp giá trị cao/không chắc chắn, duy trì quyền phủ quyết của con người',
+          isCorrect: true,
+        },
+        { content: 'Quyết định của con người với AI cung cấp khuyến nghị và phân tích hỗ trợ', isCorrect: false },
+        {
+          content: 'AI sàng lọc sơ bộ với các đội con người đưa ra tất cả quyết định phê duyệt cuối cùng',
+          isCorrect: false,
+        },
+      ],
+    },
+    // A5. NHẬN THỨC RỦI RO & QUẢN TRỊ AI
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Mối quan tâm chính khi sử dụng các công cụ AI công cộng (ChatGPT) với dữ liệu công ty?',
+      level: SFIALevel.LEVEL_1_AWARENESS,
+      competentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 1)',
+      estimatedTimeMinutes: 1,
+      difficultyWeight: 1,
+      answerOptions: [
+        { content: 'Khả năng lộ thông tin nhạy cảm cho các hệ thống bên thứ ba', isCorrect: true },
+        {
+          content: 'Sự không chính xác trong phản hồi AI dẫn đến thông tin sai lệch trong kinh doanh',
+          isCorrect: false,
+        },
+        {
+          content: 'Sự phụ thuộc vào các hệ thống bên ngoài cho các quy trình kinh doanh quan trọng',
+          isCorrect: false,
+        },
+        { content: 'Chi phí liên quan đến đăng ký premium và các tính năng doanh nghiệp', isCorrect: false },
       ],
     },
     {
       type: QuestionType.MULTIPLE_CHOICE,
-      content: 'Bạn muốn cập nhật các phát triển AI với tư cách sinh viên. Cách tiếp cận nào bền vững?',
+      content:
+        'Công ty triển khai AI cho dịch vụ khách hàng. Các chính sách sử dụng thiết yếu? (Chọn các chính sách quan trọng)',
       level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
+      competentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
       answerOptions: [
-        { content: 'Đọc mọi bài nghiên cứu AI được xuất bản', isCorrect: false },
-        { content: 'Theo dõi 2-3 bản tin và blog AI chất lượng', isCorrect: true },
-        { content: 'Tham gia cộng đồng AI để thảo luận', isCorrect: true },
-        { content: 'Chỉ học những gì được yêu cầu trong chương trình học', isCorrect: false },
-        { content: 'Thử nghiệm các công cụ AI mới hàng tháng', isCorrect: true },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Mô hình machine learning đầu tiên của bạn chỉ đạt độ chính xác 55%. Tư duy hiệu quả nhất là gì?',
-      level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
-      estimatedTimeMinutes: 3,
-      difficultyWeight: 3,
-      answerOptions: [
-        { content: 'Cân nhắc chuyển sang lĩnh vực khác', isCorrect: false },
+        { content: 'Hạn chế nhập thông tin nhận dạng cá nhân vào các hệ thống AI công cộng', isCorrect: true },
+        { content: 'Duy trì các quy trình dự phòng khi các hệ thống AI gặp sự cố ngừng hoạt động', isCorrect: true },
+        { content: 'Công bố rõ ràng khi khách hàng tương tác với AI so với đại diện con người', isCorrect: true },
         {
-          content: 'Phân tích có hệ thống chất lượng dữ liệu, kỹ thuật tạo đặc trưng và lựa chọn mô hình',
+          content: 'Giới hạn việc sử dụng AI trong giờ làm việc để đảm bảo có sự giám sát của con người',
+          isCorrect: false,
+        },
+        {
+          content: 'Xem xét và cập nhật thường xuyên các phản hồi AI về độ chính xác và tính phù hợp',
           isCorrect: true,
         },
-        { content: 'Sao chép giải pháp hoạt động từ trực tuyến', isCorrect: false },
-        { content: 'Tăng độ phức tạp mô hình ngay lập tức', isCorrect: false },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Tổ chức của bạn muốn áp dụng GPT-4 cho dịch vụ khách hàng. Bạn có 3 tháng để chuẩn bị. Chiến lược học tập của bạn?',
+        'Triển khai AI trong quy trình tuyển dụng quan trọng. Các thành phần thiết yếu của khung quản trị rủi ro?',
       level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
+      competentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
       answerOptions: [
-        { content: 'Chỉ tập trung vào tài liệu kỹ thuật GPT-4', isCorrect: false },
+        { content: 'Đào tạo toàn diện cho đội ngũ HR với các yêu cầu tuân thủ pháp lý', isCorrect: false },
         {
           content:
-            'Thiết kế lộ trình học tập có hệ thống: Cơ bản LLM → kỹ thuật prompt → mẫu tích hợp → thử nghiệm pilot',
+            'Đánh giá tác động, giám sát thiên kiến liên tục, quy trình giám sát của con người, thủ tục ứng phó sự cố, kiểm toán vệt toàn diện',
           isCorrect: true,
         },
-        { content: 'Thuê tư vấn ngoài để xử lý mọi thứ', isCorrect: false },
-        { content: 'Bắt đầu triển khai ngay lập tức và học trong quá trình thực hiện', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Bạn được giao nhiệm vụ chuẩn bị tổ chức cho thế hệ công nghệ AI tiếp theo. Làm thế nào để xây dựng năng lực học tập thích ứng?',
-      level: SFIALevel.LEVEL_5_INNOVATION,
-      compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
-      estimatedTimeMinutes: 4,
-      difficultyWeight: 5,
-      answerOptions: [
-        { content: 'Tập trung sâu vào công nghệ hiện tại cho đến khi thành thạo', isCorrect: false },
+        { content: 'Các quy trình tuyển dụng dự phòng và chiến lược đa dạng hóa nhà cung cấp', isCorrect: false },
         {
-          content:
-            'Phát triển khung meta-learning: hiểu biết dựa trên nguyên tắc, văn hóa thử nghiệm, hợp tác đa chức năng',
-          isCorrect: true,
+          content: 'Xem xét pháp lý của hợp đồng nhà cung cấp AI với các điều khoản trách nhiệm pháp lý',
+          isCorrect: false,
         },
-        { content: 'Chờ tiêu chuẩn ngành rõ ràng trước khi đầu tư vào học tập', isCorrect: false },
-        { content: 'Thuê chuyên gia cho mỗi công nghệ mới khi nó xuất hiện', isCorrect: false },
-      ],
-    },
-    //TƯ DUY PHẢN BIỆN & PHÂN TÍCH (Critical Thinking & Analysis)
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Khi AI cung cấp thông tin cho bạn, bạn nên làm gì?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        { content: 'Luôn tin tưởng hoàn toàn', isCorrect: false },
-        { content: 'Kiểm tra xem có hợp lý không và xác minh các sự kiện quan trọng', isCorrect: true },
-        { content: 'Không bao giờ tin thông tin AI', isCorrect: false },
-        { content: 'Chỉ sử dụng để giải trí', isCorrect: false },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'ChatGPT cung cấp dữ liệu thống kê về "việc áp dụng AI trong các công ty Việt Nam" cho bài tập của bạn. Bước đầu tiên để xác minh là gì?',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        { content: 'Sử dụng dữ liệu ngay lập tức vì ChatGPT thường chính xác', isCorrect: false },
-        { content: 'Kiểm tra chéo với các nguồn chính thức như báo cáo chính phủ và khảo sát ngành', isCorrect: true },
-        { content: 'Yêu cầu ChatGPT cung cấp nguồn', isCorrect: false },
-        { content: 'Kiểm tra Wikipedia', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.MULTIPLE_CHOICE,
-      content:
-        'Startup của bạn phụ thuộc nhiều vào OpenAI API cho các tính năng sản phẩm cốt lõi. Rủi ro liên tục kinh doanh nào nên xem xét? (Chọn tất cả mối quan tâm hợp lệ)',
-      level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
-      estimatedTimeMinutes: 3,
-      difficultyWeight: 3,
-      answerOptions: [
-        { content: 'Giới hạn tốc độ API và thay đổi giá', isCorrect: true },
-        { content: 'Gián đoạn dịch vụ ảnh hưởng tính khả dụng sản phẩm', isCorrect: true },
-        { content: 'Cập nhật mô hình thay đổi hành vi bất ngờ', isCorrect: true },
-        { content: 'OpenAI đọc dữ liệu của bạn và đánh cắp ý tưởng kinh doanh', isCorrect: false },
-        { content: 'Cần chiến lược dự phòng cho các chức năng quan trọng', isCorrect: true },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Mô hình AI của bạn cho thấy các chỉ số kỹ thuật tuyệt vời (độ chính xác 95%, độ trễ 12ms, thời gian hoạt động 94%) nhưng kết quả kinh doanh đáng thất vọng (tương tác người dùng giảm 12%). Cách tiếp cận phân tích phù hợp nhất là gì?',
-      level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
-      estimatedTimeMinutes: 4,
-      difficultyWeight: 4,
-      answerOptions: [
-        { content: 'Chỉ số kỹ thuật là đủ; kinh doanh sẽ thích ứng', isCorrect: false },
-        { content: 'Điều tra khoảng cách giữa độ chính xác kỹ thuật và sự hài lòng của người dùng', isCorrect: true },
-        { content: 'Chỉ tập trung vào chỉ số kinh doanh và bỏ qua hiệu suất kỹ thuật', isCorrect: false },
-        { content: 'Thay thế hệ thống AI ngay lập tức', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Bạn đang đánh giá việc xây dựng giải pháp AI tùy chỉnh so với sử dụng API bên thứ ba cho ứng dụng quan trọng nhiệm vụ với yêu cầu nghiêm ngặt về độ trễ, bảo mật và độ tin cậy. Khung quyết định của bạn?',
-      level: SFIALevel.LEVEL_5_INNOVATION,
-      compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
-      estimatedTimeMinutes: 5,
-      difficultyWeight: 5,
-      answerOptions: [
-        { content: 'Luôn xây dựng tùy chỉnh cho ứng dụng quan trọng nhiệm vụ', isCorrect: false },
-        {
-          content:
-            'Phân tích chi phí-lợi ích toàn diện: chi phí phát triển, thời gian ra thị trường, chi phí bảo trì, đánh giá rủi ro, so với giá trị chiến lược và yêu cầu',
-          isCorrect: true,
-        },
-        { content: 'Luôn sử dụng API bên thứ ba để giảm độ phức tạp', isCorrect: false },
-        { content: 'Để nhóm kỹ thuật quyết định dựa trên sở thích kỹ thuật', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Bạn đang dẫn dắt phát triển tiêu chuẩn ngành cho an toàn AI trong hệ thống tự động. Nhiều bên liên quan (công ty công nghệ, chính phủ, tổ chức an toàn, nhóm lợi ích công cộng) có ưu tiên xung đột. Cách tiếp cận xây dựng đồng thuận của bạn?',
+        'Giám đốc Rủi ro cho tập đoàn tài chính phát triển khung rủi ro AI doanh nghiệp. Nhiều đơn vị kinh doanh sử dụng các ứng dụng AI đa dạng (giao dịch, chấm điểm tín dụng, phát hiện gian lận, dịch vụ khách hàng). Phương pháp tiếp cận?',
       level: SFIALevel.LEVEL_6_LEADERSHIP,
-      compatentcySkillName: 'Tầm Nhìn & Định Hướng AI (Level 7)',
+      competentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 6)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 6,
       answerOptions: [
-        { content: 'Ưu tiên các công ty công nghệ vì họ xây dựng hệ thống', isCorrect: false },
+        { content: 'Cấm sử dụng AI cho đến khi các hướng dẫn quy định toàn diện được thiết lập', isCorrect: false },
         {
           content:
-            'Tạo điều kiện đối thoại đa bên liên quan, phát triển khung tiêu chuẩn dựa trên bằng chứng, tạo cơ chế quản trị thích ứng',
+            'Phát triển quản trị AI phân tầng rủi ro: xác định khẩu vị rủi ro theo đơn vị kinh doanh, thiết lập cấu trúc quản trị, tạo bảng điều khiển giám sát thời gian thực, quy trình leo thang và ứng phó sự cố',
           isCorrect: true,
         },
-        { content: 'Tập trung vào yêu cầu chính phủ như ràng buộc chính', isCorrect: false },
-        { content: 'Tạo tiêu chuẩn riêng cho mỗi nhóm bên liên quan', isCorrect: false },
+        {
+          content: 'Cho phép các đơn vị kinh doanh tự quản lý rủi ro AI với giám sát doanh nghiệp định kỳ',
+          isCorrect: false,
+        },
+        { content: 'Tập trung độc quyền vào tuân thủ quy định với các quy định tài chính hiện hành', isCorrect: false },
       ],
     },
-    // HỢP TÁC & GIAO TIẾP (Collaboration & Communication)
+    // B1. GIAO TIẾP AI & PROMPT ENGINEERING
     {
       type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Khi làm việc trong nhóm mà một số người biết về AI nhiều hơn những người khác, cách tiếp cận tốt nhất là gì?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      compatentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        { content: 'Để các chuyên gia làm tất cả công việc liên quan AI', isCorrect: false },
-        { content: 'Chia sẻ kiến thức và học hỏi lẫn nhau', isCorrect: true },
-        { content: 'Tránh sử dụng AI để giữ mọi thứ đơn giản', isCorrect: false },
-        { content: 'Làm việc riêng biệt dựa trên cấp độ kỹ năng AI', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Một bạn cùng lớp nhờ phản hồi về dự án AI của họ. Code hoạt động nhưng sử dụng cách tiếp cận không hiệu quả. Phản hồi mang tính xây dựng nhất là gì?',
+      content: 'ChatGPT hỗ trợ động não cho bài luận về biến đổi khí hậu. Lệnh hiệu quả nhất?',
       level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 2)',
+      competentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
       answerOptions: [
-        { content: 'Code rất tệ, bạn nên viết lại hoàn toàn', isCorrect: false },
-        { content: 'Khởi đầu tốt! Đây là một số tối ưu hóa có thể cải thiện hiệu suất: ...', isCorrect: true },
-        { content: 'Trông ổn để tránh xung đột', isCorrect: false },
-        { content: 'Chỉ ra vấn đề mà không đề xuất cải thiện', isCorrect: false },
+        {
+          content: 'Phân tích các tác động lớn của biến đổi khí hậu và khuyến nghị các giải pháp toàn diện',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Tạo ra 8 góc nhìn độc đáo về tác động biến đổi khí hậu trên các lĩnh vực khác nhau (kinh tế, công nghệ, xã hội, sức khỏe) bao gồm cả thách thức và cơ hội',
+          isCorrect: true,
+        },
+        {
+          content:
+            'Tạo dàn ý chi tiết cho bài luận học thuật bao gồm nguyên nhân, tác động và chiến lược giảm thiểu biến đổi khí hậu',
+          isCorrect: false,
+        },
+        {
+          content: 'Liệt kê 10 vấn đề biến đổi khí hậu quan trọng nhất với giải thích chi tiết và bằng chứng hỗ trợ',
+          isCorrect: false,
+        },
       ],
     },
     {
       type: QuestionType.MULTIPLE_CHOICE,
-      content:
-        'Nhóm 5 người của bạn có kinh nghiệm AI hỗn hợp: 2 người dùng nâng cao, 2 người mới bắt đầu, 1 thành viên hoài nghi AI. Chiến lược nào thúc đẩy hợp tác hiệu quả? (Chọn các cách tiếp cận mang tính xây dựng)',
+      content: 'Các kỹ thuật cải thiện chất lượng tạo mã từ LLM? (Chọn các phương pháp hiệu quả)',
       level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
-      estimatedTimeMinutes: 3,
-      difficultyWeight: 3,
-      answerOptions: [
-        { content: 'Phân chia công việc nghiêm ngặt theo cấp độ kỹ năng AI', isCorrect: false },
-        { content: 'Phiên lập trình cặp (pair programming) với các cấp độ kinh nghiệm hỗn hợp', isCorrect: true },
-        { content: 'Phiên chia sẻ kiến thức hàng tuần', isCorrect: true },
-        { content: 'Để thành viên hoài nghi tự chọn không tham gia các nhiệm vụ AI', isCorrect: false },
-        { content: 'Tạo tài nguyên học tập chung và hướng dẫn', isCorrect: true },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Bạn đang trình bày kết quả dự án AI cho ban điều hành. Kỹ thuật: độ chính xác 87%, độ trễ 12ms. Kinh doanh: cải thiện hiệu quả 15%, tiết kiệm 200.000 USD. Nguyên tắc giao tiếp nào?',
-      level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 4)',
-      estimatedTimeMinutes: 4,
-      difficultyWeight: 4,
-      answerOptions: [
-        { content: 'Chỉ tập trung vào chỉ số kỹ thuật vì chúng chính xác hơn', isCorrect: false },
-        {
-          content:
-            'Dẫn đầu với tác động kinh doanh, hỗ trợ bằng độ tin cậy kỹ thuật, bao gồm các bước tiếp theo rõ ràng',
-          isCorrect: true,
-        },
-        { content: 'Chỉ trình bày chỉ số kinh doanh để giữ đơn giản', isCorrect: false },
-        { content: 'Để ban điều hành đặt câu hỏi thay vì cấu trúc bài thuyết trình', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Bạn đang lãnh đạo một liên minh các đối thủ cạnh tranh để thiết lập tiêu chuẩn đạo đức AI toàn cầu. Người tham gia gồm công ty công nghệ lớn, startup, học giả, cơ quan quản lý và nhóm xã hội dân sự với giá trị và động cơ khác biệt. Cách tiếp cận lãnh đạo của bạn?',
-      level: SFIALevel.LEVEL_7_MASTERY,
-      compatentcySkillName: 'Tư Duy Chiến Lược AI (Level 5)',
-      estimatedTimeMinutes: 6,
-      difficultyWeight: 7,
-      answerOptions: [
-        { content: 'Tập trung vào giải pháp kỹ thuật để tránh xung đột giá trị', isCorrect: false },
-        {
-          content:
-            'Thiết kế quy trình đồng thuận đa tầng: thiết lập các nguyên tắc chung, tạo nhóm làm việc cho các lĩnh vực cụ thể, phát triển khung triển khai thích ứng với chu kỳ đánh giá thường xuyên',
-          isCorrect: true,
-        },
-        { content: 'Để lực lượng thị trường tự nhiên quyết định tiêu chuẩn', isCorrect: false },
-        { content: 'Ưu tiên lợi ích của các công ty lớn nhất để áp dụng thực tế', isCorrect: false },
-      ],
-    },
-    // KỸ THUẬT PROMPT & GIAO TIẾP AI (Prompt Engineering & AI Communication)
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Tình huống: Bạn cần ChatGPT giúp lên ý tưởng bài luận về biến đổi khí hậu. Prompt nào có khả năng cho kết quả hữu ích nhất?',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        { content: 'Ý tưởng biến đổi khí hậu', isCorrect: false },
-        {
-          content:
-            'Tạo ra 8 góc nhìn độc đáo về tác động biến đổi khí hậu trên các lĩnh vực khác nhau (kinh tế, công nghệ, xã hội, sức khỏe) với cả thách thức và cơ hội',
-          isCorrect: true,
-        },
-        { content: 'Viết bài luận cho tôi', isCorrect: false },
-        { content: 'Biến đổi khí hậu tốt hay xấu?', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.MULTIPLE_CHOICE,
-      content:
-        'Câu Hỏi Kỹ Thuật: Kỹ thuật nào cải thiện chất lượng tạo code từ LLM? (Chọn tất cả cách tiếp cận hiệu quả)',
-      level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
+      competentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
       answerOptions: [
         {
-          content: 'Chain-of-thought prompting: "Giải thích cách tiếp cận từng bước trước khi lập trình"',
+          content: 'Tạo lệnh chuỗi suy nghĩ: "Giải thích phương pháp từng bước trước khi triển khai"',
           isCorrect: true,
         },
-        { content: 'Few-shot learning: Cung cấp 2-3 ví dụ đầu vào-đầu ra', isCorrect: true },
-        { content: 'Chỉ định vai trò: "Bạn là một lập trình viên Python senior"', isCorrect: true },
-        { content: 'Đặt temperature = 0 để có tính nhất quán', isCorrect: false },
-        { content: 'Sử dụng dấu phân cách code rõ ràng như python', isCorrect: true },
+        { content: 'Học ít mẫu (Few-shot learning): Cung cấp 2-3 ví dụ đầu vào-đầu ra', isCorrect: true },
+        { content: 'Chỉ định vai trò: "Bạn là nhà phát triển Python cấp cao với 10 năm kinh nghiệm"', isCorrect: true },
+        { content: 'Đặt temperature=0 để có tính nhất quán tối đa trong đầu ra', isCorrect: false },
+        { content: 'Sử dụng dấu phân cách mã rõ ràng như ```python để định dạng', isCorrect: true },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Thách Thức Tích Hợp: Bạn đang xây dựng chatbot dịch vụ khách hàng phải xử lý thông tin nhạy cảm một cách an toàn. Biện pháp bảo mật prompt nào là thiết yếu?',
+        'Xây dựng chatbot dịch vụ khách hàng xử lý thông tin nhạy cảm một cách an toàn. Các biện pháp bảo mật thiết yếu?',
       level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
+      competentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
       answerOptions: [
-        { content: 'Tin tưởng đầu vào người dùng vì đây là dịch vụ khách hàng', isCorrect: false },
+        { content: 'Tin tưởng đầu vào người dùng vì dịch vụ khách hàng yêu cầu giao tiếp mở', isCorrect: false },
         {
           content:
-            'Triển khai xác thực đầu vào, prompt có cấu trúc với dấu phân cách, hạn chế dựa trên vai trò và lọc đầu ra',
+            'Triển khai xác thực đầu vào, lệnh có cấu trúc với dấu phân cách, hạn chế dựa trên vai trò, lọc đầu ra',
           isCorrect: true,
         },
-        { content: 'Chỉ sử dụng phản hồi chung để tránh vấn đề bảo mật', isCorrect: false },
-        { content: 'Chỉ dựa vào tính năng an toàn tích hợp của mô hình AI', isCorrect: false },
+        { content: 'Sử dụng phản hồi chung để tránh hoàn toàn các lỗ hổng bảo mật', isCorrect: false },
+        { content: 'Dựa độc quyền vào các tính năng an toàn tích hợp của mô hình AI', isCorrect: false },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Kiến Trúc Nâng Cao: Bạn đang thiết kế hệ thống RAG (Retrieval-Augmented Generation - Tạo Sinh Tăng Cường Truy Xuất) cho kiến thức nội bộ công ty. Thành phần nào là thiết yếu cho triển khai hiệu quả?',
+        'Thiết kế hệ thống RAG (Retrieval-Augmented Generation - Tạo Sinh Tăng Cường Truy Xuất) cho kiến thức nội bộ công ty. Các thành phần thiết yếu để triển khai hiệu quả?',
       level: SFIALevel.LEVEL_5_INNOVATION,
-      compatentcySkillName: 'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Level 5)',
+      competentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 5)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 5,
       answerOptions: [
-        { content: 'Chỉ một mô hình ngôn ngữ lớn với dữ liệu công ty', isCorrect: false },
+        {
+          content: 'Một mô hình ngôn ngữ lớn duy nhất được huấn luyện độc quyền trên dữ liệu công ty',
+          isCorrect: false,
+        },
         {
           content:
-            'Cơ sở dữ liệu vector (vector database), mô hình embedding, tìm kiếm tương đồng, cơ chế xếp hạng lại (reranking mechanism) và tạo phản hồi',
+            'Cơ sở dữ liệu vector, mô hình nhúng, tìm kiếm tương tự, cơ chế xếp hạng lại, quy trình tạo phản hồi',
           isCorrect: true,
         },
-        { content: 'Tìm kiếm từ khóa truyền thống với tạo phản hồi AI', isCorrect: false },
-        { content: 'Nhiều mô hình AI riêng biệt cho các lĩnh vực kiến thức khác nhau', isCorrect: false },
+        { content: 'Tìm kiếm từ khóa truyền thống kết hợp với tạo phản hồi AI', isCorrect: false },
+        { content: 'Nhiều mô hình AI chuyên biệt cho các lĩnh vực kiến thức khác nhau', isCorrect: false },
       ],
     },
-    // DỮ LIỆU & PHƯƠNG PHÁP NGHIÊN CỨU (Data & Research Methodology)
+    // B2. NGHIÊN CỨU & TỔNG HỢP THÔNG TIN
     {
       type: QuestionType.SINGLE_CHOICE,
-      content: 'Điều gì ảnh hưởng đến chi phí sử dụng API AI như OpenAI?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        { content: 'Màu sắc màn hình máy tính của bạn', isCorrect: false },
-        { content: 'Số từ (token) bạn gửi và nhận', isCorrect: true },
-        { content: 'Thời gian trong ngày bạn sử dụng', isCorrect: false },
-        { content: 'Tốc độ internet của bạn', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Cho dự án machine learning của bạn, bạn cần dataset về hiệu suất học sinh. Nguồn phù hợp nhất là gì?',
+      content:
+        'ChatGPT cung cấp dữ liệu thống kê về "việc áp dụng AI trong các công ty Việt Nam" cho bài tập học thuật. Bước xác minh đầu tiên?',
       level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
+      competentcySkillName: 'Nghiên Cứu & Tổng Hợp Thông Tin (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
       answerOptions: [
-        { content: 'Bài đăng trên mạng xã hội về điểm số', isCorrect: false },
-        { content: 'Dataset giáo dục công khai từ các cơ quan chính phủ', isCorrect: true },
-        { content: 'Dữ liệu sinh viên riêng tư từ cơ sở dữ liệu trường của bạn', isCorrect: false },
-        { content: 'Dữ liệu bạn tự tạo ra', isCorrect: false },
+        { content: 'Sử dụng dữ liệu ngay lập tức vì tỷ lệ chính xác của ChatGPT thường cao', isCorrect: false },
+        {
+          content: 'Tham chiếu chéo với các nguồn có thẩm quyền như báo cáo chính phủ và khảo sát ngành',
+          isCorrect: true,
+        },
+        { content: 'Yêu cầu ChatGPT cung cấp trích dẫn cụ thể và tài liệu nguồn', isCorrect: false },
+        { content: 'Kiểm tra thông tin so với thống kê áp dụng AI quốc tế', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Nghiên cứu "tác động AI đến thị trường việc làm Việt Nam" cho báo cáo chiến lược. Phương pháp tổng hợp thông tin đa nguồn?',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
+      competentcySkillName: 'Nghiên Cứu & Tổng Hợp Thông Tin (Level 4)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 4,
+      answerOptions: [
+        { content: 'Tập trung độc quyền vào phân tích do AI tạo ra để có tính toàn diện và tốc độ', isCorrect: false },
+        {
+          content:
+            'Sử dụng AI cho nghiên cứu ban đầu và nhận dạng mẫu, xác thực chéo với phỏng vấn chuyên gia, thống kê chính thức, nghiên cứu tình huống thực tế',
+          isCorrect: true,
+        },
+        { content: 'Chỉ dựa vào các nguồn truyền thống để đảm bảo độ tin cậy tối đa', isCorrect: false },
+        {
+          content: 'Tính trung bình tất cả các nguồn có sẵn mà không xem xét sự khác biệt về độ tin cậy nguồn',
+          isCorrect: false,
+        },
+      ],
+    },
+    // B3. LÀM VIỆC NHÓM & HỢP TÁC AI-CON NGƯỜI
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Bạn cùng lớp yêu cầu phản hồi về dự án AI của họ. Mã hoạt động nhưng sử dụng phương pháp không hiệu quả. Phản hồi mang tính xây dựng nhất?',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Làm Việc Nhóm & Hợp Tác AI-Con Người (Level 2)',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        {
+          content: 'Khởi đầu tuyệt vời! Đây là các đề xuất tối ưu hóa có thể cải thiện hiệu suất: ...',
+          isCorrect: true,
+        },
+        {
+          content: 'Nền tảng tốt. Hãy xem xét các phương pháp thay thế này để có hiệu quả tốt hơn: [đề xuất cụ thể]',
+          isCorrect: false,
+        },
+        { content: 'Trông ổn', isCorrect: false },
+        { content: 'Chỉ ra các vấn đề mà không đưa ra đề xuất cải thiện cụ thể', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Bạn là Quản lý Dự án AI và cần trình bày kết quả dự án chatbot khách hàng cho Hội đồng Điều hành công ty. Dự án đã hoàn thành với các kết quả sau: Chỉ số kỹ thuật: Độ chính xác 87%, thời gian phản hồi 12ms. Tác động kinh doanh: Cải thiện hiệu quả 15%, tiết kiệm chi phí 200.000 USD. Trong buổi họp 15 phút với CEO và các Giám đốc, bạn sẽ cấu trúc bài trình bày như thế nào để tạo tác động mạnh nhất?',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
+      competentcySkillName: 'Làm Việc Nhóm & Hợp Tác AI-Con Người (Level 4)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 4,
+      answerOptions: [
+        {
+          content: 'Bắt đầu với phân tích chi tiết các chỉ số kỹ thuật để chứng minh tính khoa học của dự án',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Mở đầu bằng tác động kinh doanh, sau đó hỗ trợ bằng bằng chứng kỹ thuật, và kết thúc với đề xuất các bước tiếp theo cụ thể',
+          isCorrect: true,
+        },
+        { content: 'Chỉ tập trung vào các con số kinh doanh để tránh làm phức tạp cuộc họp', isCorrect: false },
+        { content: 'Để Hội đồng Điều hành chủ động đặt câu hỏi về những gì họ quan tâm', isCorrect: false },
+      ],
+    },
+    // B4. HIỂU BIẾT DỮ LIỆU & XÁC THỰC
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Dự án học máy (Machine Learning) yêu cầu bộ dữ liệu hiệu suất sinh viên. Nguồn phù hợp nhất?',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 2)',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        { content: 'Các bài đăng trên mạng xã hội về hiệu suất học tập và điểm số', isCorrect: false },
+        { content: 'Bộ dữ liệu giáo dục công khai từ các cơ quan chính phủ hoặc tổ chức nghiên cứu', isCorrect: true },
+        { content: 'Dữ liệu sinh viên riêng tư từ cơ sở dữ liệu nội bộ của trường đại học bạn', isCorrect: false },
+        { content: 'Dữ liệu tổng hợp được tạo ra dựa trên các giả định giáo dục', isCorrect: false },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Mô hình phân loại đạt độ chính xác 95%, nhưng bộ dữ liệu chứa 95% mẫu từ một lớp. Đánh giá tình huống thực tế?',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
+      competentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 4,
+      answerOptions: [
+        { content: 'Hiệu suất mô hình xuất sắc với thành tích độ chính xác cao', isCorrect: false },
+        {
+          content: 'Có khả năng gây hiểu lầm do mất cân bằng lớp - cần phân tích độ chính xác, độ nhạy, điểm F1',
+          isCorrect: true,
+        },
+        { content: 'Độ chính xác đủ để đánh giá hiệu suất, tiến hành triển khai', isCorrect: false },
+        { content: 'Tập trung vào đạt 100% độ chính xác trước khi đánh giá thêm', isCorrect: false },
+      ],
+    },
+    // B5. PHÂN TÁCH VẤN ĐỀ & XÁC ĐỊNH PHẠM VI AI
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Công ty khởi nghiệp thương mại điện tử muốn "cải thiện trải nghiệm khách hàng bằng AI." Phương pháp phân tách và định phạm vi?',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
+      competentcySkillName: 'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Level 4)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 4,
+      answerOptions: [
+        { content: 'Xây dựng hệ thống AGI toàn diện giải quyết tất cả các điểm tiếp xúc khách hàng', isCorrect: false },
+        {
+          content:
+            'Phân tách thành các trường hợp sử dụng cụ thể: động cơ khuyến nghị, chatbot hỗ trợ, tối ưu hóa giá, phát hiện gian lận - ưu tiên theo tác động và tính khả thi',
+          isCorrect: true,
+        },
+        { content: 'Tập trung độc quyền vào triển khai chatbot như điểm vào dễ tiếp cận nhất', isCorrect: false },
+        { content: 'Thuê ngoài toàn bộ sáng kiến AI cho các nhà cung cấp chuyên biệt', isCorrect: false },
+      ],
+    },
+    // B6. NĂNG LỰC BẢO MẬT & QUYỀN RIÊNG TƯ
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Công ty khởi nghiệp AI thu thập dữ liệu người dùng để huấn luyện mô hình. Các yêu cầu đạo đức và pháp lý thiết yếu?',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Năng Lực Bảo Mật & Quyền Riêng Tư (Level 3)',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Tính minh bạch thu thập dữ liệu được công bố trong thỏa thuận Điều khoản Dịch vụ',
+          isCorrect: false,
+        },
+        {
+          content:
+            'Đồng ý có thông tin, tùy chọn từ chối tham gia, nguyên tắc tối thiểu hóa dữ liệu, quy trình lưu trữ an toàn',
+          isCorrect: true,
+        },
+        { content: 'Chỉ yêu cầu mã hóa dữ liệu và cơ sở hạ tầng máy chủ an toàn', isCorrect: false },
+        { content: 'Yêu cầu quyền riêng tư chỉ áp dụng cho thông tin cá nhân nhạy cảm', isCorrect: false },
+      ],
+    },
+    // C1. THÀNH THẠO CÔNG CỤ AI CỐT LỜI
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content: 'Công cụ AI tốt nhất để bắt đầu cho sinh viên không có kinh nghiệm trước đó?',
+      level: SFIALevel.LEVEL_1_AWARENESS,
+      competentcySkillName: 'Thành Thạo Công Cụ AI Cốt Lõi (Level 1)',
+      estimatedTimeMinutes: 1,
+      difficultyWeight: 1,
+      answerOptions: [
+        { content: 'ChatGPT phiên bản miễn phí với cơ bản AI đối thoại và ứng dụng đa mục đích', isCorrect: true },
+        {
+          content: 'Claude.ai phiên bản miễn phí cung cấp các phong cách và phương pháp tương tác AI khác nhau',
+          isCorrect: false,
+        },
+        { content: 'Bing Chat cung cấp tích hợp thông tin thời gian thực với khả năng AI', isCorrect: false },
+        { content: 'Google Gemini với tích hợp hệ sinh thái Google và các tính năng hợp tác', isCorrect: false },
       ],
     },
     {
       type: QuestionType.MULTIPLE_CHOICE,
-      content: 'Bạn tải dataset cho machine learning. Kiểm tra chất lượng nào là thiết yếu? (Chọn các bước quan trọng)',
-      level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
-      estimatedTimeMinutes: 3,
-      difficultyWeight: 3,
-      answerOptions: [
-        { content: 'Kiểm tra giá trị bị thiếu và outlier', isCorrect: true },
-        { content: 'Xác minh tính nhất quán định dạng dữ liệu', isCorrect: true },
-        { content: 'Hiểu cách dữ liệu được thu thập', isCorrect: true },
-        { content: 'Giả định dataset là hoàn hảo nếu nó phổ biến', isCorrect: false },
-        { content: 'Tìm kiếm thiên lệch tiềm ẩn trong dữ liệu', isCorrect: true },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
       content:
-        'Mô hình phân loại của bạn cho độ chính xác 95%, nhưng dataset có 95% mẫu từ một lớp. Tình huống thực sự là gì?',
+        'Trưởng nhóm đánh giá 5 công cụ AI cốt lõi cho đội 20 người đa chức năng (phát triển, thiết kế, nội dung, bán hàng). Tiêu chí lựa chọn quan trọng nhất? (Chọn các yếu tố chính)',
       level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
-      estimatedTimeMinutes: 4,
+      competentcySkillName: 'Thành Thạo Công Cụ AI Cốt Lõi (Level 4)',
+      estimatedTimeMinutes: 3,
       difficultyWeight: 4,
       answerOptions: [
-        { content: 'Mô hình tuyệt vời với độ chính xác 95%', isCorrect: false },
-        {
-          content: 'Mô hình có thể chỉ dự đoán lớp đa số - cần kiểm tra precision, recall và F1-score',
-          isCorrect: true,
-        },
-        { content: 'Độ chính xác đủ để đánh giá hiệu suất', isCorrect: false },
-        { content: 'Tập trung đạt độ chính xác 100%', isCorrect: false },
+        { content: 'Dễ sử dụng trên các mức độ kỹ năng kỹ thuật khác nhau', isCorrect: true },
+        { content: 'Khả năng tích hợp với các công cụ quy trình làm việc hiện có', isCorrect: true },
+        { content: 'Hiệu quả chi phí và mô hình cấp phép linh hoạt', isCorrect: true },
+        { content: 'Luôn chọn các công cụ mới nhất để duy trì vị thế dẫn đầu công nghệ', isCorrect: false },
+        { content: 'Chất lượng hỗ trợ và tính sẵn có của tài nguyên cộng đồng', isCorrect: true },
+        { content: 'Tiêu chuẩn tuân thủ bảo mật và quyền riêng tư dữ liệu', isCorrect: true },
       ],
     },
-    // GIẢI QUYẾT VẤN ĐỀ & TRIỂN KHAI KỸ THUẬT (Problem Solving & Technical Implementation)
+    // C2. ĐÁNH GIÁ & LỰA CHỌN CÔNG CỤ
     {
-      type: QuestionType.SINGLE_CHOICE,
+      type: QuestionType.MULTIPLE_CHOICE,
       content:
-        'Mô hình machine learning của bạn cần sức mạnh tính toán nhiều hơn laptop có thể cung cấp. Giải pháp thân thiện với sinh viên tốt nhất là gì?',
+        'Sinh viên hạn chế ngân sách tìm kiếm các công cụ học tập AI có giá trị cao. Các lựa chọn dễ tiếp cận tốt nhất? (Chọn các lựa chọn thực tế)',
       level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
+      competentcySkillName: 'Đánh Giá & Lựa Chọn Công Cụ (Level 2)',
       estimatedTimeMinutes: 2,
       difficultyWeight: 2,
       answerOptions: [
-        { content: 'Mua laptop gaming đắt tiền', isCorrect: false },
-        {
-          content: 'Sử dụng runtime GPU miễn phí của Google Colab',
-          isCorrect: true,
-        },
-        { content: 'Bỏ qua dự án', isCorrect: false },
-        {
-          content: 'Chỉ sử dụng mô hình đơn giản chạy trên CPU',
-          isCorrect: false,
-        },
+        { content: 'ChatGPT phiên bản miễn phí cho tương tác AI chung và hỗ trợ học tập', isCorrect: true },
+        { content: 'Google Colab cho thử nghiệm và thực hành học máy', isCorrect: true },
+        { content: 'GitHub Copilot với giảm giá giáo dục sinh viên', isCorrect: true },
+        { content: 'Các nền tảng AI doanh nghiệp với tính năng nâng cao', isCorrect: false },
+        { content: 'Các mô hình Hugging Face cho thử nghiệm dự án NLP', isCorrect: true },
       ],
     },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Bạn đang xây dựng hệ thống gợi ý cho dự án thương mại điện tử. Cách tiếp cận thực tế nhất cho nhóm sinh viên là gì?',
+        'Đội đánh giá GitHub Copilot cho 20 nhà phát triển với giá $10/tháng/người. Các yếu tố ROI biện minh cho đầu tư?',
       level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 3)',
+      competentcySkillName: 'Đánh Giá & Lựa Chọn Công Cụ (Level 3)',
       estimatedTimeMinutes: 3,
       difficultyWeight: 3,
       answerOptions: [
-        { content: 'Xây dựng mạng neural từ đầu', isCorrect: false },
+        { content: 'Số dòng mã được tạo ra mỗi ngày trên các thành viên đội', isCorrect: false },
         {
-          content: 'Bắt đầu với collaborative filtering sử dụng thư viện có sẵn, sau đó cải tiến dựa trên kết quả',
+          content:
+            'Cải thiện tốc độ phát triển, giảm thời gian gỡ lỗi, sự hài lòng của nhà phát triển, tăng tốc phân phối tính năng',
           isCorrect: true,
         },
-        {
-          content: 'Sao chép chính xác một giải pháp hiện có',
-          isCorrect: false,
-        },
-        { content: 'Chỉ sử dụng gợi ý ngẫu nhiên', isCorrect: false },
+        { content: 'Tiết kiệm chi phí so với việc thuê thêm nguồn lực phát triển', isCorrect: false },
+        { content: 'Tăng cường ấn tượng khách hàng và phân biệt thị trường', isCorrect: false },
       ],
     },
+    // C3. TÍCH HỢP & THIẾT KẾ QUY TRÌNH
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Ứng dụng web được hỗ trợ AI của bạn hoạt động hoàn hảo trong phát triển nhưng thất bại ngẫu nhiên trong sản xuất với người dùng thực. Cách tiếp cận debug có hệ thống của bạn?',
+        'Ứng dụng thực hiện 10.000 cuộc gọi API hàng ngày đến OpenAI với chi phí leo thang. Chiến lược tối ưu hóa chi phí duy trì chất lượng?',
       level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 4)',
+      competentcySkillName: 'Tích Hợp & Thiết Kế Quy Trình (Level 4)',
       estimatedTimeMinutes: 4,
       difficultyWeight: 4,
       answerOptions: [
-        { content: 'Xây dựng lại toàn bộ hệ thống', isCorrect: false },
+        { content: 'Giảm việc sử dụng API bất kể tác động đến chức năng ứng dụng', isCorrect: false },
         {
           content:
-            'Phân tích sự khác biệt: mẫu dữ liệu, điều kiện tải, hành vi người dùng, giới hạn API, sau đó triển khai monitoring và rollout từ từ',
+            'Triển khai bộ nhớ đệm thông minh, sử dụng các mô hình nhỏ hơn cho các tác vụ đơn giản, gom nhóm các yêu cầu khi có thể',
           isCorrect: true,
         },
         {
-          content: 'Bỏ qua lỗi vì nó hoạt động trong phát triển',
+          content: 'Chuyển độc quyền sang các giải pháp thay thế miễn phí bất kể tác động chất lượng',
           isCorrect: false,
         },
-        {
-          content: 'Yêu cầu người dùng thay đổi hành vi của họ',
-          isCorrect: false,
-        },
+        { content: 'Chấp nhận chi phí như chi phí không thể tránh khỏi của tích hợp AI', isCorrect: false },
       ],
     },
+    // C4. ĐỔI MỚI & PHÁT TRIỂN TÙY CHỈNH
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
-        'Tổ chức của bạn cần quyết định giữa fine-tuning mô hình độc quyền vs. sử dụng foundation model với RAG cho ứng dụng cụ thể lĩnh vực. Nhiều đơn vị kinh doanh có yêu cầu, ngân sách và timeline khác nhau. Khung chiến lược của bạn?',
+        'Sự phát triển nhanh chóng của công cụ AI - công nghệ tiên tiến hôm nay trở thành tiêu chuẩn ngày mai. Chiến lược AI doanh nghiệp cho công ty trên nhiều đơn vị kinh doanh. Phương pháp lợi thế cạnh tranh bền vững?',
       level: SFIALevel.LEVEL_6_LEADERSHIP,
-      compatentcySkillName: 'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Level 5)',
+      competentcySkillName: 'Đổi Mới & Phát Triển Tùy Chỉnh (Level 6)',
       estimatedTimeMinutes: 5,
       difficultyWeight: 6,
       answerOptions: [
+        { content: 'Luôn áp dụng các công cụ mới nhất để duy trì vị thế dẫn đầu công nghệ', isCorrect: false },
         {
-          content: 'Chọn một cách tiếp cận để nhất quán tổ chức',
+          content:
+            'Phát triển các nguyên tắc kiến trúc thích ứng không phụ thuộc vào công cụ: xây dựng khả năng có thể chuyển đổi, đầu tư vào kỹ năng thích ứng, phòng thí nghiệm đổi mới, đối tác hệ sinh thái, tập trung vào sự xuất sắc dữ liệu và quy trình hơn là phụ thuộc vào công cụ',
+          isCorrect: true,
+        },
+        {
+          content: 'Tiêu chuẩn hóa trên các công cụ đã được chứng minh và tránh rủi ro công nghệ thử nghiệm',
           isCorrect: false,
         },
         {
-          content:
-            'Phát triển ma trận quyết định: đánh giá từng use case dựa trên độ nhạy cảm dữ liệu, yêu cầu hiệu suất, ràng buộc chi phí, khả năng bảo trì, sau đó tạo khung quản trị để triển khai',
-          isCorrect: true,
-        },
-        {
-          content: 'Để mỗi đơn vị kinh doanh quyết định độc lập',
+          content: 'Theo các quyết định của người dẫn đầu thị trường và phương pháp đồng thuận ngành',
           isCorrect: false,
         },
-        {
-          content: 'Luôn chọn phương án tiên tiến kỹ thuật nhất',
-          isCorrect: false,
-        },
-      ],
-    },
-    //LỰA CHỌN & SỬ DỤNG CÔNG CỤ (Tool Selection & Usage)
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Nếu bạn muốn thử AI miễn phí với tư cách sinh viên, đâu là lựa chọn khởi đầu tốt?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      compatentcySkillName: 'Nhập Môn Công Cụ AI (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        { content: 'ChatGPT Plus (20 USD/tháng)', isCorrect: false },
-        { content: 'Phiên bản ChatGPT miễn phí', isCorrect: true },
-        { content: 'Phần mềm AI doanh nghiệp', isCorrect: false },
-        { content: 'Tự xây dựng AI từ đầu', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.MULTIPLE_CHOICE,
-      content:
-        'Với tư cách sinh viên có ngân sách hạn chế, công cụ AI nào mang lại giá trị học tập cao nhất? (Chọn các phương án dễ tiếp cận)',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      compatentcySkillName: 'Nền Tảng Công Cụ AI (Level 2)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        { content: 'ChatGPT miễn phí để hỗ trợ học tập', isCorrect: true },
-        { content: 'Google Colab cho thí nghiệm machine learning', isCorrect: true },
-        { content: 'GitHub Copilot với giảm giá sinh viên', isCorrect: true },
-        { content: 'Nền tảng AI doanh nghiệp', isCorrect: false },
-        { content: 'Mô hình Hugging Face cho dự án NLP', isCorrect: true },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Nhóm của bạn đang đánh giá GitHub Copilot cho 20 lập trình viên với giá 20 USD/tháng/người. Yếu tố ROI nào biện minh cho khoản đầu tư?',
-      level: SFIALevel.LEVEL_3_APPLICATION,
-      compatentcySkillName: 'Ứng Dụng Công Cụ AI (Level 3)',
-      estimatedTimeMinutes: 3,
-      difficultyWeight: 3,
-      answerOptions: [
-        { content: 'Số dòng code được tạo ra mỗi ngày', isCorrect: false },
-        {
-          content:
-            'Cải thiện tốc độ phát triển, giảm thời gian debug, sự hài lòng của lập trình viên và tăng tốc giao hàng tính năng',
-          isCorrect: true,
-        },
-        { content: 'Chỉ tiết kiệm chi phí so với thuê thêm lập trình viên', isCorrect: false },
-        { content: 'Mức độ gây ấn tượng với khách hàng', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Ứng dụng của bạn thực hiện 10.000 lệnh gọi API hàng ngày đến OpenAI với chi phí tăng. Chiến lược tối ưu hóa nào duy trì chất lượng trong khi giảm chi phí?',
-      level: SFIALevel.LEVEL_4_INTEGRATION,
-      compatentcySkillName: 'Tích Hợp Công Cụ AI (Level 4)',
-      estimatedTimeMinutes: 4,
-      difficultyWeight: 4,
-      answerOptions: [
-        { content: 'Giảm sử dụng API bất kể tác động', isCorrect: false },
-        {
-          content: 'Triển khai caching thông minh, sử dụng mô hình nhỏ hơn cho tác vụ đơn giản, gộp request khi có thể',
-          isCorrect: true,
-        },
-        { content: 'Chỉ chuyển sang phương án miễn phí', isCorrect: false },
-        { content: 'Chấp nhận chi phí như không thể tránh khỏi', isCorrect: false },
-      ],
-    },
-    // TRIỂN KHAI CHIẾN LƯỢC (Strategic Implementation)
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Ngành của bạn không có giải pháp AI hiện có cho use case cụ thể của bạn. Bạn phải chọn giữa xây dựng giải pháp tùy chỉnh vs. điều chỉnh công cụ hiện có. Khung quyết định của bạn?',
-      level: SFIALevel.LEVEL_5_INNOVATION,
-      compatentcySkillName: 'Tích Hợp & Thiết Kế Quy Trình (Level 6)',
-      estimatedTimeMinutes: 4,
-      difficultyWeight: 5,
-      answerOptions: [
-        { content: 'Luôn xây dựng tùy chỉnh để đảm bảo phù hợp hoàn hảo', isCorrect: false },
-        {
-          content:
-            'Đánh giá: chi phí phát triển, thời gian ra thị trường, yêu cầu bảo trì, sự phù hợp năng lực cốt lõi, lợi thế cạnh tranh, so với giá trị chiến lược',
-          isCorrect: true,
-        },
-        { content: 'Luôn điều chỉnh công cụ hiện có để giảm thiểu rủi ro', isCorrect: false },
-        { content: 'Để nhóm kỹ thuật quyết định dựa trên sở thích', isCorrect: false },
-      ],
-    },
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Công cụ AI phát triển nhanh chóng - công nghệ tiên tiến hôm nay trở thành chuẩn mực ngày mai. Bạn chịu trách nhiệm về chiến lược AI doanh nghiệp trên nhiều đơn vị kinh doanh trong công ty Fortune 500. Cách tiếp cận của bạn cho lợi thế cạnh tranh bền vững?',
-      level: SFIALevel.LEVEL_7_MASTERY,
-      compatentcySkillName: 'Đổi Mới & Phát Triển Tùy Chỉnh (Level 7)',
-      estimatedTimeMinutes: 6,
-      difficultyWeight: 7,
-      answerOptions: [
-        { content: 'Luôn áp dụng công cụ mới nhất để duy trì lãnh đạo công nghệ', isCorrect: false },
-        {
-          content:
-            'Phát triển nguyên tắc kiến trúc thích ứng: xây dựng năng lực độc lập công cụ, đầu tư vào kỹ năng có thể chuyển giao, tạo phòng thí nghiệm đổi mới, thiết lập đối tác trên hệ sinh thái AI, tập trung vào xuất sắc dữ liệu và quy trình thay vì phụ thuộc công cụ',
-          isCorrect: true,
-        },
-        { content: 'Chuẩn hóa trên công cụ đã chứng minh và tránh công nghệ thử nghiệm', isCorrect: false },
-        { content: 'Để người dẫn đầu thị trường quyết định hướng và theo đồng thuận ngành', isCorrect: false },
       ],
     },
   ];
@@ -747,7 +923,7 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       maxPossibleScore: qData.difficultyWeight,
       sequence: index + 1,
       levelId: levelsMap[qData.level].id,
-      competencySkillId: competenciesSkillMap[qData.compatentcySkillName].id,
+      competencySkillId: competenciesSkillMap[qData.competentcySkillName].id,
     })),
   });
 
