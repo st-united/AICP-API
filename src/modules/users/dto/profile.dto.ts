@@ -45,4 +45,14 @@ export class ProfileDto {
 
   @Expose()
   deletedAt?: Date;
+
+  @Expose()
+  roles?: RoleDto[];
+}
+
+class RoleDto {
+  @Expose()
+  id: string;
+  @Expose()
+  name: string;
 }
