@@ -24,17 +24,35 @@ export class UpdatePortfolioDto {
   @IsUrl({ require_protocol: true })
   githubUrl?: string;
 
-  @ApiProperty({ description: 'Certification file URLs', required: false, type: [String] })
+  @ApiProperty({
+    description: 'Certifications',
+    required: false,
+    type: 'array',
+    items: { type: 'string', format: 'binary' },
+  })
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  @Transform(transformArray)
-  certificateFiles?: string[];
+  certificateFiles?: Express.Multer.File[];
 
-  @ApiProperty({ description: 'Experience file URLs', required: false, type: [String] })
+  @ApiProperty({
+    description: 'Experiences',
+    required: false,
+    type: 'array',
+    items: { type: 'string', format: 'binary' },
+  })
+  @IsOptional()
+  experienceFiles?: Express.Multer.File[];
+
+  @ApiProperty({ description: 'Deleted Certifications', required: false })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @Transform(transformArray)
-  experienceFiles?: string[];
+  deleted_certifications?: string[];
+
+  @ApiProperty({ description: 'Deleted Experiences', required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(transformArray)
+  deleted_experiences?: string[];
 }
