@@ -17,6 +17,7 @@ import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
 import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
+import { UserRoleEnum } from '@Constant/enums';
 
 @Injectable()
 export class AuthService {
@@ -35,9 +36,25 @@ export class AuthService {
         email: credentialsDto.email,
         deletedAt: null,
       },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+        mentor: true,
+      },
     });
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
+
     if (!user.status) throw new UnauthorizedException('Tài khoản không dược kích hoạt');
+
+    const hasMentorRole = user.roles.some((r) => r.role.name === UserRoleEnum.MENTOR);
+
+    if (hasMentorRole && user.mentor && user.mentor.isActive === false) {
+      throw new UnauthorizedException('Tài khoản mentor của bạn đã bị khóa');
+    }
+
     const comparePassword = bcrypt.compareSync(credentialsDto.password, user.password);
     if (!comparePassword) throw new UnauthorizedException('Mật khẩu không đúng');
 
