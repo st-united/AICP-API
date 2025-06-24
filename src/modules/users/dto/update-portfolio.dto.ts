@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsOptional, IsString, IsUrl } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { Express } from 'express';
 
 const transformArray = ({ value }) => {
   if (typeof value === 'string') {
