@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, Domain } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 async function hashPassword(password: string): Promise<string> {
@@ -6,7 +6,90 @@ async function hashPassword(password: string): Promise<string> {
   return await bcrypt.hash(password, saltRounds);
 }
 
-export async function seedUsers(prisma: PrismaClient, roles: Role[]): Promise<{ [email: string]: { id: string } }> {
+// Vietnam provinces data
+const VIETNAM_PROVINCES = [
+  'Thành phố Hà Nội',
+  'Tỉnh Hà Giang',
+  'Tỉnh Cao Bằng',
+  'Tỉnh Bắc Kạn',
+  'Tỉnh Tuyên Quang',
+  'Tỉnh Lào Cai',
+  'Tỉnh Điện Biên',
+  'Tỉnh Lai Châu',
+  'Tỉnh Sơn La',
+  'Tỉnh Yên Bái',
+  'Tỉnh Hoà Bình',
+  'Tỉnh Thái Nguyên',
+  'Tỉnh Lạng Sơn',
+  'Tỉnh Quảng Ninh',
+  'Tỉnh Bắc Giang',
+  'Tỉnh Phú Thọ',
+  'Tỉnh Vĩnh Phúc',
+  'Tỉnh Bắc Ninh',
+  'Tỉnh Hải Dương',
+  'Thành phố Hải Phòng',
+  'Tỉnh Hưng Yên',
+  'Tỉnh Thái Bình',
+  'Tỉnh Hà Nam',
+  'Tỉnh Nam Định',
+  'Tỉnh Ninh Bình',
+  'Tỉnh Thanh Hóa',
+  'Tỉnh Nghệ An',
+  'Tỉnh Hà Tĩnh',
+  'Tỉnh Quảng Bình',
+  'Tỉnh Quảng Trị',
+  'Thành phố Huế',
+  'Thành phố Đà Nẵng',
+  'Tỉnh Quảng Nam',
+  'Tỉnh Quảng Ngãi',
+  'Tỉnh Bình Định',
+  'Tỉnh Phú Yên',
+  'Tỉnh Khánh Hòa',
+  'Tỉnh Ninh Thuận',
+  'Tỉnh Bình Thuận',
+  'Tỉnh Kon Tum',
+  'Tỉnh Gia Lai',
+  'Tỉnh Đắk Lắk',
+  'Tỉnh Đắk Nông',
+  'Tỉnh Lâm Đồng',
+  'Tỉnh Bình Phước',
+  'Tỉnh Tây Ninh',
+  'Tỉnh Bình Dương',
+  'Tỉnh Đồng Nai',
+  'Tỉnh Bà Rịa - Vũng Tàu',
+  'Thành phố Hồ Chí Minh',
+  'Tỉnh Long An',
+  'Tỉnh Tiền Giang',
+  'Tỉnh Bến Tre',
+  'Tỉnh Trà Vinh',
+  'Tỉnh Vĩnh Long',
+  'Tỉnh Đồng Tháp',
+  'Tỉnh An Giang',
+  'Tỉnh Kiên Giang',
+  'Thành phố Cần Thơ',
+  'Tỉnh Hậu Giang',
+  'Tỉnh Sóc Trăng',
+  'Tỉnh Bạc Liêu',
+  'Tỉnh Cà Mau',
+];
+
+function getRandomDomains(domains: Domain[], minCount: number = 1, maxCount: number = 3): Domain[] {
+  const count = Math.floor(Math.random() * (maxCount - minCount + 1)) + minCount;
+  const shuffled = [...domains].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
+
+// Helper function to get random province
+function getRandomProvince(): string {
+  const randomIndex = Math.floor(Math.random() * VIETNAM_PROVINCES.length);
+  return VIETNAM_PROVINCES[randomIndex];
+}
+
+export async function seedUsers(
+  prisma: PrismaClient,
+  roles: Role[],
+  domains: Domain[]
+): Promise<{ [email: string]: { id: string } }> {
   const usersData = [
     {
       phoneNumber: '0901234567',
@@ -330,6 +413,8 @@ export async function seedUsers(prisma: PrismaClient, roles: Role[]): Promise<{ 
 
   for (const userData of usersData) {
     const hashedPassword = await hashPassword(userData.password);
+    const userDomains = getRandomDomains(domains);
+    const userProvince = getRandomProvince();
 
     const user = await prisma.user.upsert({
       where: { email: userData.email },
@@ -341,6 +426,10 @@ export async function seedUsers(prisma: PrismaClient, roles: Role[]): Promise<{ 
         fullName: userData.fullName,
         provider: 'local',
         status: Math.random() >= 0.5,
+        province: userProvince,
+        job: {
+          connect: userDomains.map((domain) => ({ id: domain.id })),
+        },
       },
     });
 

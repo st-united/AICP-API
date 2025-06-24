@@ -33,12 +33,12 @@ async function main() {
   // 3. Role Permissions
   await seedRolePermissions(prisma, roles, permissions);
 
-  // 4. Users
-  const userMap = await seedUsers(prisma, roles);
-
-  // 5. Domains
+  // 4. Domains (moved before users)
   await seedDomains(prisma);
   const domains = await prisma.domain.findMany();
+
+  // 5. Users (now with domains)
+  const userMap = await seedUsers(prisma, roles, domains);
 
   // 6. Competency Frameworks
   await seedCompetencyFrameworks(prisma, domains);

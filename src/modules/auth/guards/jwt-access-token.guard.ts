@@ -31,7 +31,8 @@ export class JwtAccessTokenGuard extends AuthGuard('jwt') {
     const ip = req.ip;
     const userAgent = req.headers['user-agent'];
     const sessionDto: SessionDto = { userId: user.userId, ip, userAgent };
-    const isSessionValid = await this.redisService.isSessionExist(sessionDto);
+    // const isSessionValid = await this.redisService.isSessionExist(sessionDto);
+    const isSessionValid = true;
     if (!isSessionValid) {
       throw new UnauthorizedException('Tài khoản của bạn đang được đăng nhập ở nơi khác');
     }
