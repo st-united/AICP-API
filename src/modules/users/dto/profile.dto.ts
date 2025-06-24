@@ -48,14 +48,12 @@ export class ProfileDto {
   deletedAt?: Date;
 
   @Expose()
-  refreshToken?: string;
+  roles?: RoleDto[];
+}
 
+class RoleDto {
   @Expose()
-  position?: string;
-
+  id: string;
   @Expose()
-  timezone?: string;
-
-  @Expose()
-  languagePreference?: string;
+  name: string;
 }
