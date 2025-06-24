@@ -122,6 +122,15 @@ export class UsersController {
     return await this.usersService.sendForgotPassword(email);
   }
 
+  @Public()
+  @Post('/check-reset-token')
+  @ApiOperation({ summary: 'Check reset password token' })
+  @ApiResponse({ status: 200, description: 'Token is valid' })
+  @ApiResponse({ status: 400, description: 'Token is invalid or expired' })
+  async checkResetToken(@Body('token') token: string): Promise<ResponseItem<boolean>> {
+    return await this.usersService.checkResetToken(token);
+  }
+
   @ApiTags('users')
   @Public()
   @Post('/update-forgot-password')
