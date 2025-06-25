@@ -153,6 +153,7 @@ export async function seedExams(
     SFIALevel.LEVEL_6_LEADERSHIP,
     SFIALevel.LEVEL_7_MASTERY,
   ];
+
   const examPromises = examData.map((data) =>
     prisma.exam.create({
       data: {
