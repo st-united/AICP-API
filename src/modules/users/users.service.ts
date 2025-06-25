@@ -161,7 +161,11 @@ export class UsersService {
       ...(jobFilter &&
         jobFilter.length > 0 && {
           job: {
-            in: jobFilter,
+            some: {
+              id: {
+                in: jobFilter,
+              },
+            },
           },
         }),
       ...(provinceFilter &&
@@ -264,9 +268,11 @@ export class UsersService {
   }
 
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
+
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
+        job: true,
         roles: {
           select: {
             role: {
@@ -292,7 +298,7 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
-    const { email, referralCode, ...updateData } = updateUserDto;
+    const { email, referralCode, job, ...updateData } = updateUserDto;
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
@@ -301,6 +307,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: updateData,
+      include: { job: true },
     });
 
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
@@ -323,6 +330,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl },
+      include: { job: true },
     });
 
     if (file.path && fs.existsSync(file.path)) {
@@ -342,6 +350,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl: null },
+      include: { job: true },
     });
 
     if (fs.existsSync(user.avatarUrl)) {

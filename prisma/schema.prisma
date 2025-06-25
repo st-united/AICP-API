@@ -22,13 +22,15 @@ model User {
   dob                DateTime? @map("dob") @db.Timestamptz(6)
   country            String?   @db.VarChar
   province           String?   @db.VarChar
-  job                String?   @db.VarChar
+
   referralCode       String?   @unique @map("referral_code") @db.VarChar
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken       String?   @unique @map("refresh_token") @db.VarChar
 
+
+  job                Domain[]    @relation("UserDomain")
   roles              UserRole[]
   userExam           Exam[]                 @relation("UserExam")
   reviewerExam       Exam[]                 @relation("ReviewerExam")
@@ -218,6 +220,7 @@ model Domain {
   courses   Course[]
   framework CompetencyFramework[]
   metrics   OrganizationalMetrics[]
+  users     User[]     @relation("UserDomain")
 }
 
 model CompetencyAspect {
