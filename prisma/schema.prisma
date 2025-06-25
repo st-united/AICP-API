@@ -230,9 +230,10 @@ model CompetencyAspect {
   createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  courses          Course[]
-  competencySkill  CompetencySkill[]
-  competencyPillar CompetencyPillar  @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+  courses            Course[]
+  competencySkill    CompetencySkill[]
+  examAspectSnapshot ExamAspectSnapshot[]
+  competencyPillar   CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
 }
 
 model ExamSet {
@@ -259,9 +260,6 @@ model Exam {
   examSetId         String?          @map("exam_set_id") @db.Uuid
   assessmentType    AssessmentType   @default(SELF_ASSESSMENT) @map("assessment_type")
   reviewerId        String?          @map("reviewer_id") @db.Uuid
-  mindsetScore      Decimal?         @map("mindset_score") @db.Decimal(3, 2)
-  skillsetScore     Decimal?         @map("skillset_score") @db.Decimal(3, 2)
-  toolsetScore      Decimal?         @map("toolset_score") @db.Decimal(3, 2)
   overallScore      Decimal?         @map("overall_score") @db.Decimal(3, 2)
   sfiaLevel         SFIALevel?       @map("sfia_level")
   readyToWorkTier   ReadyToWorkTier? @map("ready_to_work_tier")
@@ -277,9 +275,11 @@ model Exam {
   competencyAssessment CompetencyAssessment[]
   assessmentSession    AssessmentSession[]
 
-  user     User     @relation("UserExam", fields: [userId], references: [id], onDelete: Cascade)
-  reviewer User?    @relation("ReviewerExam", fields: [reviewerId], references: [id], onDelete: Cascade)
-  examSet  ExamSet? @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  user               User                 @relation("UserExam", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer           User?                @relation("ReviewerExam", fields: [reviewerId], references: [id], onDelete: Cascade)
+  examSet            ExamSet?             @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  examAspectSnapshot ExamAspectSnapshot[]
+  examPillarSnapshot ExamPillarSnapshot[]
 }
 
 model ExamSetQuestion {
@@ -374,6 +374,7 @@ model CompetencyPillar {
   mentorBooking       MentorBooking[]
   aspects             CompetencyAspect[]
   competencyFramework CompetencyFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  examPillarSnapshot  ExamPillarSnapshot[]
 }
 
 model CompetencySkill {
@@ -425,6 +426,32 @@ model CompetencyScore {
 
   pillar     CompetencyPillar     @relation(fields: [pillarId], references: [id])
   assessment CompetencyAssessment @relation(fields: [assessmentId], references: [id])
+}
+
+model ExamPillarSnapshot {
+  examId    String   @map("exam_id") @db.Uuid
+  pillarId  String   @map("pillar_id") @db.Uuid
+  score     Decimal  @map("mindset_score") @db.Decimal(3, 2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  exam   Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  pillar CompetencyPillar @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+
+  @@id([examId, pillarId])
+}
+
+model ExamAspectSnapshot {
+  examId    String   @map("exam_id") @db.Uuid
+  aspectId  String   @map("aspect_id") @db.Uuid
+  score     Decimal  @map("mindset_score") @db.Decimal(3, 2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  exam   Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  aspect CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+
+  @@id([examId, aspectId])
 }
 
 model LearningPath {

@@ -164,9 +164,9 @@ export class AnswersService {
       await this.prisma.exam.update({
         where: { id: examId },
         data: {
-          mindsetScore: mindScore,
-          skillsetScore: skillScore,
-          toolsetScore: toolScore,
+          // mindsetScore: mindScore,
+          // skillsetScore: skillScore,
+          // toolsetScore: toolScore,
           overallScore: finalScore,
           examStatus: ExamStatus.SUBMITTED,
         },
