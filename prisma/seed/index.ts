@@ -46,7 +46,11 @@ async function main() {
 
   // 7. Competency Pillars
   await seedPillars(prisma, competencyFrameworks);
-  const pillars = await prisma.competencyPillar.findMany();
+  const pillars = await prisma.competencyPillar.findMany({
+    include: {
+      aspects: true,
+    },
+  });
 
   // 8. Aspects
   await seedAspects(prisma, pillars);
@@ -57,7 +61,7 @@ async function main() {
   const levels = await prisma.level.findMany();
 
   // 10. Competency Skills
-  await seedCompetencySkills(prisma, aspects, levels);
+  await seedCompetencySkills(prisma, aspects);
   const competencySkills = await prisma.competencySkill.findMany();
 
   // 11. Questions
@@ -72,7 +76,7 @@ async function main() {
   const examSets = await prisma.examSet.findMany();
 
   // 14. Exams
-  const exams = await seedExams(prisma, userMap, examSets);
+  const exams = await seedExams(prisma, userMap, examSets, pillars, aspects);
 
   // 15. Mentors
   await seedMentors(prisma, userMap);
