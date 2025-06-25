@@ -6,7 +6,7 @@ ZONE=asia-southeast1-a
 
 REPOSITORY=aicp
 IMAGE_NAME=aicp-api
-VERSION=0.1.5
+VERSION=0.1.14
 ARTIFACT_REGISTRY_NAME=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME):$(VERSION)
 
 
@@ -48,19 +48,21 @@ create:
 
 build-load:
 	docker buildx build \
-			--platform linux/arm64 \
-			--load \
-			-t $(ARTIFACT_REGISTRY_NAME) \
-			--no-cache \
-			.
+					--platform linux/arm64 \
+					--load \
+					-t $(ARTIFACT_REGISTRY_NAME) \
+					--no-cache \
+					-f Dockerfile.prod \
+					.
 
 build-push:
 	docker buildx build \
-			--platform linux/amd64 \
-			--push \
-			-t $(ARTIFACT_REGISTRY_NAME) \
-			--no-cache \
-			.
+					--platform linux/amd64 \
+					--push \
+					-t $(ARTIFACT_REGISTRY_NAME) \
+					--no-cache \
+					-f Dockerfile.prod \
+					.
 
 run:
 	docker run --rm \
@@ -91,14 +93,6 @@ helm-redis:
 			--namespace devplus-aicp \
 			-f ./k8s/redis/values.yaml
 
-manual-db-setup:
-	kubectl run aicp-db-setup-manual \
-			--image=asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.3 \
-			--restart=Never \
-			--env-from=secret/aicp-api-env \
-			--command -- /bin/sh -c "yarn db:migrate && yarn db:seed" \
-			--namespace=devplus-aicp
-
 map-db:
 	kubectl -n devplus-aicp port-forward pod/postgres-aicp-postgresql-0 5432:5432
 
@@ -119,3 +113,33 @@ logs:
 
 restart-api:
 	kubectl rollout restart statefulset aicp-api -n devplus-aicp
+
+manual-db-setup:
+	kubectl run aicp-db-setup-manual \
+					--image=asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.14 \
+					--restart=Never \
+					--env-from=secret/aicp-api-env \
+					--command -- /bin/sh -c "yarn prisma migrate deploy && yarn db:seed" \
+					--namespace=devplus-aicp
+
+# DEV ONLY
+reset-db-dev:
+	kubectl run aicp-db-reset-manual \
+					--image=asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.14 \
+					--restart=Never \
+					--env-from=secret/aicp-api-env \
+					--command -- /bin/sh -c "yarn prisma migrate reset --force && yarn prisma migrate deploy && yarn db:seed" \
+					--namespace=devplus-aicp
+
+check-db-status:
+	kubectl run aicp-db-status-check \
+					--image=asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.14 \
+					--restart=Never \
+					--env-from=secret/aicp-api-env \
+					--command -- /bin/sh -c "yarn prisma migrate status" \
+					--namespace=devplus-aicp
+
+cleanup-jobs:
+	kubectl delete job aicp-db-setup-manual -n devplus-aicp --ignore-not-found
+	kubectl delete job aicp-db-reset-manual -n devplus-aicp --ignore-not-found
+	kubectl delete job aicp-db-status-check -n devplus-aicp --ignore-not-found

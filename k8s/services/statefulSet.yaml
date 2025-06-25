@@ -20,25 +20,38 @@ spec:
         runAsUser: 1000
       initContainers:
         - name: db-migration
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.5
-          command: ['yarn', 'db:migrate']
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.14
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Deploying database migrations..."
+              yarn prisma migrate deploy
+              echo "Migration completed successfully"
           envFrom:
             - secretRef:
                 name: aicp-api-env
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '256Mi'
+              cpu: '200m'
       containers:
         - name: aicp-api
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.5
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.14
           ports:
             - containerPort: 6002
           envFrom:
             - secretRef:
                 name: aicp-api-env
           volumeMounts:
-            # - name: aicp-api-env-file
-            #   mountPath: /app/server/.env
-            #   subPath: .env
             - name: storage-volume
               mountPath: /app/server/storage
+            - name: firebase-service-key
+              mountPath: /app/secrets
+              readOnly: true
           securityContext:
             allowPrivilegeEscalation: true
             capabilities:
@@ -54,10 +67,10 @@ spec:
             limits:
               memory: 1Gi
               cpu: '2'
-      # volumes:
-      #   - name: aicp-api-env-file
-      #     secret:
-      #       secretName: aicp-api-env-file
+      volumes:
+        - name: firebase-service-key
+          secret:
+            secretName: firebase-service-key
   volumeClaimTemplates:
     - metadata:
         name: storage-volume

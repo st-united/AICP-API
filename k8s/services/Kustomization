@@ -11,3 +11,10 @@ secretGenerator:
       - .env
     options:
       disableNameSuffixHash: true
+
+  - name: firebase-service-key
+    namespace: devplus-aicp
+    files:
+      - firebase-service-key.json=./secrets/firebase-service-key.json
+    options:
+      disableNameSuffixHash: true

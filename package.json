@@ -21,6 +21,7 @@
     "db:pull": "npx prisma db pull --force",
     "db:seed": "ts-node prisma/seed/index.ts",
     "db:studio": "prisma studio",
+    "db:deploy": "npx prisma migrate deploy && npx prisma generate",
     "generateType": "npx prisma generate"
   },
   "dependencies": {
@@ -71,7 +72,7 @@
     "@typescript-eslint/eslint-plugin": "8.32.1",
     "@typescript-eslint/parser": "8.32.1",
     "eslint": "9.26.0",
-    "eslint-config-prettier": "10.1.5",
+    "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "5.4.0",
     "husky": "9.1.7",
     "lint-staged": "16.0.0",
