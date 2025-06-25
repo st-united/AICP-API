@@ -268,7 +268,6 @@ export class UsersService {
   }
 
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
-
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
