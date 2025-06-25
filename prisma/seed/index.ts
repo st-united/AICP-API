@@ -33,12 +33,12 @@ async function main() {
   // 3. Role Permissions
   await seedRolePermissions(prisma, roles, permissions);
 
-  // 4. Users
-  const userMap = await seedUsers(prisma, roles);
-
-  // 5. Domains
+  // 4. Domains (moved before users)
   await seedDomains(prisma);
   const domains = await prisma.domain.findMany();
+
+  // 5. Users (now with domains)
+  const userMap = await seedUsers(prisma, roles, domains);
 
   // 6. Competency Frameworks
   await seedCompetencyFrameworks(prisma, domains);
@@ -46,7 +46,11 @@ async function main() {
 
   // 7. Competency Pillars
   await seedPillars(prisma, competencyFrameworks);
-  const pillars = await prisma.competencyPillar.findMany();
+  const pillars = await prisma.competencyPillar.findMany({
+    include: {
+      aspects: true,
+    },
+  });
 
   // 8. Aspects
   await seedAspects(prisma, pillars);
@@ -72,7 +76,7 @@ async function main() {
   const examSets = await prisma.examSet.findMany();
 
   // 14. Exams
-  const exams = await seedExams(prisma, userMap, examSets);
+  const exams = await seedExams(prisma, userMap, examSets, pillars, aspects);
 
   // 15. Mentors
   await seedMentors(prisma, userMap);

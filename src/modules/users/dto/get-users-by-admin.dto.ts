@@ -15,11 +15,11 @@ export class GetUsersByAdminDto extends PageOptionsDto {
   })
   status: boolean;
 
-  @Expose({ name: 'provice[]' })
+  @Expose({ name: 'province[]' })
   @ApiProperty({
     required: false,
     type: [String],
-    description: 'Filter by multiple provices (array format)',
+    description: 'Filter by multiple provinces (array format)',
     example: ['Quang binh', 'Quang tri'],
   })
   @IsOptional()
@@ -29,11 +29,9 @@ export class GetUsersByAdminDto extends PageOptionsDto {
       return value.filter((item) => item && item.trim() !== '');
     }
     if (typeof value === 'string') {
-      return value
-        .split(',')
-        .map((job) => job.trim())
-        .filter((job) => job !== '');
+      return [value];
     }
+
     return undefined;
   })
   'province[]': string[];
@@ -52,10 +50,7 @@ export class GetUsersByAdminDto extends PageOptionsDto {
       return value.filter((item) => item && item.trim() !== '');
     }
     if (typeof value === 'string') {
-      return value
-        .split(',')
-        .map((job) => job.trim())
-        .filter((job) => job !== '');
+      return [value];
     }
     return undefined;
   })

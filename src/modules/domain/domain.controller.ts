@@ -6,7 +6,7 @@ import { ResponseItem } from '@app/common/dtos';
 import { DomainService } from './domain.service';
 import { DomainNamesDto } from './dto/domain-names.dto';
 
-@ApiTags('domains')
+@ApiTags('domain')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
 @Controller('domain')
