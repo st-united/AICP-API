@@ -111,9 +111,6 @@ export class ExamService {
           id: true,
           startedAt: true,
           sfiaLevel: true,
-          mindsetScore: true,
-          skillsetScore: true,
-          toolsetScore: true,
           overallScore: true,
           examStatus: true,
           createdAt: true,
@@ -123,27 +120,58 @@ export class ExamService {
               name: true,
             },
           },
+          examPillarSnapshot: {
+            select: {
+              pillar: {
+                select: {
+                  name: true,
+                },
+              },
+              score: true,
+            },
+          },
         },
       });
 
-      if (!exam) {
-        throw new NotFoundException('Bài thi không tồn tại');
-      }
+      if (!exam) throw new NotFoundException('Bài thi không tồn tại');
+
+      const { examPillarSnapshot, overallScore, ...rest } = exam;
+
+      const pillarScores = examPillarSnapshot.reduce(
+        (acc, snapshot) => {
+          const name = snapshot.pillar.name.toUpperCase();
+          const score = Number(snapshot.score);
+
+          switch (name) {
+            case CompetencyDimension.MINDSET:
+              acc.mindsetScore = score;
+              break;
+            case CompetencyDimension.SKILLSET:
+              acc.skillsetScore = score;
+              break;
+            case CompetencyDimension.TOOLSET:
+              acc.toolsetScore = score;
+              break;
+          }
+          return acc;
+        },
+        {
+          mindsetScore: 0,
+          skillsetScore: 0,
+          toolsetScore: 0,
+        }
+      );
 
       const response: DetailExamResponseDto = {
-        ...exam,
-        overallScore: Number(exam.overallScore),
-        mindsetScore: Number(exam.mindsetScore),
-        skillsetScore: Number(exam.skillsetScore),
-        toolsetScore: Number(exam.toolsetScore),
+        ...rest,
+        overallScore: Number(overallScore),
+        ...pillarScores,
       };
 
       return new ResponseItem<DetailExamResponseDto>(response, 'Lấy chi tiết bài thi thành công');
     } catch (error) {
       this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
+      if (error instanceof NotFoundException) throw error;
       throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
     }
   }
