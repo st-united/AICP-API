@@ -20,6 +20,7 @@ export async function seedExams(
   const examData = [
     {
       email: 'user1@example.com',
+      emailMentor: 'mentor1@example.com',
       examSetName: 'AI Foundations Assessment',
       startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
@@ -51,6 +52,7 @@ export async function seedExams(
     },
     {
       email: 'user2@example.com',
+      emailMentor: 'mentor2@example.com',
       examSetName: 'AI Ethics and Impact',
       startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
@@ -81,6 +83,7 @@ export async function seedExams(
     },
     {
       email: 'user2@example.com',
+      emailMentor: 'mentor2@example.com',
       examSetName: 'AI Foundations Assessment',
       startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
@@ -111,6 +114,7 @@ export async function seedExams(
     },
     {
       email: 'user@example.com',
+      emailMentor: 'mentor3@example.com',
       examSetName: 'AI INPUT TEST',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000),
@@ -140,7 +144,6 @@ export async function seedExams(
       },
     },
   ];
-
   const sfiaLevels = [
     SFIALevel.LEVEL_1_AWARENESS,
     SFIALevel.LEVEL_2_FOUNDATION,
@@ -155,6 +158,7 @@ export async function seedExams(
     prisma.exam.create({
       data: {
         userId: userMap[data.email].id,
+        reviewerId: userMap[data.emailMentor].id,
         examSetId: examSetMap[data.examSetName].id,
         startedAt: data.startedAt,
         finishedAt: data.finishedAt,

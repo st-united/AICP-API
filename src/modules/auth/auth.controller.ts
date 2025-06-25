@@ -64,11 +64,15 @@ export class AuthController {
   - If \`data.status = false\`: This is a **returning user**.`,
     type: ResponseItem<TokenDto>,
   })
-  async loginWithGoogle(@Body('idToken') idToken: string) {
+  async loginWithGoogle(@Req() request, @Body('idToken') idToken: string) {
+    const userAgent = request.headers['user-agent'];
+    const ip = request.ip;
+    const userPayloadDto: UserPayloadDto = null;
+    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
     if (!idToken) {
       throw new BadRequestException('idToken is required');
     }
-    return this.authService.loginWithGoogle(idToken);
+    return this.authService.loginWithGoogle(userAndSessionPayloadDto, idToken);
   }
 
   @UseGuards(JwtAccessTokenGuard)

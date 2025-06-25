@@ -20,6 +20,7 @@
     "db:reset": "npx prisma migrate reset",
     "db:pull": "npx prisma db pull --force",
     "db:seed": "ts-node prisma/seed/index.ts",
+    "db:reset:full": "npx prisma migrate reset && npx prisma migrate dev && ts-node prisma/seed/index.ts",
     "db:studio": "prisma studio",
     "generateType": "npx prisma generate"
   },
