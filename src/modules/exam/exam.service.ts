@@ -175,4 +175,18 @@ export class ExamService {
       throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
     }
   }
+
+  async deleteExam(examId: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
+    const existingExam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+    });
+
+    if (!existingExam) {
+      throw new NotFoundException('Bài kiểm tra không tồn tại.');
+    }
+    await this.prisma.exam.delete({
+      where: { id: examId },
+    });
+    return new ResponseItem(null, 'Xoá bài làm thành công');
+  }
 }
