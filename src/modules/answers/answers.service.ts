@@ -113,7 +113,7 @@ export class AnswersService {
         }),
       ]);
 
-      const scoreMeta = this.calculateTotalScorePerPillar(examQuestions);
+      const scoreMeta = this.mapAspectWeightsPerPillar(examQuestions);
       const groupedSelections = this.groupSelections(matchingSelections);
       const groupedByQuestion = this.groupAnswerOptions(answerOptions);
       const classificationResult = this.classifyAnswers(groupedSelections, groupedByQuestion);
@@ -296,27 +296,27 @@ export class AnswersService {
     );
   }
 
-  private calculateTotalScorePerPillar(questions: any[]) {
-    const result = {
+  private mapAspectWeightsPerPillar(questions: any[]) {
+    const pillarMap: Record<string, Record<string, { weight: number }>> = {
       MINDSET: {},
       SKILLSET: {},
       TOOLSET: {},
     };
 
-    for (const q of questions) {
-      const namePillar = q.question.skill?.aspect?.competencyPillar?.name as keyof typeof result;
-      const nameAspect = q.question.skill?.aspect?.name as keyof typeof result;
-      const weightWithinDimension = q.question.skill?.aspect?.weightWithinDimension as keyof typeof result;
+    for (const questionItem of questions) {
+      const aspect = questionItem.question?.skill?.aspect;
+      const pillarName = aspect?.competencyPillar?.name;
+      const aspectName = aspect?.name;
+      const weight = aspect?.weightWithinDimension ?? 0;
 
-      if (!namePillar || !nameAspect || !result[namePillar]) continue;
+      if (!pillarName || !aspectName || !pillarMap[pillarName]) continue;
 
-      if (!result[namePillar][nameAspect]) {
-        result[namePillar][nameAspect] = {
-          weight: weightWithinDimension || 0,
-        };
+      if (!pillarMap[pillarName][aspectName]) {
+        pillarMap[pillarName][aspectName] = { weight };
       }
     }
-    return result;
+
+    return pillarMap;
   }
 
   private groupSelections(selections: any[]) {
@@ -386,7 +386,7 @@ export class AnswersService {
 
   private calculateAspectScoresPerPillar(
     totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>>,
-    scoreMetaPerAspect: Record<string, Record<string, { totalScore: number; weight: string }>>,
+    scoreMetaPerAspect: Record<string, Record<string, { weight: number }>>,
     pillarName: string
   ): Record<string, number> {
     const aspectScores = totalScoresPerAspect[pillarName] || {};
