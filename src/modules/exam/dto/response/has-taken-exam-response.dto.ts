@@ -1,3 +1,4 @@
+import { ExamStatus } from '@prisma/client';
 import { Expose } from 'class-transformer';
 
 export class HasTakenExamResponseDto {
@@ -9,4 +10,7 @@ export class HasTakenExamResponseDto {
 
   @Expose()
   examId?: string;
+
+  @Expose()
+  examStatus?: ExamStatus;
 }

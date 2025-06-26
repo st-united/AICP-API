@@ -20,6 +20,7 @@ export class ExamService {
       hasTakenExam: hasTaken,
       examSetDuration: examSet.timeLimitMinutes,
       examId: exam?.id,
+      examStatus: exam?.examStatus,
     };
     return new ResponseItem(response, hasTaken ? 'Đã làm bài thi này' : 'Chưa làm bài thi này');
   }
