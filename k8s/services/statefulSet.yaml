@@ -20,7 +20,7 @@ spec:
         runAsUser: 1000
       initContainers:
         - name: db-migration
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.14
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.16
           command:
             - /bin/sh
             - -c
@@ -40,7 +40,7 @@ spec:
               cpu: '200m'
       containers:
         - name: aicp-api
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.14
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.16
           ports:
             - containerPort: 6002
           envFrom:

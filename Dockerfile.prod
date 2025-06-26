@@ -37,7 +37,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy secrets folder
-COPY --from=builder /app/etc ./secrets
+COPY --from=builder /app/etc ./etc
 
 # Expose port
 EXPOSE 6002
