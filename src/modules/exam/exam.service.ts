@@ -111,9 +111,6 @@ export class ExamService {
           id: true,
           startedAt: true,
           sfiaLevel: true,
-          mindsetScore: true,
-          skillsetScore: true,
-          toolsetScore: true,
           overallScore: true,
           examStatus: true,
           createdAt: true,
@@ -123,27 +120,91 @@ export class ExamService {
               name: true,
             },
           },
+          examPillarSnapshot: {
+            select: {
+              pillar: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              score: true,
+            },
+          },
+          examAspectSnapshot: {
+            select: {
+              aspect: {
+                select: {
+                  id: true,
+                  name: true,
+                  represent: true,
+                  pillarId: true,
+                },
+              },
+              score: true,
+            },
+          },
         },
       });
 
-      if (!exam) {
-        throw new NotFoundException('Bài thi không tồn tại');
-      }
+      if (!exam) throw new NotFoundException('Bài thi không tồn tại');
+
+      const { examPillarSnapshot, examAspectSnapshot, overallScore, ...rest } = exam;
+
+      const pillarsWithAspects = examPillarSnapshot.map((pillarSnapshot) => {
+        const pillar = pillarSnapshot.pillar;
+
+        const aspects = examAspectSnapshot
+          .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+          .map((aspectSnapshot) => ({
+            id: aspectSnapshot.aspect.id,
+            name: aspectSnapshot.aspect.name,
+            represent: aspectSnapshot.aspect.represent,
+            score: Number(aspectSnapshot.score),
+          }));
+
+        return {
+          id: pillar.id,
+          name: pillar.name,
+          score: Number(pillarSnapshot.score),
+          aspects: aspects,
+        };
+      });
+
+      const pillarScores = pillarsWithAspects.reduce(
+        (acc, snapshot) => {
+          const name = snapshot.name.toUpperCase();
+
+          switch (name) {
+            case CompetencyDimension.MINDSET:
+              acc.mindsetScore = snapshot;
+              break;
+            case CompetencyDimension.SKILLSET:
+              acc.skillsetScore = snapshot;
+              break;
+            case CompetencyDimension.TOOLSET:
+              acc.toolsetScore = snapshot;
+              break;
+          }
+          return acc;
+        },
+        {
+          mindsetScore: null,
+          skillsetScore: null,
+          toolsetScore: null,
+        }
+      );
 
       const response: DetailExamResponseDto = {
-        ...exam,
-        overallScore: Number(exam.overallScore),
-        mindsetScore: Number(exam.mindsetScore),
-        skillsetScore: Number(exam.skillsetScore),
-        toolsetScore: Number(exam.toolsetScore),
+        ...rest,
+        overallScore: Number(overallScore),
+        ...pillarScores,
       };
 
       return new ResponseItem<DetailExamResponseDto>(response, 'Lấy chi tiết bài thi thành công');
     } catch (error) {
       this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
+      if (error instanceof NotFoundException) throw error;
       throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
     }
   }
