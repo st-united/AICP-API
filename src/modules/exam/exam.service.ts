@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
-import { Exam, ExamSet } from '@prisma/client';
+import { CompetencyDimension, Exam, ExamSet } from '@prisma/client';
 import { examSetDefaultName } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
