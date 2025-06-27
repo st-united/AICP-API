@@ -4,6 +4,8 @@ import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { SessionDto } from './dto/session.dto';
+import { PendingPhone } from '../zalo-otp/interface/zalo-otp.interface';
+import { OtpData } from '../zalo-otp/interface/zalo-otp.interface';
 
 /**
  * Service for managing Redis operations related to user sessions
@@ -112,6 +114,142 @@ export class RedisService implements OnModuleDestroy {
       Logger.error(`Error deleting value: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  /**
+   * Saves pending phone data to Redis
+   * @param phoneData - The phone data to save
+   * @throws {Error} If Redis operation fails
+   */
+  async savePendingPhone(phoneNumber: string): Promise<void> {
+    const key = `pending:${phoneNumber}`;
+    const data: PendingPhone = {
+      phoneNumber,
+      submittedAt: Date.now(),
+    };
+
+    try {
+      await this.redisClient.setex(key, 600, JSON.stringify(data));
+      Logger.log(`Saved pending phone: ${phoneNumber}`);
+    } catch (error) {
+      Logger.error(`Error saving pending phone: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves pending phone data
+   * @param phoneNumber - The phone number to check
+   * @returns {Promise<PendingPhone | null>} Pending phone data or null if not found
+   */
+  async getPendingPhone(phoneNumber: string): Promise<PendingPhone | null> {
+    const key = `pending:${phoneNumber}`;
+
+    try {
+      const data = await this.redisClient.get(key);
+
+      if (!data) return null;
+
+      return JSON.parse(data) as PendingPhone;
+    } catch (error) {
+      Logger.error(`Error getting pending phone: ${error.message}`, error.stack);
+      return null;
+    }
+  }
+
+  /**
+   * Clears pending phone after OTP is created
+   * @param phoneNumber - The phone number to clear
+   * @throws {Error} If Redis operation fails
+   */
+  async clearPendingPhone(phoneNumber: string): Promise<void> {
+    const key = `pending:${phoneNumber}`;
+
+    try {
+      await this.redisClient.del(key);
+      Logger.log(`Cleared pending phone: ${phoneNumber}`);
+    } catch (error) {
+      Logger.error(`Error clearing pending phone: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Saves OTP data (TTL: 5 minutes)
+   * @param phoneNumber - The phone number
+   * @param otpData - The OTP data to save
+   * @throws {Error} If Redis operation fails
+   */
+  async saveOtp(phoneNumber: string, otpData: OtpData): Promise<void> {
+    const key = `otp:${phoneNumber}`;
+
+    try {
+      await this.redisClient.setex(key, 300, JSON.stringify(otpData));
+      Logger.log(`Saved OTP for phone: ${phoneNumber}`);
+    } catch (error) {
+      Logger.error(`Error saving OTP: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves OTP data for verification
+   * @param phoneNumber - The phone number
+   * @returns {Promise<OtpData | null>} OTP data or null if not found
+   */
+  async getOtp(phoneNumber: string): Promise<OtpData | null> {
+    const key = `otp:${phoneNumber}`;
+
+    try {
+      const data = await this.redisClient.get(key);
+
+      if (!data) return null;
+
+      return JSON.parse(data) as OtpData;
+    } catch (error) {
+      Logger.error(`Error getting OTP: ${error.message}`, error.stack);
+      return null;
+    }
+  }
+
+  /**
+   * Clears OTP after successful verification
+   * @param phoneNumber - The phone number
+   * @throws {Error} If Redis operation fails
+   */
+  async clearOtp(phoneNumber: string): Promise<void> {
+    const key = `otp:${phoneNumber}`;
+
+    try {
+      await this.redisClient.del(key);
+      Logger.log(`Cleared OTP for phone: ${phoneNumber}`);
+    } catch (error) {
+      Logger.error(`Error clearing OTP: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  async checkSubmitRateLimit(phoneNumber: string): Promise<boolean> {
+    const key = `submit_limit:${phoneNumber}`;
+    const current = await this.redisClient.incr(key);
+
+    if (current === 1) {
+      await this.redisClient.expire(key, 300);
+    }
+
+    return current <= 3;
+  }
+
+  // Rate limiting cho verify OTP
+  async checkVerifyRateLimit(phoneNumber: string): Promise<boolean> {
+    const key = `verify_limit:${phoneNumber}`;
+    const current = await this.redisClient.incr(key);
+
+    if (current === 1) {
+      await this.redisClient.expire(key, 300);
+    }
+
+    return current <= 5;
   }
 
   /**
