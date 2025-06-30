@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class UpdateProfileUserDto {
   @ApiProperty({ description: 'fullName', example: 'Nguyen Van A' })
@@ -45,11 +45,15 @@ export class UpdateProfileUserDto {
   @IsString()
   province?: string;
 
-  @ApiProperty({ description: 'job', example: 'Developer' })
+  @ApiProperty({
+    description: 'List of Domain IDs the user belongs to',
+    example: ['uuid-domain-1', 'uuid-domain-2'],
+  })
   @Expose()
   @IsOptional()
-  @IsString()
-  job?: string;
+  @IsArray()
+  @IsUUID('all', { each: true })
+  job?: string[];
 
   @ApiProperty({ description: 'referralCode', example: 'REF123' })
   @Expose()
