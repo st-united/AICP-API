@@ -15,6 +15,9 @@ import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
+import { FirebaseService } from '../firebase/firebase.service';
+import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
+import { UserRoleEnum } from '@Constant/enums';
 
 @Injectable()
 export class AuthService {
@@ -23,19 +26,34 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
     private readonly redisService: RedisService,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
     const user = await this.prisma.user.findFirst({
       where: {
         email: credentialsDto.email,
-        // status: true,
         deletedAt: null,
       },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+        mentor: true,
+      },
     });
-
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
+
+    if (!user.status) throw new UnauthorizedException('Tài khoản không dược kích hoạt');
+
+    const hasMentorRole = user.roles.some((r) => r.role.name === UserRoleEnum.MENTOR);
+
+    if (hasMentorRole && user.mentor && user.mentor.isActive === false) {
+      throw new UnauthorizedException('Tài khoản mentor của bạn đã bị khóa');
+    }
 
     const comparePassword = bcrypt.compareSync(credentialsDto.password, user.password);
     if (!comparePassword) throw new UnauthorizedException('Mật khẩu không đúng');
@@ -93,6 +111,71 @@ export class AuthService {
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
 
+  async loginWithGoogle(
+    UserAndSessionPayloadDto: UserAndSessionPayloadDto,
+    idToken: string
+  ): Promise<ResponseItem<TokenDto>> {
+    try {
+      const { userPayloadDto, userAgent, ip } = UserAndSessionPayloadDto;
+      const decodedToken = await this.firebaseService.verifyIdToken(idToken);
+      const { email, name, picture } = decodedToken;
+
+      const hashedPassword = await bcrypt.hash('loginWithGooogle', 10);
+
+      const user = await this.prisma.user.upsert({
+        where: { email },
+        update: {
+          fullName: name,
+          avatarUrl: picture,
+        },
+        create: {
+          email,
+          fullName: name,
+          avatarUrl: picture,
+          password: hashedPassword,
+          phoneNumber: null,
+        },
+      });
+
+      const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+
+      return new ResponseItem(tokenData, 'Đăng nhập thành công');
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
+
+  private async generateTokensAndSession(
+    user: UserTokenPayloadDto,
+    name: string,
+    userAgent: string,
+    ip: string,
+    isNewUser: boolean = false
+  ): Promise<TokenDto> {
+    const payload: JwtPayload = { sub: user.id, email: user.email };
+    let refreshToken = user.refreshToken;
+
+    if (!refreshToken || this.tokenService.checkExpiredToken(refreshToken, 'refresh')) {
+      refreshToken = this.tokenService.generateRefreshToken(payload);
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken },
+      });
+    }
+
+    const accessToken = this.tokenService.generateAccessToken(payload);
+
+    const sessionDto: SessionDto = { userId: user.id, userAgent, ip };
+    await this.redisService.saveSessionToRedis(sessionDto);
+
+    return {
+      name,
+      accessToken,
+      refreshToken,
+      status: isNewUser,
+    };
+  }
+
   async handleLogout(userId: string): Promise<ResponseItem<string>> {
     const user = await this.prisma.user.update({
       where: { id: userId },
@@ -117,7 +200,7 @@ export class AuthService {
       },
     });
 
-    if (!user) throw new UnauthorizedException('Tài khoản không đúng');
+    if (!user) throw new UnauthorizedException('Tài khoản không hợp lệ');
 
     const payload: JwtPayload = { sub: user.id, email: user.email };
 
@@ -129,7 +212,7 @@ export class AuthService {
   }
 
   async register(params: RegisterUserDto): Promise<ResponseItem<UserResponseDto>> {
-    const user = await this.userService.create(params);
+    const user = await this.userService.create({ ...params, status: false });
 
     const activationToken = this.tokenService.generateActivationToken(user.id);
     await this.emailService.sendActivationEmail(user.fullName, user.email, activationToken);
@@ -158,7 +241,7 @@ export class AuthService {
 
       return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {
-      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn');
+      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn' + error);
     }
   }
 }

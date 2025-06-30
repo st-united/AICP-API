@@ -35,17 +35,17 @@ export class AnswersController {
     return await this.answersService.create(req.user.userId, dto);
   }
 
-  @Patch(':examSetId')
+  @Patch(':examId')
   @ApiOperation({
     summary: 'Submit the entire exam',
     description: `Call this endpoint after answering all questions to finalize and submit the entire exam.  
     The system will calculate the total score based on the previously submitted answers.`,
   })
   @ApiParam({
-    name: 'examSetId',
+    name: 'examId',
     required: true,
-    description: 'ID of the exam set to submit',
-    example: 'exam-set-123',
+    description: 'ID of the exam to submit',
+    example: 'exam-123',
   })
   @ApiResponse({
     status: 200,
@@ -54,7 +54,7 @@ export class AnswersController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Exam set not found or user not authorized.',
+    description: 'Exam not found or user not authorized.',
   })
   update(@Req() req, @Param('examId') examId: string): Promise<ResponseItem<userAnswerDto>> {
     return this.answersService.update(req.user.userId, examId);
