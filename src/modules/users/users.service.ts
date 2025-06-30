@@ -298,15 +298,25 @@ export class UsersService {
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
     const { email, referralCode, job, ...updateData } = updateUserDto;
+
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
+    const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateData,
-      include: { job: true },
+      data: {
+        ...updateData,
+        job: {
+          set: domainIds.map((domainId) => ({ id: domainId })),
+        },
+      },
+      include: {
+        job: true,
+      },
     });
 
     return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
