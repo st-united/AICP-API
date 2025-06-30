@@ -1,5 +1,42 @@
-import { ExamStatus, SFIALevel } from '@prisma/client';
+import { ExamStatus, SFIALevel, CompetencyDimension } from '@prisma/client';
 import { Expose, Type } from 'class-transformer';
+
+export class AspectDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  name: string;
+
+  @Expose()
+  represent: string;
+
+  @Expose()
+  score: number;
+}
+
+export class PillarScoreDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  name: CompetencyDimension;
+
+  @Expose()
+  score: number;
+
+  @Expose()
+  @Type(() => AspectDto)
+  aspects: AspectDto[];
+}
+
+export class ExamSetInformationDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  name: string;
+}
 
 export class DetailExamResponseDto {
   @Expose()
@@ -15,25 +52,24 @@ export class DetailExamResponseDto {
   overallScore: number;
 
   @Expose()
-  mindsetScore: number;
-
-  @Expose()
-  skillsetScore: number;
-
-  @Expose()
-  toolsetScore: number;
-
-  @Expose()
   examStatus: ExamStatus;
+
+  @Expose()
+  createdAt: Date;
 
   @Expose()
   @Type(() => ExamSetInformationDto)
   examSet: ExamSetInformationDto;
-}
 
-export class ExamSetInformationDto {
   @Expose()
-  id: string;
+  @Type(() => PillarScoreDto)
+  mindsetScore: PillarScoreDto;
+
   @Expose()
-  name: string;
+  @Type(() => PillarScoreDto)
+  skillsetScore: PillarScoreDto;
+
+  @Expose()
+  @Type(() => PillarScoreDto)
+  toolsetScore: PillarScoreDto;
 }
