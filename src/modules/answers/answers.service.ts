@@ -113,12 +113,12 @@ export class AnswersService {
         }),
       ]);
 
-      const scoreMeta = this.calculateTotalScorePerPillar(examQuestions);
+      const scoreMeta = this.mapAspectWeightsPerPillar(examQuestions);
       const groupedSelections = this.groupSelections(matchingSelections);
       const groupedByQuestion = this.groupAnswerOptions(answerOptions);
       const classificationResult = this.classifyAnswers(groupedSelections, groupedByQuestion);
 
-      const totalScoresPerAspect: Record<string, Record<string, number>> = {};
+      const totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>> = {};
       const scorePerQuestion: Record<string, any> = {};
 
       await Promise.all(
@@ -132,8 +132,10 @@ export class AnswersService {
 
           if (pillarName && aspectName) {
             totalScoresPerAspect[pillarName] ??= {};
-            totalScoresPerAspect[pillarName][aspectName] ??= 0;
-            totalScoresPerAspect[pillarName][aspectName] += finalScore;
+            totalScoresPerAspect[pillarName][aspectName] ??= { score: 0, maxScore: 0 };
+
+            totalScoresPerAspect[pillarName][aspectName].score += finalScore;
+            totalScoresPerAspect[pillarName][aspectName].maxScore += maxScorePerQuestion;
           }
 
           scorePerQuestion[userAnswerId] = {
@@ -294,33 +296,27 @@ export class AnswersService {
     );
   }
 
-  private calculateTotalScorePerPillar(questions: any[]) {
-    const result = {
+  private mapAspectWeightsPerPillar(questions: any[]) {
+    const pillarMap: Record<string, Record<string, { weight: number }>> = {
       MINDSET: {},
       SKILLSET: {},
       TOOLSET: {},
     };
 
-    for (const q of questions) {
-      const namePillar = q.question.skill?.aspect?.competencyPillar?.name as keyof typeof result;
-      const nameAspect = q.question.skill?.aspect?.name as keyof typeof result;
-      const weightWithinDimension = q.question.skill?.aspect?.weightWithinDimension as keyof typeof result;
+    for (const questionItem of questions) {
+      const aspect = questionItem.question?.skill?.aspect;
+      const pillarName = aspect?.competencyPillar?.name;
+      const aspectName = aspect?.name;
+      const weight = aspect?.weightWithinDimension ?? 0;
 
-      const score = q.question.maxPossibleScore?.toNumber() || 0;
+      if (!pillarName || !aspectName || !pillarMap[pillarName]) continue;
 
-      if (!namePillar || !nameAspect || !result[namePillar]) continue;
-
-      if (!result[namePillar][nameAspect]) {
-        result[namePillar][nameAspect] = {
-          totalScore: 0,
-          weight: weightWithinDimension || 0,
-        };
+      if (!pillarMap[pillarName][aspectName]) {
+        pillarMap[pillarName][aspectName] = { weight };
       }
-
-      result[namePillar][nameAspect].totalScore += score;
     }
 
-    return result;
+    return pillarMap;
   }
 
   private groupSelections(selections: any[]) {
@@ -389,8 +385,8 @@ export class AnswersService {
   }
 
   private calculateAspectScoresPerPillar(
-    totalScoresPerAspect: Record<string, Record<string, number>>,
-    scoreMetaPerAspect: Record<string, Record<string, { totalScore: number; weight: string }>>,
+    totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>>,
+    scoreMetaPerAspect: Record<string, Record<string, { weight: number }>>,
     pillarName: string
   ): Record<string, number> {
     const aspectScores = totalScoresPerAspect[pillarName] || {};
@@ -398,8 +394,8 @@ export class AnswersService {
 
     const result = Object.fromEntries(
       Object.entries(aspectMeta).map(([aspectName, meta]) => {
-        const actual = aspectScores[aspectName] || 0;
-        const max = meta.totalScore || 0;
+        const actual = aspectScores[aspectName].score || 0;
+        const max = aspectScores[aspectName].maxScore || 0;
         const weight = Number(meta.weight) || 0;
 
         const score = max > 0 ? +((actual / max) * 7 * weight).toFixed(2) : 0;

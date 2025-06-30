@@ -20,6 +20,7 @@ export class ExamService {
       hasTakenExam: hasTaken,
       examSetDuration: examSet.timeLimitMinutes,
       examId: exam?.id,
+      examStatus: exam?.examStatus,
     };
     return new ResponseItem(response, hasTaken ? 'Đã làm bài thi này' : 'Chưa làm bài thi này');
   }
@@ -124,7 +125,21 @@ export class ExamService {
             select: {
               pillar: {
                 select: {
+                  id: true,
                   name: true,
+                },
+              },
+              score: true,
+            },
+          },
+          examAspectSnapshot: {
+            select: {
+              aspect: {
+                select: {
+                  id: true,
+                  name: true,
+                  represent: true,
+                  pillarId: true,
                 },
               },
               score: true,
@@ -135,30 +150,49 @@ export class ExamService {
 
       if (!exam) throw new NotFoundException('Bài thi không tồn tại');
 
-      const { examPillarSnapshot, overallScore, ...rest } = exam;
+      const { examPillarSnapshot, examAspectSnapshot, overallScore, ...rest } = exam;
 
-      const pillarScores = examPillarSnapshot.reduce(
+      const pillarsWithAspects = examPillarSnapshot.map((pillarSnapshot) => {
+        const pillar = pillarSnapshot.pillar;
+
+        const aspects = examAspectSnapshot
+          .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+          .map((aspectSnapshot) => ({
+            id: aspectSnapshot.aspect.id,
+            name: aspectSnapshot.aspect.name,
+            represent: aspectSnapshot.aspect.represent,
+            score: Number(aspectSnapshot.score),
+          }));
+
+        return {
+          id: pillar.id,
+          name: pillar.name,
+          score: Number(pillarSnapshot.score),
+          aspects: aspects,
+        };
+      });
+
+      const pillarScores = pillarsWithAspects.reduce(
         (acc, snapshot) => {
-          const name = snapshot.pillar.name.toUpperCase();
-          const score = Number(snapshot.score);
+          const name = snapshot.name.toUpperCase();
 
           switch (name) {
             case CompetencyDimension.MINDSET:
-              acc.mindsetScore = score;
+              acc.mindsetScore = snapshot;
               break;
             case CompetencyDimension.SKILLSET:
-              acc.skillsetScore = score;
+              acc.skillsetScore = snapshot;
               break;
             case CompetencyDimension.TOOLSET:
-              acc.toolsetScore = score;
+              acc.toolsetScore = snapshot;
               break;
           }
           return acc;
         },
         {
-          mindsetScore: 0,
-          skillsetScore: 0,
-          toolsetScore: 0,
+          mindsetScore: null,
+          skillsetScore: null,
+          toolsetScore: null,
         }
       );
 
@@ -174,5 +208,19 @@ export class ExamService {
       if (error instanceof NotFoundException) throw error;
       throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
     }
+  }
+
+  async deleteExam(examId: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
+    const existingExam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+    });
+
+    if (!existingExam) {
+      throw new NotFoundException('Bài kiểm tra không tồn tại.');
+    }
+    await this.prisma.exam.delete({
+      where: { id: examId },
+    });
+    return new ResponseItem(null, 'Xoá bài làm thành công');
   }
 }
