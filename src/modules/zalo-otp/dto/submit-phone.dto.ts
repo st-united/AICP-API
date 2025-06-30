@@ -7,4 +7,8 @@ export class SubmitPhoneDto {
     message: 'Số điện thoại không hợp lệ',
   })
   phoneNumber: string;
+
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
 }

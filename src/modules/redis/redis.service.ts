@@ -4,8 +4,6 @@ import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { SessionDto } from './dto/session.dto';
-import { PendingPhone } from '../zalo-otp/interface/zalo-otp.interface';
-import { OtpData } from '../zalo-otp/interface/zalo-otp.interface';
 
 /**
  * Service for managing Redis operations related to user sessions
@@ -123,7 +121,7 @@ export class RedisService implements OnModuleDestroy {
    */
   async savePendingPhone(phoneNumber: string): Promise<void> {
     const key = `pending:${phoneNumber}`;
-    const data: PendingPhone = {
+    const data = {
       phoneNumber,
       submittedAt: Date.now(),
     };
@@ -142,7 +140,7 @@ export class RedisService implements OnModuleDestroy {
    * @param phoneNumber - The phone number to check
    * @returns {Promise<PendingPhone | null>} Pending phone data or null if not found
    */
-  async getPendingPhone(phoneNumber: string): Promise<PendingPhone | null> {
+  async getPendingPhone(phoneNumber: string) {
     const key = `pending:${phoneNumber}`;
 
     try {
@@ -150,7 +148,7 @@ export class RedisService implements OnModuleDestroy {
 
       if (!data) return null;
 
-      return JSON.parse(data) as PendingPhone;
+      return JSON.parse(data);
     } catch (error) {
       Logger.error(`Error getting pending phone: ${error.message}`, error.stack);
       return null;
@@ -180,7 +178,7 @@ export class RedisService implements OnModuleDestroy {
    * @param otpData - The OTP data to save
    * @throws {Error} If Redis operation fails
    */
-  async saveOtp(phoneNumber: string, otpData: OtpData): Promise<void> {
+  async saveOtp(phoneNumber: string, otpData): Promise<void> {
     const key = `otp:${phoneNumber}`;
 
     try {
@@ -197,7 +195,7 @@ export class RedisService implements OnModuleDestroy {
    * @param phoneNumber - The phone number
    * @returns {Promise<OtpData | null>} OTP data or null if not found
    */
-  async getOtp(phoneNumber: string): Promise<OtpData | null> {
+  async getOtp(phoneNumber: string) {
     const key = `otp:${phoneNumber}`;
 
     try {
@@ -205,7 +203,7 @@ export class RedisService implements OnModuleDestroy {
 
       if (!data) return null;
 
-      return JSON.parse(data) as OtpData;
+      return JSON.parse(data);
     } catch (error) {
       Logger.error(`Error getting OTP: ${error.message}`, error.stack);
       return null;

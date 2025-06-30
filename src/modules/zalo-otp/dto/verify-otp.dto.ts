@@ -9,4 +9,8 @@ export class VerifyOtpDto {
   @IsNotEmpty()
   @Length(6, 6)
   otpCode: string;
+
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
 }
