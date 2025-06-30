@@ -40,4 +40,5 @@ lerna-debug.log*
 
 /etc
 /etc/secrets
-etc/secrets/firebase-service-key.json
+/etc/secrets/google-service-key.json
+/etc/secrets/firebase-service-key.json
