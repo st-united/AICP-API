@@ -7,6 +7,7 @@ import { CompetencyDimension, Exam, ExamSet } from '@prisma/client';
 import { examSetDefaultName } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
+import * as dayjs from 'dayjs';
 import { DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
 
 @Injectable()
@@ -77,13 +78,17 @@ export class ExamService {
     try {
       const where: any = { userId: userId };
 
-      if (historyExam.startDate && historyExam.endDate) {
-        where.createdAt = {
-          gte: historyExam.startDate,
-          lte: historyExam.endDate,
-        };
-      }
+      if (historyExam.startDate || historyExam.endDate) {
+        where.createdAt = {};
 
+        if (historyExam.startDate) {
+          where.createdAt.gte = dayjs(historyExam.startDate).startOf('day').toDate();
+        }
+
+        if (historyExam.endDate) {
+          where.createdAt.lte = dayjs(historyExam.endDate).endOf('day').toDate();
+        }
+      }
       const exams = await this.prisma.exam.findMany({
         where,
         orderBy: {
