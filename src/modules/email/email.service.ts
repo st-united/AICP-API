@@ -34,7 +34,7 @@ export class EmailService {
   }
 
   async sendEmailNewMentor(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const activationLink = `${this.configService.get('FE_APP_URL')}/mentor-activation/${emailContent.token}`;
+    const activationLink = `${this.configService.get('FE_APP_URL_ADMIN')}/mentor-activation/${emailContent.token}`;
 
     const template = this.generateMentorAccountEmailTemplate(
       emailContent.fullName,
@@ -45,7 +45,7 @@ export class EmailService {
   }
 
   async sendEmailActivateMentorAccount(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const loginLink = `${this.configService.get('FE_APP_URL')}/login`;
+    const loginLink = `${this.configService.get('FE_APP_URL_ADMIN')}/login`;
 
     const template = this.activateMentorAccountEmailTemplate(emailContent.fullName, loginLink);
     await this.sendEmail(emailContent.email, 'Tài khoản Mentor của bạn đã được kích hoạt', template);
