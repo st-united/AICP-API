@@ -12,6 +12,7 @@ import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto'
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
+import { ActivateAccountDto } from './dto/request/activate-account.dto';
 
 @Controller('mentors')
 export class MentorsController {
@@ -56,7 +57,10 @@ export class MentorsController {
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.mentorsService.getMentor(id);
   }
-
+  @Patch('activate-link-account')
+  async activateAccountByMentor(@Body() activateAccountDto: ActivateAccountDto) {
+    return await this.mentorsService.activateAccountByMentor(activateAccountDto.token);
+  }
   @Patch(':id')
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateMentorDto: UpdateMentorDto) {
     return await this.mentorsService.updateMentor(id, updateMentorDto);

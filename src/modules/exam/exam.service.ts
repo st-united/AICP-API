@@ -3,11 +3,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
-import { Exam, ExamSet } from '@prisma/client';
+import { CompetencyDimension, Exam, ExamSet } from '@prisma/client';
 import { examSetDefaultName } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
+import { DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
 
 @Injectable()
 export class ExamService {
@@ -20,6 +21,7 @@ export class ExamService {
       hasTakenExam: hasTaken,
       examSetDuration: examSet.timeLimitMinutes,
       examId: exam?.id,
+      examStatus: exam?.examStatus,
     };
     return new ResponseItem(response, hasTaken ? 'Đã làm bài thi này' : 'Chưa làm bài thi này');
   }
@@ -105,5 +107,125 @@ export class ExamService {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi lấy lịch sử thi');
     }
+  }
+
+  async getDetailExam(examId: string): Promise<ResponseItem<DetailExamResponseDto>> {
+    try {
+      const exam = await this.prisma.exam.findUnique({
+        where: { id: examId },
+        select: {
+          id: true,
+          startedAt: true,
+          sfiaLevel: true,
+          overallScore: true,
+          examStatus: true,
+          createdAt: true,
+          examSet: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          examPillarSnapshot: {
+            select: {
+              pillar: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              score: true,
+            },
+          },
+          examAspectSnapshot: {
+            select: {
+              aspect: {
+                select: {
+                  id: true,
+                  name: true,
+                  represent: true,
+                  pillarId: true,
+                },
+              },
+              score: true,
+            },
+          },
+        },
+      });
+
+      if (!exam) throw new NotFoundException('Bài thi không tồn tại');
+
+      const { examPillarSnapshot, examAspectSnapshot, overallScore, ...rest } = exam;
+
+      const pillarsWithAspects = examPillarSnapshot.map((pillarSnapshot) => {
+        const pillar = pillarSnapshot.pillar;
+
+        const aspects = examAspectSnapshot
+          .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+          .map((aspectSnapshot) => ({
+            id: aspectSnapshot.aspect.id,
+            name: aspectSnapshot.aspect.name,
+            represent: aspectSnapshot.aspect.represent,
+            score: Number(aspectSnapshot.score),
+          }));
+
+        return {
+          id: pillar.id,
+          name: pillar.name,
+          score: Number(pillarSnapshot.score),
+          aspects: aspects,
+        };
+      });
+
+      const pillarScores = pillarsWithAspects.reduce(
+        (acc, snapshot) => {
+          const name = snapshot.name.toUpperCase();
+
+          switch (name) {
+            case CompetencyDimension.MINDSET:
+              acc.mindsetScore = snapshot;
+              break;
+            case CompetencyDimension.SKILLSET:
+              acc.skillsetScore = snapshot;
+              break;
+            case CompetencyDimension.TOOLSET:
+              acc.toolsetScore = snapshot;
+              break;
+          }
+          return acc;
+        },
+        {
+          mindsetScore: null,
+          skillsetScore: null,
+          toolsetScore: null,
+        }
+      );
+
+      const response: DetailExamResponseDto = {
+        ...rest,
+        overallScore: Number(overallScore),
+        ...pillarScores,
+      };
+
+      return new ResponseItem<DetailExamResponseDto>(response, 'Lấy chi tiết bài thi thành công');
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
+    }
+  }
+
+  async deleteExam(examId: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
+    const existingExam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+    });
+
+    if (!existingExam) {
+      throw new NotFoundException('Bài kiểm tra không tồn tại.');
+    }
+    await this.prisma.exam.delete({
+      where: { id: examId },
+    });
+    return new ResponseItem(null, 'Xoá bài làm thành công');
   }
 }
