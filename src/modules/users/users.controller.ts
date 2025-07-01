@@ -49,10 +49,7 @@ export class UsersController {
   @Public()
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
-  @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async create(
-    @UploadedFile()
-    // avatar: Express.Multer.File,
     @Body()
     createUserDto: CreateUserDto
   ) {
