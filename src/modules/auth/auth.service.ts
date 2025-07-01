@@ -1,28 +1,29 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { CredentialsDto } from './dto/credentials.dto';
-import { UserPayloadDto } from './dto/user-payload.dto';
+import { UserPayloadDto, UserAndSessionPayloadDto } from './dto/user-payload.dto';
 import { JwtPayload } from '@Constant/types';
 import { ResponseItem } from '@app/common/dtos';
 import { TokenDto } from './dto/token.dto';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UserResponseDto } from '@UsersModule/dto/response/user-response.dto';
 import { UsersService } from '@UsersModule/users.service';
 import * as jwt from 'jsonwebtoken';
 import { EmailService } from '../email/email.service';
+import { RedisService } from '../redis/redis.service';
+import { TokenService } from './services/token.service';
+import { SessionDto } from '../redis/dto/session.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly redisService: RedisService,
+    private readonly tokenService: TokenService
   ) {}
 
   async validateUser(credentialsDto: CredentialsDto): Promise<UserPayloadDto> {
@@ -46,43 +47,65 @@ export class AuthService {
     };
   }
 
-  async login(userPayloadDto: UserPayloadDto): Promise<ResponseItem<TokenDto>> {
+  async login(UserAndSessionPayloadDto: UserAndSessionPayloadDto): Promise<ResponseItem<TokenDto>> {
+    const { userPayloadDto, userAgent, ip } = UserAndSessionPayloadDto;
+    let refreshToken: string;
     const payload: JwtPayload = { sub: userPayloadDto.id, email: userPayloadDto.email };
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRETKEY'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES'),
-    });
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-      expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES'),
-    });
-
-    await this.prisma.user.update({
+    const existingUser = await this.prisma.user.findUnique({
       where: { id: userPayloadDto.id },
-      data: { refreshToken },
+      select: { refreshToken: true },
     });
 
+    if (existingUser) {
+      refreshToken = existingUser.refreshToken;
+    }
+
+    if (!refreshToken) {
+      refreshToken = this.tokenService.generateRefreshToken(payload);
+
+      await this.prisma.user.update({
+        where: { id: userPayloadDto.id },
+        data: { refreshToken },
+      });
+    }
+    const isRefreshTokenExpired = this.tokenService.checkExpiredToken(refreshToken, 'refresh');
+
+    if (isRefreshTokenExpired) {
+      refreshToken = this.tokenService.generateRefreshToken(payload);
+
+      await this.prisma.user.update({
+        where: { id: userPayloadDto.id },
+        data: { refreshToken },
+      });
+    }
+
+    const accessToken = this.tokenService.generateAccessToken(payload);
     const data = {
       name: userPayloadDto.name,
       accessToken,
       refreshToken,
     };
 
+    const sessionDto: SessionDto = { userId: userPayloadDto.id, userAgent, ip };
+    await this.redisService.saveSessionToRedis(sessionDto);
+
     return new ResponseItem(data, 'Đăng nhập thành công');
   }
 
-  async logout(userId: string): Promise<ResponseItem<string>> {
+  async handleLogout(userId: string): Promise<ResponseItem<string>> {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: null },
     });
 
     if (!user) {
-      throw new BadRequestException('Đăng xuất không thành công');
+      throw new BadRequestException('Đăng xuất thiết bị không thành công');
     }
 
-    return new ResponseItem('', 'Đăng xuất thành công');
+    await this.redisService.deleteSession(userId);
+
+    return new ResponseItem('', 'Đăng xuất thiết bị thành công');
   }
 
   async refreshToken(token: string): Promise<ResponseItem<TokenDto>> {
@@ -99,10 +122,7 @@ export class AuthService {
     const payload: JwtPayload = { sub: user.id, email: user.email };
 
     const data = {
-      accessToken: this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRETKEY'),
-        expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRES'),
-      }),
+      accessToken: this.tokenService.generateAccessToken(payload),
     };
 
     return new ResponseItem(data, 'Làm mới token thành công');
@@ -111,16 +131,14 @@ export class AuthService {
   async register(params: RegisterUserDto): Promise<ResponseItem<UserResponseDto>> {
     const user = await this.userService.create(params);
 
-    const activationToken = this.jwtService.sign(
-      { userId: user.id },
-      {
-        secret: this.configService.get<string>('JWT_ACTIVATE_SECRETKEY'),
-        expiresIn: this.configService.get<string>('JWT_ACTIVATE_EXPIRES'),
-      }
-    );
+    const activationToken = this.tokenService.generateActivationToken(user.id);
     await this.emailService.sendActivationEmail(user.fullName, user.email, activationToken);
 
-    return new ResponseItem(user, 'Đăng ký thành công', UserResponseDto);
+    return new ResponseItem(
+      user,
+      'Đăng ký tài khoản thành công. Vui lòng kiểm tra email để kích hoạt tài khoản.',
+      UserResponseDto
+    );
   }
 
   async activateAccount(token: string): Promise<ResponseItem<null>> {
@@ -138,7 +156,7 @@ export class AuthService {
 
       await this.userService.updateUserStatus(user.id, true);
 
-      return new ResponseItem(null, 'Account activation successful');
+      return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {
       throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn');
     }

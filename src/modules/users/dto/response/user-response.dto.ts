@@ -31,4 +31,8 @@ export class UserResponseDto {
   @Expose()
   @ApiProperty()
   status: boolean;
+
+  @Expose()
+  @ApiProperty()
+  dob?: Date;
 }

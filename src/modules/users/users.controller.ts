@@ -20,6 +20,7 @@ import { fileOption } from '@app/config/image-multer-config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GetUsersDto } from '@UsersModule/dto/get-users.dto';
 import { UpdateUserDto } from '@UsersModule/dto/update-user.dto';
+import { UpdateForgotPasswordUserDto } from '@UsersModule/dto/update-forgot-password';
 import { UsersService } from '@UsersModule/users.service';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -29,6 +30,9 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { CreateUserDto } from './dto/request/create-user.dto';
 import { Public } from '../auth/guards/decorator/public.decorator';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
+import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
+import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
+
 @ApiTags('users')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -39,7 +43,7 @@ export class UsersController {
   @Public()
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
-  @UseInterceptors(FileInterceptor('avatar', fileOption('users')))
+  @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async create(
     @UploadedFile()
     // avatar: Express.Multer.File,
@@ -60,8 +64,15 @@ export class UsersController {
   }
 
   @Get()
-  async getUsers(@Query() getUsersDto: GetUsersDto): Promise<ResponsePaginate<UserDto>> {
-    return await this.usersService.getUsers(getUsersDto);
+  @Public()
+  async getUsers(@Query() queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    return await this.usersService.getUsers(queries);
+  }
+
+  @Get('status-summary')
+  @Public()
+  async getStatusSummary(): Promise<ResponseItem<GetStatusSummaryDto>> {
+    return await this.usersService.getStatusSummary();
   }
 
   @Get('me')
@@ -80,36 +91,37 @@ export class UsersController {
     return await this.usersService.updateProfile(req.user.userId, updateUserDto);
   }
 
-  @Delete(':id')
-  async deleteUser(@Param('id', ParseIntPipe) id: string): Promise<ResponseItem<null>> {
-    return await this.usersService.deleteUser(id);
-  }
-
-  @Get(':id')
-  async getUser(@Param('id', ParseIntPipe) id: string): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.getUser(id);
-  }
-
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.update(id, updateUserDto);
-  }
-
-  @Post('avatar/:id')
-  @UseInterceptors(FileInterceptor('avatar', fileOption('users')))
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async uploadAvatar(
-    @Param('id') id: string,
+    @Req() req,
     @UploadedFile()
     avatar: Express.Multer.File
-  ): Promise<any> {
+  ): Promise<ResponseItem<UserDto>> {
     if (avatar) {
-      return await this.usersService.uploadAvatar(id, avatar);
+      return await this.usersService.uploadAvatar(req.user.userId, avatar);
     }
     throw new BadRequestException('Hình ảnh không hợp lệ');
   }
 
-  @Patch('avatar/:id')
-  async removeAvatar(@Param('id') id: string): Promise<ResponseItem<UserDto>> {
-    return await this.usersService.removeAvatar(id);
+  @Delete('avatar')
+  async removeAvatar(@Req() req): Promise<ResponseItem<UserDto>> {
+    return await this.usersService.removeAvatar(req.user.userId);
+  }
+
+  @ApiTags('users')
+  @Public()
+  @Post('/forgot-password')
+  async forgotPassword(@Body('email') email: string): Promise<ResponseItem<boolean>> {
+    return await this.usersService.sendForgotPassword(email);
+  }
+
+  @ApiTags('users')
+  @Public()
+  @Post('/update-forgot-password')
+  async updateForgotPassword(
+    @Body() updateForgotPasswordUserDto: UpdateForgotPasswordUserDto
+  ): Promise<ResponseItem<boolean>> {
+    return await this.usersService.updateNewPassword(updateForgotPasswordUserDto);
   }
 }

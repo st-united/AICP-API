@@ -19,6 +19,13 @@ export enum UserProviderEnum {
   GITHUB = 'GITHUB',
 }
 
+export enum UserRoleEnum {
+  USER = 'user',
+  ADMIN = 'admin',
+  MENTOR = 'mentor',
+  SUPER_ADMIN = 'super_admin',
+}
+
 export enum examSetDefaultName {
   DEFAULT = 'AI INPUT TEST',
 }
