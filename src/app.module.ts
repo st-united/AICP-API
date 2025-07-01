@@ -14,6 +14,7 @@ import { MentorsModule } from './modules/mentors/mentors.module';
 import { AnswersModule } from '@AnswersModule/answers.module';
 import { ExamSetsModule } from './modules/exam-sets/exam-sets.module';
 import { ExamModule } from './modules/exam/exam.module';
+import { DomainModule } from './modules/domain/domain.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ExamModule } from './modules/exam/exam.module';
     AnswersModule,
     ExamSetsModule,
     ExamModule,
+    DomainModule,
   ],
   providers: [
     {
