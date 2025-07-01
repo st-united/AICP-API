@@ -227,6 +227,7 @@ model CompetencyAspect {
   id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pillarId              String              @map("pillar_id") @db.Uuid
   name                  String              @unique @db.VarChar
+  represent             String              @db.VarChar @default("")
   description           String              @db.Text
   weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
