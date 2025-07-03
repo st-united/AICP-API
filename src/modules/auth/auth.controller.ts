@@ -10,6 +10,7 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { UserAndSessionPayloadDto, UserPayloadDto } from './dto/user-payload.dto';
+import { ClientTypeEnum } from '@Constant/enums';
 
 @Controller('auth')
 export class AuthController {
@@ -24,9 +25,10 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
     const userAgent = request.headers['user-agent'];
+    const clientType: ClientTypeEnum = request.headers['x-client-type'];
     const ip = request.ip;
     const userPayloadDto: UserPayloadDto = request.user;
-    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
+    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip, clientType };
     return await this.authService.login(userAndSessionPayloadDto);
   }
 
