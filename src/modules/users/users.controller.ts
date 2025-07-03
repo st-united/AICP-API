@@ -49,10 +49,7 @@ export class UsersController {
   @Public()
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
-  @UseInterceptors(FileInterceptor('avatar', fileOption()))
   async create(
-    @UploadedFile()
-    // avatar: Express.Multer.File,
     @Body()
     createUserDto: CreateUserDto
   ) {
@@ -98,12 +95,8 @@ export class UsersController {
   }
 
   @Post('avatar')
-  @UseInterceptors(FileInterceptor('avatar', fileOption()))
-  async uploadAvatar(
-    @Req() req,
-    @UploadedFile()
-    avatar: Express.Multer.File
-  ): Promise<ResponseItem<UserDto>> {
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadAvatar(@Req() req, @UploadedFile() avatar: Express.Multer.File): Promise<ResponseItem<UserDto>> {
     if (avatar) {
       return await this.usersService.uploadAvatar(req.user.userId, avatar);
     }

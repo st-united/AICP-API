@@ -41,7 +41,7 @@ import {
   validateDeletedFiles,
 } from '@app/validations/portfolio-validation';
 import { Response } from 'express';
-
+import * as sharp from 'sharp';
 @Injectable()
 export class UsersService {
   constructor(
@@ -329,22 +329,32 @@ export class UsersService {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
+    // Resize ảnh về 512x512 và convert sang JPEG (nén tốt, chất lượng tốt)
+    const resizedBuffer = await sharp(file.buffer)
+      .resize(512, 512, { fit: 'cover' }) // fit cover đảm bảo đúng 512x512, crop nếu cần
+      .jpeg({ quality: 80 })
+      .toBuffer();
+
+    // Kiểm tra kích thước sau khi resize
+    if (resizedBuffer.length > 5 * 1024 * 1024) {
+      throw new BadRequestException('Ảnh vượt quá kích thước tối đa 5MB sau khi xử lý');
+    }
+
+    // Nếu có ảnh cũ => xóa
     if (user.avatarUrl) {
       const oldDest = this.googleCloudStorageService.getFileDestFromPublicUrl(user.avatarUrl);
       await this.googleCloudStorageService.deleteFile(oldDest);
     }
+
+    // Upload buffer ảnh lên GCS
     const destPath = avtPathName('avatars', uuidv4());
-    const avatarUrl = await this.googleCloudStorageService.uploadFile(file, destPath);
+    const avatarUrl = await this.googleCloudStorageService.uploadBuffer(resizedBuffer, destPath, 'image/jpeg');
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl },
       include: { job: true },
     });
-
-    if (file.path && fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path);
-    }
 
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công', UserDto);
   }
