@@ -95,4 +95,32 @@ export class GoogleCloudStorageService {
       Logger.error(`Failed to delete file ${destFileName}: ${err instanceof Error ? err.message : err}`);
     }
   }
+
+  /**
+   * Uploads a buffer (e.g. resized image) to Google Cloud Storage.
+   * @param buffer - The buffer to upload (e.g. from sharp)
+   * @param destFileName - Destination filename on GCS
+   * @param contentType - MIME type (e.g. 'image/jpeg')
+   * @returns Promise<string> - The public URL of the uploaded file
+   */
+  async uploadBuffer(buffer: Buffer, destFileName: string, contentType: string): Promise<string> {
+    try {
+      const bucket = this.storage.bucket(this.bucketName);
+      const blob = bucket.file(destFileName);
+
+      await blob.save(buffer, {
+        resumable: false,
+        metadata: {
+          contentType,
+          cacheControl: `public, max-age=${this.googleCacheMaxAge}`,
+        },
+        //public: true,
+      });
+
+      return `${this.googlePublicUrl}/${this.bucketName}/${destFileName}`;
+    } catch (error) {
+      Logger.error(`Failed to upload buffer: ${error instanceof Error ? error.message : String(error)}`);
+      throw new BadRequestException('Lỗi khi upload ảnh từ buffer');
+    }
+  }
 }
