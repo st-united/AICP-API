@@ -28,6 +28,9 @@ export class AnswersService {
   }
 
   async update(userId: string, examId: string): Promise<ResponseItem<userAnswerDto>> {
+    const totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>> = {};
+    const scorePerQuestion: Record<string, any> = {};
+    const totalScorePerPillar: Record<string, { id: string; score: number; weightWithinDimension: number }> = {};
     const existingExam = await this.prisma.exam.findFirst({
       where: { id: examId },
     });
@@ -118,9 +121,6 @@ export class AnswersService {
       const groupedByQuestion = this.groupAnswerOptions(answerOptions);
       const classificationResult = this.classifyAnswers(groupedSelections, groupedByQuestion);
 
-      const totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>> = {};
-      const scorePerQuestion: Record<string, any> = {};
-
       await Promise.all(
         Object.entries(classificationResult).map(async ([userAnswerId, result]) => {
           const { TP, FP, FN, pillarName, aspectName, maxScorePerQuestion } = result;
@@ -152,11 +152,15 @@ export class AnswersService {
         })
       );
 
-      const aspectScoresPerPillar = {
-        MINDSET: this.calculateAspectScoresPerPillar(totalScoresPerAspect, scoreMeta, 'MINDSET'),
-        SKILLSET: this.calculateAspectScoresPerPillar(totalScoresPerAspect, scoreMeta, 'SKILLSET'),
-        TOOLSET: this.calculateAspectScoresPerPillar(totalScoresPerAspect, scoreMeta, 'TOOLSET'),
-      };
+      const aspectScoresPerPillar = ['MINDSET', 'SKILLSET', 'TOOLSET'].reduce(
+        (result, aspect) => {
+          result[aspect] = this.isNonEmpty(totalScoresPerAspect[aspect])
+            ? this.calculateAspectScoresPerPillar(totalScoresPerAspect, scoreMeta, aspect)
+            : {};
+          return result;
+        },
+        {} as Record<string, Record<string, number>>
+      );
 
       const validPillarIds = allPillars.map((p) => p.id);
       const aspects = await this.prisma.competencyAspect.findMany({
@@ -173,8 +177,6 @@ export class AnswersService {
           },
         },
       });
-
-      const totalScorePerPillar: Record<string, { id: string; score: number; weightWithinDimension: number }> = {};
 
       const snapshots = aspects.map((aspect) => {
         const { name: aspectName, id: aspectId, competencyPillar } = aspect;
@@ -394,8 +396,9 @@ export class AnswersService {
 
     const result = Object.fromEntries(
       Object.entries(aspectMeta).map(([aspectName, meta]) => {
-        const actual = aspectScores[aspectName].score || 0;
-        const max = aspectScores[aspectName].maxScore || 0;
+        const aspect = aspectScores[aspectName] || { score: 0, maxScore: 0 };
+        const actual = aspect.score || 0;
+        const max = aspect.maxScore || 0;
         const weight = Number(meta.weight) || 0;
 
         const score = max > 0 ? +((actual / max) * 7 * weight).toFixed(2) : 0;
@@ -405,5 +408,9 @@ export class AnswersService {
     );
 
     return result;
+  }
+
+  private isNonEmpty(obj: any): boolean {
+    return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
   }
 }
