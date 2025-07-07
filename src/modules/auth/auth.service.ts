@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
 import { CredentialsDto } from './dto/credentials.dto';
@@ -17,7 +17,7 @@ import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
 import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
-import { UserRoleEnum } from '@Constant/enums';
+import { ClientTypeEnum, UserRoleEnum } from '@Constant/enums';
 
 @Injectable()
 export class AuthService {
@@ -66,17 +66,37 @@ export class AuthService {
   }
 
   async login(UserAndSessionPayloadDto: UserAndSessionPayloadDto): Promise<ResponseItem<TokenDto>> {
-    const { userPayloadDto, userAgent, ip } = UserAndSessionPayloadDto;
+    const { userPayloadDto, userAgent, ip, clientType } = UserAndSessionPayloadDto;
     let refreshToken: string;
     const payload: JwtPayload = { sub: userPayloadDto.id, email: userPayloadDto.email };
 
     const existingUser = await this.prisma.user.findUnique({
       where: { id: userPayloadDto.id },
-      select: { refreshToken: true },
+      select: {
+        refreshToken: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (existingUser) {
       refreshToken = existingUser.refreshToken;
+    }
+
+    const userRoles = existingUser.roles.map((r) => r.role.name);
+
+    if (
+      clientType === ClientTypeEnum.WEB_ADMIN &&
+      !userRoles.some((role: UserRoleEnum) => [UserRoleEnum.ADMIN, UserRoleEnum.MENTOR].includes(role))
+    ) {
+      throw new ForbiddenException('Bạn không có quyền truy cập trang quản trị');
     }
 
     if (!refreshToken) {
@@ -134,6 +154,7 @@ export class AuthService {
           avatarUrl: picture,
           password: hashedPassword,
           phoneNumber: null,
+          status: true,
         },
       });
 

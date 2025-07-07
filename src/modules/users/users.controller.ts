@@ -95,12 +95,12 @@ export class UsersController {
   }
 
   @Post('avatar')
-  @UseInterceptors(FileInterceptor('avatar', fileOption()))
-  async uploadAvatar(
-    @Req() req,
-    @UploadedFile()
-    avatar: Express.Multer.File
-  ): Promise<ResponseItem<UserDto>> {
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadAvatar(@Req() req, @UploadedFile() avatar: Express.Multer.File): Promise<ResponseItem<UserDto>> {
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!ALLOWED_TYPES.includes(avatar.mimetype)) {
+      throw new BadRequestException('Định dạng ảnh không hợp lệ (chỉ nhận jpeg, png, webp)');
+    }
     if (avatar) {
       return await this.usersService.uploadAvatar(req.user.userId, avatar);
     }

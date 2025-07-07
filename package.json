@@ -20,10 +20,10 @@
     "db:reset": "npx prisma migrate reset",
     "db:pull": "npx prisma db pull --force",
     "db:seed": "ts-node prisma/seed/index.ts",
-    "db:reset:full": "npx prisma migrate reset && npx prisma migrate dev && ts-node prisma/seed/index.ts",
     "db:studio": "prisma studio",
     "db:deploy": "npx prisma migrate deploy && npx prisma generate",
-    "generateType": "npx prisma generate"
+    "generateType": "npx prisma generate",
+    "db:reset:full": "npx prisma migrate reset -- force && npx prisma migrate dev && ts-node prisma/seed/index.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "7.16.0",
@@ -52,6 +52,7 @@
     "passport-jwt": "4.0.1",
     "passport-local": "1.0.0",
     "rxjs": "7.8.2",
+    "sharp": "^0.34.2",
     "tmp": "0.2.3",
     "typeorm": "0.3.23"
   },
