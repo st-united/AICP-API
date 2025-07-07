@@ -21,7 +21,8 @@
     "db:pull": "npx prisma db pull --force",
     "db:seed": "ts-node prisma/seed/seed.ts",
     "db:studio": "prisma studio",
-    "generateType": "npx prisma generate"
+    "generateType": "npx prisma generate",
+    "db:reset:full": "npx prisma migrate reset -- force && npx prisma migrate dev && ts-node prisma/seed/index.ts"
   },
   "dependencies": {
     "@faker-js/faker": "8.4.1",
