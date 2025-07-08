@@ -30,7 +30,7 @@ export class MentorsService {
     private readonly tokenService: TokenService
   ) {}
 
-  async create(createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
+  async create(createMentorDto: CreateMentorDto, url: string): Promise<ResponseItem<MentorResponseDto>> {
     const password = generateSecurePassword();
     const { expertise, maxMentees, ...userData } = createMentorDto;
     const createUser = await this.userService.create({ ...userData, password });
@@ -49,6 +49,7 @@ export class MentorsService {
         email: createUser.email,
         password,
         token,
+        url,
       };
       await this.redisService.setValue(`active_mentor:${emailContent.token}`, 'true');
       this.emailService.sendEmailNewMentor(emailContent);
