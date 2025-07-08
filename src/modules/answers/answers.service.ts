@@ -30,7 +30,10 @@ export class AnswersService {
   async update(userId: string, examId: string): Promise<ResponseItem<userAnswerDto>> {
     const totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>> = {};
     const scorePerQuestion: Record<string, any> = {};
-    const totalScorePerPillar: Record<string, { id: string; score: number; weightWithinDimension: number }> = {};
+    const totalScorePerPillar: Record<
+      string,
+      { id: string; weightedScore: number; rawScore: number; weightWithinDimension: number }
+    > = {};
     const existingExam = await this.prisma.exam.findFirst({
       where: { id: examId },
     });
@@ -159,7 +162,7 @@ export class AnswersService {
             : {};
           return result;
         },
-        {} as Record<string, Record<string, number>>
+        {} as Record<string, Record<string, { weighted: number; raw: number }>>
       );
 
       const validPillarIds = allPillars.map((p) => p.id);
@@ -182,37 +185,40 @@ export class AnswersService {
         const { name: aspectName, id: aspectId, competencyPillar } = aspect;
         const { name: pillarName, id: pillarId, weightWithinDimension } = competencyPillar;
 
-        const score = aspectScoresPerPillar[pillarName]?.[aspectName] ?? 0;
+        const weightedScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.weighted ?? 0;
+        const rawScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.raw ?? 0;
 
         totalScorePerPillar[pillarName] ??= {
           id: pillarId,
-          score: 0,
+          weightedScore: 0,
+          rawScore: 0,
           weightWithinDimension: weightWithinDimension.toNumber(),
         };
-        totalScorePerPillar[pillarName].score += score;
+        totalScorePerPillar[pillarName].weightedScore += weightedScore;
+        totalScorePerPillar[pillarName].rawScore += rawScore;
 
-        return { aspectId, score };
+        return { aspectId, weightedScore, rawScore };
       });
 
       await Promise.all([
         ...snapshots.map((s) =>
           this.prisma.examAspectSnapshot.upsert({
             where: { examId_aspectId: { examId, aspectId: s.aspectId } },
-            create: { examId, aspectId: s.aspectId, score: s.score },
-            update: { score: s.score },
+            create: { examId, aspectId: s.aspectId, score: s.rawScore },
+            update: { score: s.rawScore },
           })
         ),
         ...Object.values(totalScorePerPillar).map((s) =>
           this.prisma.examPillarSnapshot.upsert({
             where: { examId_pillarId: { examId, pillarId: s.id } },
-            create: { examId, pillarId: s.id, score: s.score },
-            update: { score: s.score },
+            create: { examId, pillarId: s.id, score: s.weightedScore },
+            update: { score: s.weightedScore },
           })
         ),
       ]);
 
       const overallScore = +Object.values(totalScorePerPillar)
-        .reduce((acc, s) => acc + s.score * s.weightWithinDimension, 0)
+        .reduce((acc, s) => acc + s.weightedScore * s.weightWithinDimension, 0)
         .toFixed(2);
 
       await this.prisma.exam.update({
@@ -390,7 +396,7 @@ export class AnswersService {
     totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>>,
     scoreMetaPerAspect: Record<string, Record<string, { totalScore: number; weight: string }>>,
     pillarName: string
-  ): Record<string, number> {
+  ): Record<string, { weighted: number; raw: number }> {
     const aspectScores = totalScoresPerAspect[pillarName] || {};
     const aspectMeta = scoreMetaPerAspect[pillarName] || {};
 
@@ -401,9 +407,10 @@ export class AnswersService {
         const max = aspect.maxScore || 0;
         const weight = Number(meta.weight) || 0;
 
-        const score = max > 0 ? +((actual / max) * 7 * weight).toFixed(2) : 0;
+        const rawScore = max > 0 ? +((actual / max) * 7).toFixed(2) : 0;
+        const weightedScore = max > 0 ? +((actual / max) * 7 * weight).toFixed(2) : 0;
 
-        return [aspectName, score];
+        return [aspectName, { weighted: weightedScore, raw: rawScore }];
       })
     );
 
