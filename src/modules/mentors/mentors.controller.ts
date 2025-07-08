@@ -59,8 +59,9 @@ export class MentorsController {
     return await this.mentorsService.getMentor(id);
   }
   @Patch('activate-link-account')
-  async activateAccountByMentor(@Body() activateAccountDto: ActivateAccountDto) {
-    return await this.mentorsService.activateAccountByMentor(activateAccountDto.token);
+  async activateAccountByMentor(@Body() activateAccountDto: ActivateAccountDto, @Req() req) {
+    const url = req.headers.origin;
+    return await this.mentorsService.activateAccountByMentor(activateAccountDto.token, url);
   }
   @Patch(':id')
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateMentorDto: UpdateMentorDto) {
@@ -68,12 +69,14 @@ export class MentorsController {
   }
 
   @Patch('/activate/:id')
-  async activateMentorAccount(@Param('id', ParseUUIDPipe) id: string) {
-    return await this.mentorsService.activateMentorAccount(id);
+  async activateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
+    const url = req.headers.origin;
+    return await this.mentorsService.activateMentorAccount(id, url);
   }
 
   @Delete(':id')
-  async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<null>> {
-    return await this.mentorsService.deactivateMentorAccount(id);
+  async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req): Promise<ResponseItem<null>> {
+    const url = req.headers.origin;
+    return await this.mentorsService.deactivateMentorAccount(id, url);
   }
 }

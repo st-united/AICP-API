@@ -253,8 +253,8 @@ export class MentorsService {
     }
   }
 
-  private async toggleMentorAccountStatus(id: string, activate: boolean): Promise<ResponseItem<null>> {
-    const existingMentor = await this.prisma.mentor.findUnique({
+  private async toggleMentorAccountStatus(id: string, activate: boolean, url: string): Promise<ResponseItem<null>> {
+    const existingMentor = await this.prisma.mentor.findFirst({
       where: { id },
       select: {
         id: true,
@@ -297,6 +297,7 @@ export class MentorsService {
       const emailContent = {
         fullName: existingMentor.user.fullName,
         email: existingMentor.user.email,
+        url,
       };
 
       if (activate) {
@@ -312,12 +313,12 @@ export class MentorsService {
     }
   }
 
-  async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
-    return this.toggleMentorAccountStatus(id, false);
+  async deactivateMentorAccount(id: string, url: string): Promise<ResponseItem<null>> {
+    return this.toggleMentorAccountStatus(id, false, url);
   }
 
-  async activateMentorAccount(id: string): Promise<ResponseItem<null>> {
-    return this.toggleMentorAccountStatus(id, true);
+  async activateMentorAccount(id: string, url: string): Promise<ResponseItem<null>> {
+    return this.toggleMentorAccountStatus(id, true, url);
   }
 
   async getAvailableMentors(dto: GetAvailableMentorsDto) {
@@ -464,7 +465,7 @@ export class MentorsService {
       throw new BadRequestException(error);
     }
   }
-  async activateAccountByMentor(token: string): Promise<ResponseItem<null>> {
+  async activateAccountByMentor(token: string, url: string): Promise<ResponseItem<null>> {
     try {
       const redisToken = await this.redisService.getValue(`active_mentor:${token}`);
       if (!redisToken) {
@@ -483,7 +484,7 @@ export class MentorsService {
         throw new BadRequestException('Cố vấn không tồn tại');
       }
 
-      await this.activateMentorAccount(mentorId);
+      await this.activateMentorAccount(mentorId, url);
       await this.redisService.deleteValue(`active_mentor:${token}`);
       return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {

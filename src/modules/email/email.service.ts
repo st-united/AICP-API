@@ -50,7 +50,7 @@ export class EmailService {
   }
 
   async sendEmailActivateMentorAccount(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const loginLink = `${this.configService.get('FE_APP_URL_ADMIN')}/login`;
+    const loginLink = `${emailContent.url}/login`;
 
     const template = this.activateMentorAccountEmailTemplate(emailContent.fullName, loginLink);
     await this.sendEmail(emailContent.email, 'Tài khoản Mentor của bạn đã được kích hoạt', template);
