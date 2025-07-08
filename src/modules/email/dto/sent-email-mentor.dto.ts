@@ -17,4 +17,8 @@ export class SendEmailNewMentorDto {
   @Expose()
   @IsNotEmpty()
   token?: string;
+
+  @Expose()
+  @IsNotEmpty()
+  url?: string;
 }
