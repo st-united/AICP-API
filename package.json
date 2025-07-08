@@ -23,7 +23,7 @@
     "db:studio": "prisma studio",
     "db:deploy": "npx prisma migrate deploy && npx prisma generate",
     "generateType": "npx prisma generate",
-    "db:reset:full": "npx prisma migrate reset -- force && npx prisma migrate dev && ts-node prisma/seed/index.ts"
+    "db:reset:full": "npx prisma migrate reset --force && npx prisma migrate dev && ts-node prisma/seed/index.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "7.16.0",
