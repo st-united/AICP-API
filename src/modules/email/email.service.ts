@@ -34,7 +34,7 @@ export class EmailService {
   }
 
   async sendEmailNewMentor(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const activationLink = `${this.configService.get('FE_APP_URL_ADMIN')}/login?activateToken=${emailContent.token}`;
+    const activationLink = `${emailContent.url}/login?activateToken=${emailContent.token}`;
 
     const template = this.generateMentorAccountEmailTemplate(
       emailContent.fullName,

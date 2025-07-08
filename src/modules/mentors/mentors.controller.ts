@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe, Req } from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
@@ -19,8 +19,9 @@ export class MentorsController {
   constructor(private readonly mentorsService: MentorsService) {}
 
   @Post()
-  async create(@Body() createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
-    return await this.mentorsService.create(createMentorDto);
+  async create(@Body() createMentorDto: CreateMentorDto, @Req() req): Promise<ResponseItem<MentorResponseDto>> {
+    const url = req.headers.origin;
+    return await this.mentorsService.create(createMentorDto, url);
   }
 
   @Post('create-scheduler')
