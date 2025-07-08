@@ -34,7 +34,7 @@ export class AuthService {
       },
     });
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
-    if (!user.status) throw new UnauthorizedException('Tài khoản không được kích hoạt');
+    if (!user.status) throw new UnauthorizedException('Tài khoản chưa được kích hoạt');
     const comparePassword = bcrypt.compareSync(credentialsDto.password, user.password);
     if (!comparePassword) throw new UnauthorizedException('Mật khẩu không đúng');
 
