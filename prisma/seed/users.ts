@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, Domain } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 async function hashPassword(password: string): Promise<string> {
