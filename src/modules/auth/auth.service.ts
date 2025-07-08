@@ -47,7 +47,7 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
 
-    if (!user.status) throw new UnauthorizedException('Tài khoản không được kích hoạt');
+    if (!user.status) throw new UnauthorizedException('Tài khoản chưa được kích hoạt');
 
     const hasMentorRole = user.roles.some((r) => r.role.name === UserRoleEnum.MENTOR);
 
