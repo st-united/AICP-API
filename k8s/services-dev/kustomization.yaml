@@ -1,0 +1,31 @@
+namespace: devplus-aicp-dev
+
+resources:
+  - ../base
+
+secretGenerator:
+  - name: aicp-api-env
+    envs:
+      - .env.dev
+    options:
+      disableNameSuffixHash: true
+  - name: firebase-service-key
+    files:
+      - firebase-service-key.json=./secrets/firebase-service-key.json
+    options:
+      disableNameSuffixHash: true
+
+images:
+  - name: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api
+    newTag: 'dev-latest'
+
+commonLabels:
+  app: aicp-api
+  version: v1
+  component: backend
+  environment: development
+
+patches:
+  # - path: namespace.yaml
+  - path: patches/ingress.yaml
+  - path: patches/statefulSet.yaml

@@ -6,7 +6,7 @@ import { IsOptional } from 'class-validator';
 export class UserDto {
   @Expose()
   @ApiProperty()
-  id: string;
+  id?: string;
 
   @Expose()
   @ApiProperty()

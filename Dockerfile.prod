@@ -1,0 +1,45 @@
+# Build stage
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies without lock file first to regenerate
+RUN yarn cache clean && \
+    yarn install --network-timeout 100000
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client and build
+RUN yarn generateType && yarn build && npx tsc prisma/seed/index.ts --outDir dist/prisma/seed --target es2020 --module commonjs
+
+# Production stage  
+FROM node:22-alpine AS production
+
+WORKDIR /app
+
+RUN apk update && apk upgrade && apk add --no-cache bash git openjpeg-tools
+
+# Copy package files and new lock file
+COPY package*.json ./
+COPY --from=builder /app/yarn.lock ./
+
+# Install only production dependencies
+RUN yarn cache clean && \
+    yarn install --frozen-lockfile --production --network-timeout 100000
+
+# Copy built application and Prisma files
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Copy secrets folder
+COPY --from=builder /app/etc ./etc
+
+# Expose port
+EXPOSE 6002
+
+CMD ["node", "dist/src/main.js"]

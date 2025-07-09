@@ -14,4 +14,6 @@ COPY . .
 
 RUN yarn generateType && yarn build
 
-CMD [ "node", "dist/main.js" ]
+RUN ls -l /app/dist
+
+CMD [ "node", "dist/src/main.js" ]
