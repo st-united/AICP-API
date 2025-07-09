@@ -52,6 +52,9 @@ export class GetExamSetDto {
   examId: string;
 
   @Expose()
+  timeStart: Date;
+
+  @Expose()
   name: string;
 
   @Expose()
