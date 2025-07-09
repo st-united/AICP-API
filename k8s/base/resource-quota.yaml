@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: aicp-api-quota
+spec:
+  hard:
+    requests.cpu: '6' # tăng từ 4 lên 6
+    requests.memory: 6Gi # tăng từ 4Gi lên 6Gi
+    limits.cpu: '12' # tăng từ 8 lên 12
+    limits.memory: 12Gi # tăng từ 8Gi lên 12Gi
+    persistentvolumeclaims: '5'
+    pods: '10'
+    services: '10'
+    secrets: '10'
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: aicp-api-limits
+spec:
+  limits:
+    - default:
+        cpu: '2'
+        memory: 1Gi
+      defaultRequest:
+        cpu: '100m'
+        memory: 128Mi
+      type: Container
+    - max:
+        storage: 20Gi
+      min:
+        storage: 1Gi
+      type: PersistentVolumeClaim

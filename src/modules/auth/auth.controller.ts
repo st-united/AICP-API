@@ -1,5 +1,17 @@
 import { ResponseItem } from '@app/common/dtos';
-import { Body, Controller, Get, Headers, HttpCode, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+  Res,
+} from '@nestjs/common';
 
 import { AuthService } from './auth.service';
 import { TokenDto } from './dto/token.dto';
@@ -10,6 +22,7 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { UserAndSessionPayloadDto, UserPayloadDto } from './dto/user-payload.dto';
+import { ClientTypeEnum } from '@Constant/enums';
 
 @Controller('auth')
 export class AuthController {
@@ -24,10 +37,45 @@ export class AuthController {
   @ApiBody({ type: LoginDto })
   async login(@Req() request): Promise<ResponseItem<TokenDto>> {
     const userAgent = request.headers['user-agent'];
+    const clientType: ClientTypeEnum = request.headers['x-client-type'];
     const ip = request.ip;
     const userPayloadDto: UserPayloadDto = request.user;
-    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip };
+    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip, clientType };
     return await this.authService.login(userAndSessionPayloadDto);
+  }
+
+  @Post('login-google')
+  @ApiOperation({ summary: 'Login using Google OAuth' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        idToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjY4ODMzZTg...',
+        },
+      },
+      required: ['idToken'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: `Login successful.
+
+  - If \`data.status = true\`: This is a **new user** logging in for the first time.
+  - If \`data.status = false\`: This is a **returning user**.`,
+    type: ResponseItem<TokenDto>,
+  })
+  async loginWithGoogle(@Req() request, @Body('idToken') idToken: string) {
+    const userAgent = request.headers['user-agent'];
+    const ip = request.ip;
+    const userPayloadDto: UserPayloadDto = null;
+    const clientType: ClientTypeEnum = request.headers['x-client-type'];
+    const userAndSessionPayloadDto: UserAndSessionPayloadDto = { userPayloadDto, userAgent, ip, clientType };
+    if (!idToken) {
+      throw new BadRequestException('idToken is required');
+    }
+    return this.authService.loginWithGoogle(userAndSessionPayloadDto, idToken);
   }
 
   @UseGuards(JwtAccessTokenGuard)
