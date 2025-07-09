@@ -80,7 +80,7 @@ spec:
               mountPath: /app/secrets
               readOnly: true
             - name: google-service-key
-              mountPath: /app/secrets
+              mountPath: /app/etc
               readOnly: true
             - name: tmp-volume
               mountPath: /tmp

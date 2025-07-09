@@ -55,6 +55,9 @@ spec:
             - name: firebase-service-key
               mountPath: /app/secrets
               readOnly: true
+            - name: google-service-key
+              mountPath: /app/etc
+              readOnly: true
             - name: tmp-volume
               mountPath: /tmp
             - name: cache-volume
