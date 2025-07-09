@@ -79,6 +79,9 @@ spec:
             - name: firebase-service-key
               mountPath: /app/secrets
               readOnly: true
+            - name: google-service-key
+              mountPath: /app/secrets
+              readOnly: true
             - name: tmp-volume
               mountPath: /tmp
             - name: cache-volume
@@ -103,6 +106,9 @@ spec:
         - name: firebase-service-key
           secret:
             secretName: firebase-service-key
+        - name: google-service-key
+          secret:
+            secretName: google-service-key
         - name: tmp-volume
           emptyDir: {}
         - name: cache-volume
