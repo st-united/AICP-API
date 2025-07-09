@@ -49,7 +49,7 @@ export class AuthService {
     const hasMentorRole = user.roles.some((r) => r.role.name === UserRoleEnum.MENTOR);
 
     if (hasMentorRole && user.mentor && user.mentor.isActive === false) {
-      throw new UnauthorizedException('Tài khoản mentor  chưa được kích hoạt');
+      throw new UnauthorizedException('Tài khoản mentor chưa được kích hoạt');
     }
 
     const comparePassword = bcrypt.compareSync(credentialsDto.password, user.password);
