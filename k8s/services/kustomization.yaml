@@ -18,6 +18,12 @@ secretGenerator:
     options:
       disableNameSuffixHash: true
 
+  - name: google-service-key
+    files:
+      - google-service-key.json=./secrets/google-service-key.json
+    options:
+      disableNameSuffixHash: true
+
 images:
   - name: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api
     newTag: '0.2.15'

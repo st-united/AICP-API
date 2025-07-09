@@ -9,9 +9,16 @@ secretGenerator:
       - .env.dev
     options:
       disableNameSuffixHash: true
+
   - name: firebase-service-key
     files:
       - firebase-service-key.json=./secrets/firebase-service-key.json
+    options:
+      disableNameSuffixHash: true
+
+  - name: google-service-key
+    files:
+      - google-service-key.json=./secrets/google-service-key.json
     options:
       disableNameSuffixHash: true
 
