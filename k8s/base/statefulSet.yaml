@@ -12,25 +12,50 @@ spec:
     metadata:
       labels:
         app: aicp-api
+      annotations:
+        checksum/config: '{{ .Values.configChecksum }}'
     spec:
       securityContext:
         fsGroup: 1000
         runAsNonRoot: true
         runAsGroup: 1000
         runAsUser: 1000
+        fsGroupChangePolicy: 'OnRootMismatch'
       initContainers:
         - name: db-migration
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.16
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.2.15
           command:
             - /bin/sh
             - -c
             - |
-              echo "Deploying database migrations..."
+              echo "Checking database connection..."
+              until nc -z postgres-aicp-postgresql.devplus-aicp-dev.svc.cluster.local 5432; do
+                echo "Waiting for database to be ready..."
+                sleep 5
+              done
+              echo "Database connected successfully"
+              echo "Running migrations..."
               yarn prisma migrate deploy
               echo "Migration completed successfully"
+
+              echo "Running seed (will skip if data exists)..."
+              yarn db:seed:k8s || echo "Seed failed or skipped"
+              echo "Init container completed"
           envFrom:
             - secretRef:
                 name: aicp-api-env
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsGroup: 1000
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               memory: '128Mi'
@@ -40,9 +65,11 @@ spec:
               cpu: '200m'
       containers:
         - name: aicp-api
-          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.1.16
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.2.15
           ports:
-            - containerPort: 6002
+            - name: http
+              containerPort: 6002
+              protocol: TCP
           envFrom:
             - secretRef:
                 name: aicp-api-env
@@ -52,14 +79,19 @@ spec:
             - name: firebase-service-key
               mountPath: /app/secrets
               readOnly: true
+            - name: tmp-volume
+              mountPath: /tmp
+            - name: cache-volume
+              mountPath: /app/.cache
           securityContext:
-            allowPrivilegeEscalation: true
-            capabilities:
-              add:
-                - SYS_ADMIN
+            allowPrivilegeEscalation: false
             runAsNonRoot: true
             runAsGroup: 1000
             runAsUser: 1000
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               memory: 750Mi
@@ -71,6 +103,10 @@ spec:
         - name: firebase-service-key
           secret:
             secretName: firebase-service-key
+        - name: tmp-volume
+          emptyDir: {}
+        - name: cache-volume
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: storage-volume
@@ -80,42 +116,3 @@ spec:
         resources:
           requests:
             storage: 5Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: aicp-api
-spec:
-  selector:
-    app: aicp-api
-  ports:
-    - protocol: TCP
-      port: 6002
-      targetPort: 6002
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: aicp-api
-  annotations:
-    acme.cert-manager.io/http01-edit-in-place: 'true'
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.org/client-max-body-size: '50m'
-    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - api.aicp.dev.devplus.edu.vn
-      secretName: devplus-aicp-dev-tls
-  rules:
-    - host: api.aicp.dev.devplus.edu.vn
-      http:
-        paths:
-          - backend:
-              service:
-                name: aicp-api
-                port:
-                  number: 6002
-            path: /
-            pathType: Prefix

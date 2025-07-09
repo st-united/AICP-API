@@ -1,8 +1,7 @@
 namespace: devplus-aicp
 
 resources:
-  - namespace.yaml
-  - statefulSet.yaml
+  - ../base
 
 secretGenerator:
   - name: aicp-api-env
@@ -18,3 +17,13 @@ secretGenerator:
       - firebase-service-key.json=./secrets/firebase-service-key.json
     options:
       disableNameSuffixHash: true
+
+images:
+  - name: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api
+    newTag: '0.2.15'
+
+commonLabels:
+  app: aicp-api
+  version: v1
+  component: backend
+  environment: production
