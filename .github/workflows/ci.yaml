@@ -63,17 +63,15 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      - name: Install gke-gcloud-auth-plugin
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-          # Install gke-gcloud-auth-plugin
-          sudo apt-get update
-          sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
-
-          # Verify installation
-          gke-gcloud-auth-plugin --version
 
       - name: Generate version tag
         id: version
@@ -144,17 +142,15 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      - name: Install gke-gcloud-auth-plugin
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-          # Install gke-gcloud-auth-plugin
-          sudo apt-get update
-          sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
-
-          # Verify installation
-          gke-gcloud-auth-plugin --version
 
       - name: Generate version tag
         id: version
