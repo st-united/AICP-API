@@ -3,24 +3,24 @@ namespace: devplus-aicp-uat
 resources:
   - ../base
 
-secretGenerator:
-  - name: aicp-api-env
-    envs:
-      - .env.uat
-    options:
-      disableNameSuffixHash: true
+# secretGenerator:
+#   - name: aicp-api-env
+#     envs:
+#       - .env.uat
+#     options:
+#       disableNameSuffixHash: true
 
-  - name: firebase-service-key
-    files:
-      - firebase-service-key.json=./secrets/firebase-service-key.json
-    options:
-      disableNameSuffixHash: true
+#   - name: firebase-service-key
+#     files:
+#       - firebase-service-key.json=./secrets/firebase-service-key.json
+#     options:
+#       disableNameSuffixHash: true
 
-  - name: google-service-key
-    files:
-      - google-service-key.json=./secrets/google-service-key.json
-    options:
-      disableNameSuffixHash: true
+#   - name: google-service-key
+#     files:
+#       - google-service-key.json=./secrets/google-service-key.json
+#     options:
+#       disableNameSuffixHash: true
 
 images:
   - name: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api
@@ -33,6 +33,5 @@ commonLabels:
   environment: uat
 
 patches:
-  # - path: namespace.yaml
   - path: patches/ingress.yaml
   - path: patches/statefulSet.yaml
