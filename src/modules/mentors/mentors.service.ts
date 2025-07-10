@@ -16,6 +16,8 @@ import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto'
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
+import { RedisService } from '../redis/redis.service';
+import { TokenService } from '../auth/services/token.service';
 
 @Injectable()
 export class MentorsService {
@@ -23,28 +25,33 @@ export class MentorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userService: UsersService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly redisService: RedisService,
+    private readonly tokenService: TokenService
   ) {}
 
-  async create(createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
+  async create(createMentorDto: CreateMentorDto, url: string): Promise<ResponseItem<MentorResponseDto>> {
     const password = generateSecurePassword();
-    const { expertise, ...userData } = createMentorDto;
+    const { expertise, maxMentees, ...userData } = createMentorDto;
     const createUser = await this.userService.create({ ...userData, password });
     try {
       const mentor = await this.prisma.mentor.create({
         data: {
           userId: createUser.id,
-          expertise: createMentorDto.expertise,
+          expertise: expertise,
+          maxMentees: maxMentees ?? 5,
           isActive: false,
         },
       });
-
+      const token = this.tokenService.generateActivationToken(mentor.id);
       const emailContent = {
         fullName: createUser.fullName,
         email: createUser.email,
         password,
+        token,
+        url,
       };
-
+      await this.redisService.setValue(`active_mentor:${emailContent.token}`, 'true');
       this.emailService.sendEmailNewMentor(emailContent);
 
       return new ResponseItem(mentor, 'Tạo mentor thành công', MentorResponseDto);
@@ -147,6 +154,9 @@ export class MentorsService {
             scheduledAt: {
               gt: new Date(),
             },
+            status: {
+              in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+            },
           },
           select: {
             scheduledAt: true,
@@ -243,11 +253,24 @@ export class MentorsService {
     }
   }
 
-  private async toggleMentorAccountStatus(id: string, activate: boolean): Promise<ResponseItem<null>> {
+  private async toggleMentorAccountStatus(id: string, activate: boolean, url: string): Promise<ResponseItem<null>> {
     const existingMentor = await this.prisma.mentor.findFirst({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        isActive: true,
         user: true,
+        _count: {
+          select: {
+            bookings: {
+              where: {
+                status: {
+                  in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -257,6 +280,10 @@ export class MentorsService {
 
     if (existingMentor.isActive === activate) {
       throw new ConflictException(`Mentor đã ${activate ? 'được kích hoạt' : 'bị vô hiệu hóa'}`);
+    }
+
+    if (!activate && existingMentor._count.bookings > 0) {
+      throw new ConflictException('Không thể  vô hiệu hóa tài khoản mentor đã có lịch hẹn');
     }
 
     try {
@@ -270,6 +297,7 @@ export class MentorsService {
       const emailContent = {
         fullName: existingMentor.user.fullName,
         email: existingMentor.user.email,
+        url,
       };
 
       if (activate) {
@@ -285,12 +313,12 @@ export class MentorsService {
     }
   }
 
-  async deactivateMentorAccount(id: string): Promise<ResponseItem<null>> {
-    return this.toggleMentorAccountStatus(id, false);
+  async deactivateMentorAccount(id: string, url: string): Promise<ResponseItem<null>> {
+    return this.toggleMentorAccountStatus(id, false, url);
   }
 
-  async activateMentorAccount(id: string): Promise<ResponseItem<null>> {
-    return this.toggleMentorAccountStatus(id, true);
+  async activateMentorAccount(id: string, url: string): Promise<ResponseItem<null>> {
+    return this.toggleMentorAccountStatus(id, true, url);
   }
 
   async getAvailableMentors(dto: GetAvailableMentorsDto) {
@@ -435,6 +463,32 @@ export class MentorsService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException(error);
+    }
+  }
+  async activateAccountByMentor(token: string, url: string): Promise<ResponseItem<null>> {
+    try {
+      const redisToken = await this.redisService.getValue(`active_mentor:${token}`);
+      if (!redisToken) {
+        throw new BadRequestException('Link kích hoạt không hợp lệ hoặc đã hết hạn');
+      }
+
+      const mentorId = this.tokenService.verifyActivationToken(token);
+
+      const foundMentor = await this.prisma.mentor.findUnique({
+        where: {
+          id: mentorId,
+        },
+      });
+
+      if (!foundMentor) {
+        throw new BadRequestException('Cố vấn không tồn tại');
+      }
+
+      await this.activateMentorAccount(mentorId, url);
+      await this.redisService.deleteValue(`active_mentor:${token}`);
+      return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
+    } catch (error) {
+      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn', error.message);
     }
   }
 }

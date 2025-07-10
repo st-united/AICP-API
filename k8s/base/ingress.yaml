@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aicp-api
+  annotations:
+    acme.cert-manager.io/http01-edit-in-place: 'true'
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.org/client-max-body-size: '50m'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.aicp.devplus.edu.vn
+      secretName: devplus-aicp-dev-tls
+  rules:
+    - host: api.aicp.devplus.edu.vn
+      http:
+        paths:
+          - backend:
+              service:
+                name: aicp-api
+                port:
+                  number: 6002
+            path: /
+            pathType: Prefix
