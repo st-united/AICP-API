@@ -10,6 +10,7 @@ VERSION=0.2.15
 ARTIFACT_REGISTRY_NAME=$(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME):$(VERSION)
 
 DEV_NAMESPACE=devplus-aicp-dev
+UAT_NAMESPACE=devplus-aicp-uat
 PROD_NAMESPACE=devplus-aicp
 
 POSTGRES_CHART_VERSION=15.3.2
@@ -104,9 +105,6 @@ map-db:
 map-redis:
 	kubectl -n devplus-aicp port-forward pod/redis-aicp-0 6379:6379
 
-exec-api:
-	kubectl exec -it pod/aicp-api-0 -n devplus-aicp -- sh
-
 apply:
 	kubectl apply -k ./k8s/services
 
@@ -155,6 +153,13 @@ apply-prod:
 deploy-prod: build-push apply-prod
 	kubectl rollout status statefulset aicp-api -n $(PROD_NAMESPACE) --timeout=600s
 
+# UAT deployment
+apply-uat:
+	kubectl apply -k ./k8s/services-uat
+
+deploy-uat: build-push apply-uat
+	kubectl rollout status statefulset aicp-api -n $(UAT_NAMESPACE)
+
 # Development deployment  
 apply-dev:
 	kubectl apply -k ./k8s/services-dev
@@ -169,11 +174,17 @@ get-pods-dev:
 get-pods-prod:
 	kubectl get all -n $(PROD_NAMESPACE)
 
+get-pods-uat:
+	kubectl get all -n $(UAT_NAMESPACE)
+
 logs-dev:
 	kubectl logs -n $(DEV_NAMESPACE) -l app=aicp-api --tail=100 -f
 
 logs-prod:
 	kubectl logs -n $(PROD_NAMESPACE) -l app=aicp-api --tail=100 -f
+
+logs-uat:
+	kubectl logs -n $(UAT_NAMESPACE) -l app=aicp-api --
 
 restart-dev:
 	kubectl rollout restart statefulset aicp-api -n $(DEV_NAMESPACE)
@@ -181,8 +192,14 @@ restart-dev:
 restart-prod:
 	kubectl rollout restart statefulset aicp-api -n $(PROD_NAMESPACE)
 
+restart-uat:
+	kubectl rollout restart statefulset aicp-api -n $(UAT_NAMESPACE)
+
 exec-dev:
 	kubectl exec -it -n $(DEV_NAMESPACE) aicp-api-0 -- sh
+
+exec-uat:
+	kubectl exec -it -n $(UAT_NAMESPACE) aicp-api-0 -- sh
 
 exec-prod:
 	kubectl exec -it -n $(PROD_NAMESPACE) aicp-api-0 -- sh
@@ -204,6 +221,14 @@ migrate-prod:
 			--command -n $(PROD_NAMESPACE) \
 			-- /bin/sh -c "yarn prisma migrate deploy"
 
+migrate-uat:
+	kubectl run aicp-migrate-uat \
+			--image=asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:$(VERSION) \
+			--restart=Never \
+			--env-from=secret/aicp-api-env \
+			--command -n $(UAT_NAMESPACE) \
+			-- /bin/sh -c "yarn prisma migrate deploy && yarn db:seed
+
 # Complete setup
 setup-complete-dev: helm-db helm-redis deploy-dev
 setup-complete-prod: helm-db helm-redis deploy-prod
@@ -214,6 +239,9 @@ cleanup-dev:
 
 cleanup-prod:
 	kubectl delete namespace $(PROD_NAMESPACE) --ignore-not-found
+
+cleanup-uat:
+	kubectl delete namespace $(UAT_NAMESPACE) --ignore-not-found
 
 # Install PostgreSQL for Production
 helm-postgres-prod:
@@ -235,6 +263,28 @@ helm-redis-prod:
 			--namespace $(PROD_NAMESPACE) \
 			--create-namespace \
 			--values ./k8s/redis/values.yaml \
+			--wait --timeout=600s
+
+# Install PostgreSQL for UAT
+helm-postgres-uat:
+	helm repo add bitnami https://charts.bitnami.com/bitnami
+	helm repo update
+	helm upgrade --install postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
+			--version $(POSTGRES_CHART_VERSION) \
+			--namespace $(UAT_NAMESPACE) \
+			--create-namespace \
+			--values ./k8s/postgres/values-uat.yaml \
+			--wait --timeout=600s
+
+# Install Redis for UAT
+helm-redis-uat:
+	helm repo add bitnami https://charts.bitnami.com/bitnami
+	helm repo update
+	helm upgrade --install redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
+			--version $(REDIS_CHART_VERSION) \
+			--namespace $(UAT_NAMESPACE) \
+			--create-namespace \
+			--values ./k8s/redis/values-uat.yaml \
 			--wait --timeout=600s
 
 # Install PostgreSQL for Development
@@ -267,6 +317,10 @@ helm-infra-prod: helm-postgres-prod helm-redis-prod
 helm-infra-dev: helm-postgres-dev helm-redis-dev
 	@echo "✅ Development infrastructure installed"
 
+# Install both for UAT
+helm-infra-uat: helm-postgres-uat helm-redis-uat
+	@echo "✅ UAT infrastructure installed"
+
 # # Complete setup commands
 setup-complete-dev: helm-infra-dev deploy-dev
 	@echo "✅ Development environment ready!"
@@ -280,6 +334,12 @@ connect-postgres-dev:
 
 connect-postgres-prod:
 	kubectl port-forward -n $(PROD_NAMESPACE) svc/postgres-aicp-postgresql 5432:5432
+
+connect-postgres-uat:
+	kubectl port-forward -n $(UAT_NAMESPACE) svc/postgres-aicp-postgresql 5432:5432
+
+connect-redis-uat:
+	kubectl port-forward -n $(UAT_NAMESPACE) svc/redis-aicp 6379:6379
 
 connect-redis-dev:
 	kubectl port-forward -n $(DEV_NAMESPACE) svc/redis-aicp 6379:6379
@@ -307,6 +367,12 @@ upgrade-postgres-dev:
 			--namespace $(DEV_NAMESPACE) \
 			--values ./k8s/postgres/values-dev.yaml
 
+upgrade-postgres-uat:
+	helm upgrade postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
+			--version $(POSTGRES_CHART_VERSION) \
+			--namespace $(UAT_NAMESPACE) \
+			--values ./k8s/postgres/values-uat.yaml
+
 upgrade-postgres-prod:
 	helm upgrade postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
 			--version $(POSTGRES_CHART_VERSION) \
@@ -319,6 +385,12 @@ upgrade-redis-dev:
 			--namespace $(DEV_NAMESPACE) \
 			--values ./k8s/redis/values-dev.yaml
 
+upgrade-redis-uat:
+	helm upgrade redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
+			--version $(REDIS_CHART_VERSION) \
+			--namespace $(UAT_NAMESPACE) \
+			--values ./k8s/redis/values-uat.yaml
+
 upgrade-redis-prod:
 	helm upgrade redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
 			--version $(REDIS_CHART_VERSION) \
@@ -329,6 +401,10 @@ upgrade-redis-prod:
 cleanup-infra-dev:
 	helm uninstall postgres-aicp -n $(DEV_NAMESPACE) || true
 	helm uninstall redis-aicp -n $(DEV_NAMESPACE) || true
+
+cleanup-infra-uat:
+	helm uninstall postgres-aicp -n $(UAT_NAMESPACE) || true
+	helm uninstall redis-aicp -n $(UAT_NAMESPACE) || true
 
 cleanup-infra-prod:
 	helm uninstall postgres-aicp -n $(PROD_NAMESPACE) || true

@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, uat]
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, uat]
 
 env:
   PROJECT_ID: enspara
@@ -12,6 +12,7 @@ env:
   REPOSITORY: aicp
   IMAGE_NAME: aicp-api
   DEV_NAMESPACE: devplus-aicp-dev
+  UAT_NAMESPACE: devplus-aicp-uat
   PROD_NAMESPACE: devplus-aicp
 
 jobs:
@@ -208,6 +209,79 @@ jobs:
             echo "Image: ${{ steps.version.outputs.FULL_IMAGE_NAME }}"
           else
             echo "❌ Production deployment failed!"
+          fi
+
+  build-and-deploy-uat:
+    if: github.ref == 'refs/heads/uat'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: uat
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin
+
+      - name: Generate version tag
+        id: version
+        run: |
+          VERSION=uat-$(date +%Y%m%d)-$(git rev-parse --short HEAD)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "FULL_IMAGE_NAME=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.version.outputs.FULL_IMAGE_NAME }}
+            ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:uat-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to GKE UAT
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_UAT }} --zone ${{ env.REGION }}-a --project ${{ env.PROJECT_ID }}
+
+          # Install kustomize if not available
+          if ! command -v kustomize &> /dev/null; then
+            curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+            sudo mv kustomize /usr/local/bin/
+          fi
+
+          cd k8s/services-uat
+          kustomize edit set image asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api=${{ steps.version.outputs.FULL_IMAGE_NAME }}
+          kubectl apply -k .
+
+          # Wait for deployment to complete
+          kubectl rollout status statefulset/aicp-api -n ${{ env.UAT_NAMESPACE }} --timeout=600s
+
+          # Verify deployment
+          kubectl get pods -n ${{ env.UAT_NAMESPACE }} -l app=aicp-api
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ UAT deployment successful!"
+            echo "Image: ${{ steps.version.outputs.FULL_IMAGE_NAME }}"
+          else
+            echo "❌ UAT deployment failed!"
           fi
 
   # Optional: Rollback job for production
