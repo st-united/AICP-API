@@ -1,9 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose } from 'class-transformer';
+import { IsNumber } from 'class-validator';
 
 export class OtpStatusDto {
+  @Expose()
   @ApiProperty({
-    description: 'Whether OTP is active for the phone number',
-    example: true,
+    description: 'Số điện thoại',
+    example: '+84901234567',
   })
-  otpActive: boolean;
+  @IsNumber()
+  phoneNumber: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Trạng thái xác thực Zalo',
+    example: false,
+  })
+  zaloVerified: boolean;
 }

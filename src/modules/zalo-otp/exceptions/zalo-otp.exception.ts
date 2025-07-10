@@ -1,4 +1,5 @@
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { ZaloErrorTranslator } from '../utils/zalo-error-translator';
 
 export class ZaloOtpException extends BadRequestException {
   constructor(message: string) {
@@ -8,7 +9,8 @@ export class ZaloOtpException extends BadRequestException {
 
 export class ZaloApiException extends InternalServerErrorException {
   constructor(message: string) {
-    super(`Zalo API Error: ${message}`);
+    const translatedMessage = ZaloErrorTranslator.translate(message);
+    super(translatedMessage);
   }
 }
 

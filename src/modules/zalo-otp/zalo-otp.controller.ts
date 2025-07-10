@@ -12,38 +12,46 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { ZaloOtpService } from './zalo-otp.service';
-import { SubmitPhoneDto } from './dto/submit-phone.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ResponseItem } from '@app/common/dtos';
 import { OtpStatusDto } from './dto/response/otp-status.dto';
 import { SendOtpResponseDto } from './dto/response/send-otp-response.dto';
 import { VerifyOtpResponseDto } from './dto/response/verify-otp-response.dto';
+import { CanSendOtpResponseDto } from './dto/response/can-send-otp-response.dto';
 
 @ApiTags('Zalo OTP')
 @Controller('zalo-otp')
 export class ZaloOtpController {
   constructor(private readonly otpService: ZaloOtpService) {}
 
+  private extractUserId(req: any): string {
+    const { userId } = req.user;
+    if (!userId) {
+      throw new BadRequestException('Không tìm thấy userId trong request');
+    }
+    return userId;
+  }
+
   @Get('zalo-webhook')
-  @ApiOperation({ summary: 'Handle Zalo webhook for OAuth' })
-  @ApiQuery({ name: 'code', description: 'Authorization code from Zalo' })
+  @ApiOperation({ summary: 'Xử lý webhook Zalo cho OAuth' })
+  @ApiQuery({ name: 'code', description: 'Mã xác thực từ Zalo' })
   @ApiResponse({
     status: 200,
-    description: 'Webhook processed successfully',
+    description: 'Xử lý webhook thành công',
     type: ResponseItem,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - missing code',
+    description: 'Yêu cầu không hợp lệ - thiếu mã code',
   })
   @ApiResponse({
     status: 500,
-    description: 'Internal server error',
+    description: 'Lỗi máy chủ nội bộ',
   })
   async handleZaloWebhook(@Query() webhookData: any): Promise<ResponseItem<any>> {
     if (!webhookData.code) {
-      throw new BadRequestException('Code is required in webhook data');
+      throw new BadRequestException('Thiếu mã code trong dữ liệu webhook');
     }
     return await this.otpService.handleZaloWebhook(webhookData);
   }
@@ -52,98 +60,112 @@ export class ZaloOtpController {
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Send OTP to phone number via Zalo' })
-  @ApiBody({ type: SubmitPhoneDto })
+  @ApiOperation({ summary: 'Gửi OTP đến số điện thoại qua Zalo' })
   @ApiResponse({
     status: 200,
-    description: 'OTP sent successfully',
+    description: 'Gửi OTP thành công',
     type: ResponseItem,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - invalid phone or rate limit exceeded',
+    description: 'Yêu cầu không hợp lệ - số điện thoại không hợp lệ hoặc vượt quá giới hạn gửi',
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized',
+    description: 'Chưa xác thực',
   })
   @ApiResponse({
     status: 500,
-    description: 'Internal server error',
+    description: 'Lỗi máy chủ nội bộ',
   })
-  async sendOtp(@Body() dto: SubmitPhoneDto, @Req() req): Promise<ResponseItem<SendOtpResponseDto>> {
-    const { userId } = req.user;
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request');
-    }
-    return await this.otpService.sendOtp(userId, dto);
+  async sendOtp(@Req() req): Promise<ResponseItem<SendOtpResponseDto>> {
+    return await this.otpService.sendOtp(this.extractUserId(req));
   }
 
   @UseGuards(JwtAccessTokenGuard)
   @Post('verify')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Verify OTP code' })
+  @ApiOperation({ summary: 'Xác thực mã OTP' })
   @ApiBody({ type: VerifyOtpDto })
   @ApiResponse({
     status: 200,
-    description: 'OTP verified successfully',
+    description: 'Xác thực OTP thành công',
     type: ResponseItem,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - invalid OTP or OTP expired',
+    description: 'Yêu cầu không hợp lệ - mã OTP không hợp lệ hoặc đã hết hạn',
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized',
+    description: 'Chưa xác thực',
   })
   @ApiResponse({
     status: 500,
-    description: 'Internal server error',
+    description: 'Lỗi máy chủ nội bộ',
   })
   async verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: any): Promise<ResponseItem<VerifyOtpResponseDto>> {
-    const { userId } = req.user;
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request');
-    }
-    return await this.otpService.verifyOtp(userId, dto.phone, dto.otp);
+    return await this.otpService.verifyOtp(this.extractUserId(req), dto.otp);
   }
 
   @UseGuards(JwtAccessTokenGuard)
-  @Get('status')
+  @Post('status')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get OTP status for phone number' })
+  @ApiOperation({ summary: 'Lấy trạng thái OTP cho số điện thoại' })
   @ApiQuery({
     name: 'phone',
-    description: 'Phone number to check OTP status',
+    description: 'Số điện thoại cần kiểm tra trạng thái OTP',
     example: '+84901234567',
   })
   @ApiResponse({
     status: 200,
-    description: 'OTP status retrieved successfully',
+    description: 'Lấy trạng thái OTP thành công',
     type: ResponseItem,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - missing phone number',
+    description: 'Yêu cầu không hợp lệ - thiếu số điện thoại',
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized',
+    description: 'Chưa xác thực',
   })
   @ApiResponse({
     status: 500,
-    description: 'Internal server error',
+    description: 'Lỗi máy chủ nội bộ',
   })
-  async getPhoneStatus(@Query('phone') phone: string, @Req() req: any): Promise<ResponseItem<OtpStatusDto>> {
-    const { userId } = req.user;
-    if (!userId) {
-      throw new BadRequestException('User ID not found in request');
-    }
-    if (!phone) {
-      throw new BadRequestException('Phone number is required');
-    }
-    return await this.otpService.getPhoneStatus(userId, phone);
+  async getPhoneStatus(@Req() req: any): Promise<ResponseItem<OtpStatusDto>> {
+    return await this.otpService.getPhoneStatus(this.extractUserId(req));
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('can-send-otp')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Kiểm tra thời gian có thể gửi OTP' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy thông tin thời gian gửi OTP thành công',
+    type: ResponseItem,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Yêu cầu không hợp lệ - không tìm thấy người dùng',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Chưa xác thực',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Lỗi máy chủ nội bộ',
+  })
+  async getCanSendOtpTime(@Req() req: any): Promise<ResponseItem<CanSendOtpResponseDto>> {
+    return await this.otpService.getCanSendOtpTime(this.extractUserId(req));
+  }
+
+  @Get('country-codes')
+  async getCountryCodes(): Promise<ResponseItem<any>> {
+    return await this.otpService.getCountryCodes();
   }
 }

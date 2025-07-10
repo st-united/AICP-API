@@ -247,6 +247,18 @@ export class UsersService {
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+    if (updateData.phoneNumber) {
+      if (user.phoneNumber === updateData.phoneNumber) {
+        throw new BadRequestException('Số điện thoại này đang được bạn sử dụng');
+      }
+      const phoneExisted = await this.prisma.user.findUnique({
+        where: { phoneNumber: updateData.phoneNumber },
+      });
+      if (phoneExisted) throw new BadRequestException('Số điện thoại đã tồn tại');
+      if (user.zaloVerified) {
+        updateData['zaloVerified'] = false;
+      }
+    }
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
