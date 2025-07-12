@@ -265,4 +265,29 @@ export class AuthService {
       throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn' + error);
     }
   }
+
+  async resendActivationEmail(email: string): Promise<ResponseItem<null>> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: email,
+        deletedAt: null,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại trong hệ thống');
+    }
+
+    if (user.status) {
+      throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
+    }
+
+    // Tạo token kích hoạt mới
+    const activationToken = this.tokenService.generateActivationToken(user.id);
+
+    // Gửi email kích hoạt mới
+    await this.emailService.sendActivationEmail(user.fullName, user.email, activationToken);
+
+    return new ResponseItem(null, 'Email kích hoạt đã được gửi lại thành công. Vui lòng kiểm tra hộp thư của bạn.');
+  }
 }
