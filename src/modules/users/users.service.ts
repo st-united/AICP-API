@@ -316,16 +316,18 @@ export class UsersService {
       }
     }
 
-    const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+    const updateDataWithJob: any = { ...updateData };
+
+    if (job !== undefined && job !== null) {
+      const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+      updateDataWithJob.job = {
+        set: domainIds.map((domainId) => ({ id: domainId })),
+      };
+    }
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: {
-        ...updateData,
-        job: {
-          set: domainIds.map((domainId) => ({ id: domainId })),
-        },
-      },
+      data: updateDataWithJob,
       include: {
         job: true,
       },

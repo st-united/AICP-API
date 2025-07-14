@@ -10,7 +10,7 @@ datasource db {
 model User {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   phoneNumber        String?   @unique @map("phone_number") @db.VarChar
-  zaloVerified Boolean   @default(false) @map("zalo_verified")
+  zaloVerified       Boolean   @default(false) @map("zalo_verified")
   email              String    @unique @db.VarChar
   password           String    @db.VarChar
   fullName           String    @map("full_name") @db.VarChar
