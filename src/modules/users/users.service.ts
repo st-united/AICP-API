@@ -303,17 +303,31 @@ export class UsersService {
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+    if (updateData.phoneNumber) {
+      if (user.phoneNumber === updateData.phoneNumber) {
+        throw new BadRequestException('Số điện thoại này đang được bạn sử dụng');
+      }
+      const phoneExisted = await this.prisma.user.findUnique({
+        where: { phoneNumber: updateData.phoneNumber },
+      });
+      if (phoneExisted) throw new BadRequestException('Số điện thoại đã tồn tại');
+      if (user.zaloVerified) {
+        updateData['zaloVerified'] = false;
+      }
+    }
 
-    const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+    const updateDataWithJob: any = { ...updateData };
+
+    if (job !== undefined && job !== null) {
+      const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+      updateDataWithJob.job = {
+        set: domainIds.map((domainId) => ({ id: domainId })),
+      };
+    }
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: {
-        ...updateData,
-        job: {
-          set: domainIds.map((domainId) => ({ id: domainId })),
-        },
-      },
+      data: updateDataWithJob,
       include: {
         job: true,
       },
