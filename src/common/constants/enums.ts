@@ -29,3 +29,8 @@ export enum UserRoleEnum {
 export enum examSetDefaultName {
   DEFAULT = 'AI INPUT TEST',
 }
+
+export enum ClientTypeEnum {
+  WEB_ADMIN = 'web-admin',
+  WEB_USER = 'web-user',
+}

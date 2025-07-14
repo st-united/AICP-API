@@ -1,0 +1,10 @@
+apiVersion: v2
+name: redis-aicp
+description: A Helm chart for Redis
+type: application
+version: 0.1.0
+appVersion: '1.0.0'
+dependencies:
+  - name: redis
+    version: 18.6.0
+    repository: oci://registry-1.docker.io/bitnamicharts

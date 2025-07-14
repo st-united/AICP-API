@@ -1,0 +1,19 @@
+auth:
+  enablePostgresUser: true
+  postgresPassword: +c2QWpz6KnPOt045zQoDeA==
+  username: postgres
+  password: +c2QWpz6KnPOt045zQoDeA==
+  database: aicp
+
+primary:
+  persistence:
+    enabled: true
+    size: 8Gi
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    memory: 1Gi
+    cpu: 500m
