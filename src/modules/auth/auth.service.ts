@@ -266,7 +266,14 @@ export class AuthService {
 
       return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {
-      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn' + error);
+      if (error.name === 'TokenExpiredError') {
+        const decodedToken = jwt.decode(token) as { userId: string };
+        const user = decodedToken?.userId ? await this.userService.findById(decodedToken.userId) : null;
+        if (user?.email) {
+          throw new BadRequestException(`Mã kích hoạt không hợp lệ hoặc đã hết hạn|${user.email}`);
+        }
+      }
+      throw new BadRequestException('Mã kích hoạt không hợp lệ');
     }
   }
 
