@@ -13,7 +13,6 @@ import * as puppeteer from 'puppeteer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
-//import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ExamService {
@@ -278,7 +277,6 @@ export class ExamService {
       fullName: exam.user.fullName,
       date: new Date(exam.updatedAt).toLocaleDateString('vi-VN'),
       level: exam.sfiaLevel ? this.formatLevel(exam.sfiaLevel) : 'Level: Bạn chưa được đánh giá',
-      examTitle: exam.examSet.name,
       styles: css,
       logo: `data:image/png;base64,${logoBase64}`,
       stamp: `data:image/png;base64,${stampBase64}`,
