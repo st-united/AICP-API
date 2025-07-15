@@ -245,7 +245,7 @@ export class ExamService {
     return `Level ${num}: ${labelCapitalized}${labelCapitalized}`;
   }
 
-  async generateCertificateByExamId(examId: string, userId: string): Promise<Buffer> {
+  async generateCertificateByExamId(examId: string, userId: string): Promise<{ buffer: Buffer; date: Date }> {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId, userId },
       include: { user: true, examSet: true },
@@ -253,27 +253,32 @@ export class ExamService {
 
     if (!exam) throw new NotFoundException('Exam not found');
 
-    const templatePath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate.hbs');
+    const templatePath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.hbs');
     const template = fs.readFileSync(templatePath, 'utf-8');
 
-    const cssPath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate.css');
+    const cssPath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    const logoBase64 = fs.readFileSync('src/modules/exam/templates/images/logo.png', { encoding: 'base64' });
-    const stampBase64 = fs.readFileSync('src/modules/exam/templates/images/stamp.png', { encoding: 'base64' });
-    const backgroundBase64 = fs.readFileSync('src/modules/exam/templates/images/background.png', {
+    const logoBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/logo.png', {
       encoding: 'base64',
     });
-    const medalBase64 = fs.readFileSync('src/modules/exam/templates/images/medal.png', { encoding: 'base64' });
+    const stampBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/stamp.png', {
+      encoding: 'base64',
+    });
+    const backgroundBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/background.png', {
+      encoding: 'base64',
+    });
+    const medalBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/medal.png', {
+      encoding: 'base64',
+    });
 
     const compiled = handlebars.compile(template);
 
     const html = compiled({
       fullName: exam.user.fullName,
       date: new Date(exam.updatedAt).toLocaleDateString('vi-VN'),
-      level: this.formatLevel(exam.sfiaLevel),
+      level: exam.sfiaLevel ? this.formatLevel(exam.sfiaLevel) : 'Level: Bạn chưa được đánh giá',
       examTitle: exam.examSet.name,
-      certificateNumber: exam.id,
       styles: css,
       logo: `data:image/png;base64,${logoBase64}`,
       stamp: `data:image/png;base64,${stampBase64}`,
@@ -298,6 +303,9 @@ export class ExamService {
 
     await browser.close();
 
-    return buffer;
+    return {
+      buffer: buffer,
+      date: exam.updatedAt,
+    };
   }
 }
