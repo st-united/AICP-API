@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+   <style>
+    {{{styles}}}
+  </style>
+  <title>Certificate</title>
+</head>
+<body>
+  <div class="certificate-wrapper" style="background-image: url('{{{background}}}');">
+    <img class="logo" src="{{logo}}" alt="DevPlus Logo">
+    <div class="header">
+      <div>
+        <h1>CERTIFICATE</h1>
+        <div class="subheading">OF APPRECIATION</div>
+        <div class="award-text">THE FOLLOWING AWARD IS GIVEN TO</div>
+        <div class="name">{{fullName}}</div>
+        <div class="separator"></div>
+        <div class="description">HAS SUCCESSFULLY COMPLETED</div>
+        <div class="exam-title">{{examTitle}}</div>
+        <div class="level">{{level}}</div>
+      </div>
+      <div class="certificate-image-wrapper">
+        <img class="certificate-image" src="{{medal}}" alt="Certificate Image">
+      </div>
+    </div>
+    <div class="footer">
+       <div class="left">
+        Date: {{date}}<br/>
+        No: {{certificateNumber}}
+      </div>
+      <div class="right">
+        <div class="signature-block">
+          <img class="stamp" src="{{stamp}}" alt="Stamp" />
+       </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
