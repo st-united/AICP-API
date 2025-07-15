@@ -670,4 +670,3 @@ enum TestTrackingStatus {
   INTERVIEW_COMPLETED
   RESULT_EVALUATED
 }
-

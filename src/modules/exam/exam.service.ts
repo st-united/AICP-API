@@ -9,6 +9,11 @@ import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
 import { DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
+import * as puppeteer from 'puppeteer';
+import * as handlebars from 'handlebars';
+import * as fs from 'fs';
+import * as path from 'path';
+//import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ExamService {
@@ -227,5 +232,80 @@ export class ExamService {
       where: { id: examId },
     });
     return new ResponseItem(null, 'Xoá bài làm thành công');
+  }
+
+  private formatLevel(level: string): string {
+    const parts = level.split('_');
+    if (parts.length < 3) return level;
+
+    const num = parts[1];
+    const label = parts.slice(2).join(' ');
+    const labelCapitalized = label.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+    return `Level ${num}: ${labelCapitalized}${labelCapitalized}`;
+  }
+
+  async generateCertificateByExamId(examId: string, userId: string): Promise<{ buffer: Buffer; date: Date }> {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId, userId },
+      include: { user: true, examSet: true },
+    });
+
+    if (!exam) throw new NotFoundException('Exam not found');
+
+    const templatePath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.hbs');
+    const template = fs.readFileSync(templatePath, 'utf-8');
+
+    const cssPath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.css');
+    const css = fs.readFileSync(cssPath, 'utf-8');
+
+    const logoBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/logo.png', {
+      encoding: 'base64',
+    });
+    const stampBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/stamp.png', {
+      encoding: 'base64',
+    });
+    const backgroundBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/background.png', {
+      encoding: 'base64',
+    });
+    const medalBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/medal.png', {
+      encoding: 'base64',
+    });
+
+    const compiled = handlebars.compile(template);
+
+    const html = compiled({
+      fullName: exam.user.fullName,
+      date: new Date(exam.updatedAt).toLocaleDateString('vi-VN'),
+      level: exam.sfiaLevel ? this.formatLevel(exam.sfiaLevel) : 'Level: Bạn chưa được đánh giá',
+      examTitle: exam.examSet.name,
+      styles: css,
+      logo: `data:image/png;base64,${logoBase64}`,
+      stamp: `data:image/png;base64,${stampBase64}`,
+      background: `data:image/png;base64,${backgroundBase64}`,
+      medal: `data:image/png;base64,${medalBase64}`,
+    });
+
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const contentHeight = await page.evaluate(() => document.body.scrollHeight);
+    const contentWidth = await page.evaluate(() => document.body.scrollWidth);
+
+    const uint8Array = await page.pdf({
+      width: `${contentWidth}px`,
+      height: `${contentHeight}px`,
+      printBackground: true,
+      margin: { top: 0, bottom: 0, left: 0, right: 0 },
+    });
+    const buffer = Buffer.from(uint8Array);
+
+    await browser.close();
+
+    return {
+      buffer: buffer,
+      date: exam.updatedAt,
+    };
   }
 }
