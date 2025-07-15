@@ -13,6 +13,8 @@ import * as puppeteer from 'puppeteer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
+import { formatLevel } from '@Constant/format';
+import { DATE_TIME } from '@Constant/datetime';
 
 @Injectable()
 export class ExamService {
@@ -233,17 +235,6 @@ export class ExamService {
     return new ResponseItem(null, 'Xoá bài làm thành công');
   }
 
-  private formatLevel(level: string): string {
-    const parts = level.split('_');
-    if (parts.length < 3) return level;
-
-    const num = parts[1];
-    const label = parts.slice(2).join(' ');
-    const labelCapitalized = label.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-
-    return `Level ${num}: ${labelCapitalized}${labelCapitalized}`;
-  }
-
   async generateCertificateByExamId(examId: string, userId: string): Promise<{ buffer: Buffer; date: Date }> {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId, userId },
@@ -275,8 +266,8 @@ export class ExamService {
 
     const html = compiled({
       fullName: exam.user.fullName,
-      date: new Date(exam.updatedAt).toLocaleDateString('vi-VN'),
-      level: exam.sfiaLevel ? this.formatLevel(exam.sfiaLevel) : 'Level: Bạn chưa được đánh giá',
+      date: new Date(exam.updatedAt).toLocaleDateString(DATE_TIME.DAY_VN),
+      level: exam.sfiaLevel ? formatLevel(exam.sfiaLevel) : 'Level: Bạn chưa được đánh giá',
       styles: css,
       logo: `data:image/png;base64,${logoBase64}`,
       stamp: `data:image/png;base64,${stampBase64}`,

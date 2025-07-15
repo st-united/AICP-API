@@ -8,6 +8,7 @@ import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import { Response } from 'express';
 import * as dayjs from 'dayjs';
+import { DATE_TIME } from '@Constant/datetime';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -72,7 +73,7 @@ export class ExamController {
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="AICompetency_Certificate_${dayjs(date).format('YYYYMMDD')}.pdf"`,
+      'Content-Disposition': `attachment; filename="AICompetency_Certificate_${dayjs(date).format(DATE_TIME.DAY_YYYY_MM_DD)}.pdf"`,
       'Content-Length': buffer.length,
     });
 
