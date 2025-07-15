@@ -13,6 +13,8 @@ import * as puppeteer from 'puppeteer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DATE_TIME } from '@Constant/datetime';
+import { formatLevel } from '@Constant/format';
 //import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -276,9 +278,8 @@ export class ExamService {
 
     const html = compiled({
       fullName: exam.user.fullName,
-      date: new Date(exam.updatedAt).toLocaleDateString('vi-VN'),
-      level: exam.sfiaLevel ? this.formatLevel(exam.sfiaLevel) : 'Level: Bạn chưa được đánh giá',
-      examTitle: exam.examSet.name,
+      date: new Date(exam.updatedAt).toLocaleDateString(DATE_TIME.DAY_VN),
+      level: exam.sfiaLevel ? formatLevel(exam.sfiaLevel) : 'Level: Bạn chưa được đánh giá',
       styles: css,
       logo: `data:image/png;base64,${logoBase64}`,
       stamp: `data:image/png;base64,${stampBase64}`,

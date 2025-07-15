@@ -72,7 +72,7 @@ export class ExamController {
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="AICompetency_Certificate_${dayjs(date).format('YYYYMMDD')}.pdf"`,
+      'Content-Disposition': `attachment; filename="AICompetency_Certificate_${dayjs(date).format(DATE_TIME.DAY_YYYY_MM_DD)}.pdf"`,
       'Content-Length': buffer.length,
     });
 
