@@ -28,7 +28,7 @@ import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { Prisma } from '@prisma/client';
+import { Prisma, User, UserTrackingStatus } from '@prisma/client';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
@@ -397,10 +397,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async updateUserStatus(id: string, status: boolean): Promise<string> {
+  async updateUserStatus(id: string, status: boolean, statusTracking: UserTrackingStatus): Promise<string> {
     await this.prisma.user.update({
       where: { id },
-      data: { status },
+      data: { status, statusTracking },
     });
 
     return 'Cập nhật trạng thái thành công';
@@ -539,6 +539,13 @@ export class UsersService {
           },
         });
 
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            statusTracking: UserTrackingStatus.PROFILE_COMPLETED,
+          },
+        });
+
         return new ResponseItem(newPortfolio, 'Hồ sơ tạo thành công', GetPortfolioResponseDto);
       } catch (error) {
         if (error instanceof HttpException) throw error;
@@ -618,6 +625,19 @@ export class UsersService {
           githubUrl: portfolioDto.githubUrl,
           certificateFiles,
           experienceFiles,
+        },
+      });
+
+      const hasAnyField =
+        Boolean(portfolioDto.linkedInUrl?.trim()) ||
+        Boolean(portfolioDto.githubUrl?.trim()) ||
+        (Array.isArray(certificateFiles) && certificateFiles.length > 0) ||
+        (Array.isArray(experienceFiles) && experienceFiles.length > 0);
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          statusTracking: hasAnyField ? UserTrackingStatus.PROFILE_COMPLETED : UserTrackingStatus.PROFILE_PENDING,
         },
       });
 
