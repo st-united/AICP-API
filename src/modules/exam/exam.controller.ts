@@ -9,6 +9,7 @@ import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto
 import { Response } from 'express';
 import * as dayjs from 'dayjs';
 import { DATE_TIME } from '@Constant/datetime';
+import { QuestionWithUserAnswerDto } from './dto/response/question-with-user-answer.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -78,5 +79,15 @@ export class ExamController {
     });
 
     res.end(buffer);
+  }
+
+  @Get(':id/result')
+  @ApiOperation({ summary: 'Lấy thông tin bộ đề thi theo ID' })
+  @ApiParam({ name: 'id', type: String, description: 'ID bộ đề thi' })
+  async getExam(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req
+  ): Promise<ResponseItem<QuestionWithUserAnswerDto[]>> {
+    return this.examService.getExamWithResult(id, req.user.userId);
   }
 }

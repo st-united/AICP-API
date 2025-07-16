@@ -15,6 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { formatLevel } from '@Constant/format';
 import { DATE_TIME } from '@Constant/datetime';
+import { QuestionWithUserAnswerDto } from './dto/response/question-with-user-answer.dto';
 
 @Injectable()
 export class ExamService {
@@ -296,5 +297,65 @@ export class ExamService {
       buffer: buffer,
       date: exam.updatedAt,
     };
+  }
+
+  async getExamWithResult(examId: string, userId: string): Promise<ResponseItem<QuestionWithUserAnswerDto[]>> {
+    const existingExam = await this.prisma.exam.findUnique({
+      where: { id: examId, userId },
+    });
+
+    const existingExamSet = await this.prisma.examSet.findUnique({
+      where: { id: existingExam.examSetId },
+    });
+
+    const existingQuestions = await this.prisma.examSetQuestion.findMany({
+      where: { examSetId: existingExamSet.id },
+      include: {
+        question: {
+          include: {
+            answerOptions: true,
+          },
+        },
+      },
+    });
+
+    const questionIds = existingQuestions.map((q) => q.questionId);
+
+    const userAnswers = await this.prisma.userAnswer.findMany({
+      where: {
+        userId,
+        examId,
+        questionId: { in: questionIds },
+      },
+      include: {
+        selections: true,
+      },
+    });
+
+    const userAnswerMap = new Map<string, string[]>();
+
+    for (const ua of userAnswers) {
+      const selectedOptionIds = ua.selections.map((s) => s.answerOptionId);
+      userAnswerMap.set(ua.questionId, selectedOptionIds);
+    }
+
+    const result = existingQuestions.map((q) => {
+      const answers = q.question.answerOptions.map((opt) => ({
+        id: opt.id,
+        content: opt.content,
+        isCorrect: opt.isCorrect,
+      }));
+
+      const userAnswerOptionIds = userAnswerMap.get(q.questionId) || [];
+
+      return {
+        questionId: q.questionId,
+        question: q.question.content,
+        answers,
+        userAnswers: userAnswerOptionIds,
+      };
+    });
+
+    return new ResponseItem<QuestionWithUserAnswerDto[]>(result, 'Lấy bộ đề thi thành công');
   }
 }
