@@ -35,8 +35,4 @@ export class UserResponseDto {
   @Expose()
   @ApiProperty()
   dob?: Date;
-
-  @Expose()
-  @ApiProperty({ required: false })
-  deletedAt?: Date;
 }
