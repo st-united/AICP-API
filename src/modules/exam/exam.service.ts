@@ -305,7 +305,7 @@ export class ExamService {
     });
 
     if (!existingExam) {
-      throw new NotFoundException('Exam not found');
+      throw new NotFoundException('Bài thi không tồn tại');
     }
 
     const [examSet, examQuestions, userAnswers] = await Promise.all([
@@ -330,7 +330,7 @@ export class ExamService {
     ]);
 
     if (!examSet) {
-      throw new NotFoundException('Exam Set not found');
+      throw new NotFoundException('Bộ đề thi không tồn tại');
     }
 
     const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
