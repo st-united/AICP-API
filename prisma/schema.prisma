@@ -17,6 +17,7 @@ model User {
   avatarUrl          String?   @map("avatar_url") @db.Text
   provider           String?   @db.VarChar
   status             Boolean   @default(false) @db.Boolean
+  statusTracking     UserTrackingStatus @default(REGISTERED)
   position           String?   @db.VarChar
   timezone           String?   @default("UTC") @db.VarChar
   languagePreference String?   @default("en") @map("language_preference") @db.VarChar
@@ -599,6 +600,9 @@ enum ExamStatus {
   SUBMITTED
   WAITING_FOR_REVIEW
   GRADED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
+  RESULT_EVALUATED
 }
 
 enum AssessmentType {
@@ -649,4 +653,20 @@ enum LearningStatus {
   IN_PROGRESS
   COMPLETED
   PAUSED
+}
+
+enum UserTrackingStatus {
+  REGISTERED
+  ACTIVATED
+  PROFILE_PENDING
+  PROFILE_COMPLETED
+}
+
+enum TestTrackingStatus {
+  TEST_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  INTERVIEW_SCHEDULED
+  INTERVIEW_COMPLETED
+  RESULT_EVALUATED
 }

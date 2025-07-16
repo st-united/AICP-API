@@ -46,3 +46,14 @@ export const getLastTheoryDate = (startDate: Date, theoryDays: number) => {
   lastTheoryDate.setMilliseconds(999);
   return lastTheoryDate;
 };
+
+export const formatLevel = (level: string): string => {
+  const parts = level.split('_');
+  if (parts.length < 3) return level;
+
+  const num = parts[1];
+  const label = parts.slice(2).join(' ');
+  const labelCapitalized = label.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return `Level ${num}: ${labelCapitalized}${labelCapitalized}`;
+};
