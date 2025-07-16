@@ -124,11 +124,8 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Activation reminders sent successfully' })
   async sendActivationReminders() {
-    const result = await this.authService.sendActivationReminders();
-    return new ResponseItem(
-      result,
-      `Đã gửi ${result.success} email nhắc nhở thành công, ${result.failed} email thất bại.`
-    );
+    await this.authService.sendActivationReminders();
+    return new ResponseItem(null, 'Đã gửi email nhắc nhở thành công.');
   }
 
   @Post('delete-inactive-accounts')
@@ -137,10 +134,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Account deletion completed successfully' })
   async deleteInactiveAccounts() {
-    const result = await this.authService.deleteInactiveAccounts();
-    return new ResponseItem(
-      result,
-      `Đã xóa ${result.success} tài khoản thành công, ${result.failed} tài khoản thất bại.`
-    );
+    await this.authService.deleteInactiveAccounts();
+    return new ResponseItem(null, 'Đã xóa tài khoản thành công.');
   }
 }

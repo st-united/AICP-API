@@ -255,10 +255,6 @@ export class AuthService {
         throw new BadRequestException('Người dùng không tồn tại');
       }
 
-      if (user.deletedAt) {
-        throw new BadRequestException('Tài khoản đã bị xóa khỏi hệ thống');
-      }
-
       if (user.status) {
         throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
       }
@@ -268,11 +264,7 @@ export class AuthService {
       return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
-        const decodedToken = jwt.decode(token) as { userId: string };
-        const user = decodedToken?.userId ? await this.userService.findById(decodedToken.userId) : null;
-        if (user?.email) {
-          throw new BadRequestException(`Mã kích hoạt không hợp lệ hoặc đã hết hạn|${user.email}`);
-        }
+        throw new BadRequestException(`Mã kích hoạt đã hết hạn`);
       }
       throw new BadRequestException('Mã kích hoạt không hợp lệ');
     }
@@ -294,59 +286,50 @@ export class AuthService {
       throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
     }
 
+    const resendKey = `resend_activation_email:${user.id}`;
+    const alreadySent = await this.redisService.getValue(resendKey);
+    if (alreadySent) {
+      throw new BadRequestException('Email kích hoạt đã được gửi trước đó. Vui lòng kiểm tra hộp thư của bạn.');
+    }
+
     const activationToken = this.tokenService.generateActivationToken(user.id);
 
     await this.emailService.sendActivationEmail(user.fullName, user.email, activationToken);
+    await this.redisService.setValue(resendKey, 'sent', 86400);
 
     return new ResponseItem(null, 'Email kích hoạt đã được gửi lại thành công. Vui lòng kiểm tra hộp thư của bạn.');
   }
 
-  async sendActivationReminders(): Promise<{ success: number; failed: number }> {
+  async sendActivationReminders(): Promise<void> {
     const twentyNineDaysAgo = new Date();
     twentyNineDaysAgo.setDate(twentyNineDaysAgo.getDate() - 29);
-
     const inactiveUsers = await this.getInactiveUsers(twentyNineDaysAgo);
-    let successCount = 0;
-    let failedCount = 0;
-
     for (const user of inactiveUsers) {
       try {
         if (await this.shouldSendReminder(user.id)) {
           const activationToken = this.tokenService.generateActivationToken(user.id);
           await this.emailService.sendActivationReminderEmail(user.fullName, user.email, activationToken);
-          successCount++;
         }
-      } catch (error) {
+      } catch {
         await this.redisService.deleteValue(`activation_reminder_sent:${user.id}`);
-        failedCount++;
       }
     }
-
-    return { success: successCount, failed: failedCount };
   }
 
-  async deleteInactiveAccounts(): Promise<{ success: number; failed: number }> {
+  async deleteInactiveAccounts(): Promise<void> {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
     const inactiveUsers = await this.getInactiveUsers(thirtyDaysAgo);
-    let successCount = 0;
-    let failedCount = 0;
-
     for (const user of inactiveUsers) {
       try {
         if (await this.shouldDeleteAccount(user.id)) {
           await this.emailService.sendAccountDeletionEmail(user.fullName, user.email);
           await this.softDeleteUser(user.id);
-          successCount++;
         }
-      } catch (error) {
+      } catch {
         await this.redisService.deleteValue(`deletion_notification_sent:${user.id}`);
-        failedCount++;
       }
     }
-
-    return { success: successCount, failed: failedCount };
   }
 
   private async getInactiveUsers(date: Date) {

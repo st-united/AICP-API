@@ -20,7 +20,7 @@ export class EmailService {
   }
 
   async sendActivationEmail(fullName: string, email: string, token: string): Promise<void> {
-    const activationLink = `${this.configService.get('FE_APP_URL')}/login?activateToken=${token}`;
+    const activationLink = `${this.configService.get('FE_APP_URL')}/login?activateToken=${token}&email=${email}`;
 
     const template = this.generateEmailActivateTemplate(fullName, activationLink);
     await this.sendEmail(email, 'Kích hoạt tài khoản DevPlus', template);
@@ -62,7 +62,7 @@ export class EmailService {
   }
 
   async sendActivationReminderEmail(fullName: string, email: string, token: string): Promise<void> {
-    const activationLink = `${this.configService.get('FE_APP_URL')}/login?activateToken=${token}`;
+    const activationLink = `${this.configService.get('FE_APP_URL')}/login?activateToken=${token}&email=${email}`;
     const resendLink = `${this.configService.get('FE_APP_URL')}/resend-activation`;
 
     const template = this.generateActivationReminderTemplate(fullName, activationLink);
