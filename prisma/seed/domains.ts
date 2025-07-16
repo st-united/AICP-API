@@ -3,24 +3,24 @@ import { PrismaClient } from '@prisma/client';
 export async function seedDomains(prisma: PrismaClient) {
   const domainsData = [
     {
-      name: 'Healthcare',
-      description: 'AI applications in healthcare and medicine',
+      name: 'Y tế',
+      description: 'Ứng dụng AI trong chăm sóc sức khỏe và y học',
     },
     {
-      name: 'Finance',
-      description: 'AI applications in financial services and fintech',
+      name: 'Tài chính',
+      description: 'Ứng dụng AI trong dịch vụ tài chính và công nghệ tài chính',
     },
     {
-      name: 'Education',
-      description: 'AI applications in education and learning',
+      name: 'Giáo dục',
+      description: 'Ứng dụng AI trong giáo dục và học tập',
     },
     {
-      name: 'Information Technology',
-      description: 'AI applications in Information Technology and production',
+      name: 'Công nghệ thông tin',
+      description: 'Ứng dụng AI trong công nghệ thông tin và sản xuất',
     },
     {
-      name: 'General',
-      description: 'General AI knowledge applicable across domains',
+      name: 'Đa lĩnh vực',
+      description: 'Kiến thức AI tổng quát áp dụng cho nhiều lĩnh vực',
     },
   ];
 
