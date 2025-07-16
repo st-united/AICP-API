@@ -9,7 +9,7 @@ import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
 import { DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
-import { QuestionWithUserAnswerDto } from './dto/response/question-with-user-answer.dto';
+import { ExamWithResultDto } from './dto/response/exam-with-result.dto';
 
 @Injectable()
 export class ExamService {
@@ -230,63 +230,71 @@ export class ExamService {
     return new ResponseItem(null, 'Xoá bài làm thành công');
   }
 
-  async getExamWithResult(examId: string, userId: string): Promise<ResponseItem<QuestionWithUserAnswerDto[]>> {
+  async getExamWithResult(examId: string, userId: string): Promise<ResponseItem<ExamWithResultDto>> {
     const existingExam = await this.prisma.exam.findUnique({
       where: { id: examId, userId },
     });
 
-    const existingExamSet = await this.prisma.examSet.findUnique({
-      where: { id: existingExam.examSetId },
-    });
-
-    const existingQuestions = await this.prisma.examSetQuestion.findMany({
-      where: { examSetId: existingExamSet.id },
-      include: {
-        question: {
-          include: {
-            answerOptions: true,
-          },
-        },
-      },
-    });
-
-    const questionIds = existingQuestions.map((q) => q.questionId);
-
-    const userAnswers = await this.prisma.userAnswer.findMany({
-      where: {
-        userId,
-        examId,
-        questionId: { in: questionIds },
-      },
-      include: {
-        selections: true,
-      },
-    });
-
-    const userAnswerMap = new Map<string, string[]>();
-
-    for (const ua of userAnswers) {
-      const selectedOptionIds = ua.selections.map((s) => s.answerOptionId);
-      userAnswerMap.set(ua.questionId, selectedOptionIds);
+    if (!existingExam) {
+      throw new NotFoundException('Exam not found');
     }
 
-    const result = existingQuestions.map((q) => {
-      const answers = q.question.answerOptions.map((opt) => ({
+    const [examSet, examQuestions, userAnswers] = await Promise.all([
+      this.prisma.examSet.findUnique({ where: { id: existingExam.examSetId } }),
+      this.prisma.examSetQuestion.findMany({
+        where: { examSetId: existingExam.examSetId },
+        include: {
+          question: {
+            include: { answerOptions: true },
+          },
+        },
+      }),
+      this.prisma.userAnswer.findMany({
+        where: {
+          userId,
+          examId,
+        },
+        include: {
+          selections: true,
+        },
+      }),
+    ]);
+
+    if (!examSet) {
+      throw new NotFoundException('Exam Set not found');
+    }
+
+    const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
+    const h = Math.floor(diffMs / 3600000)
+      .toString()
+      .padStart(2, '0');
+    const m = Math.floor((diffMs % 3600000) / 60000)
+      .toString()
+      .padStart(2, '0');
+    const s = Math.floor((diffMs % 60000) / 1000)
+      .toString()
+      .padStart(2, '0');
+    const elapsedTime = `${h}:${m}:${s}`;
+
+    const userAnswerMap: Record<string, string[]> = {};
+    userAnswers.forEach((ua) => {
+      userAnswerMap[ua.questionId] = ua.selections.map((s) => s.answerOptionId);
+    });
+
+    const questions = examQuestions.map((q) => ({
+      questionId: q.questionId,
+      question: q.question.content,
+      answers: q.question.answerOptions.map((opt) => ({
         id: opt.id,
         content: opt.content,
         isCorrect: opt.isCorrect,
-      }));
+      })),
+      userAnswers: userAnswerMap[q.questionId] || [],
+      sequence: q.question.sequence,
+    }));
 
-      const userAnswerOptionIds = userAnswerMap.get(q.questionId) || [];
+    questions.sort((a, b) => a.sequence - b.sequence);
 
-      return {
-        questionId: q.questionId,
-        question: q.question.content,
-        answers,
-        userAnswers: userAnswerOptionIds,
-      };
-    });
-
-    return new ResponseItem<QuestionWithUserAnswerDto[]>(result, 'Lấy bộ đề thi thành công');
+    return new ResponseItem<ExamWithResultDto>({ elapsedTime, questions }, 'Lấy kết quả bài thi thành công');
   }
 }

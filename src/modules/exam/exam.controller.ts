@@ -6,7 +6,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@n
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
-import { QuestionWithUserAnswerDto } from './dto/response/question-with-user-answer.dto';
+import { ExamWithResultDto } from './dto/response/exam-with-result.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -66,10 +66,10 @@ export class ExamController {
   @Get(':id/result')
   @ApiOperation({ summary: 'Lấy thông tin bộ đề thi theo ID' })
   @ApiParam({ name: 'id', type: String, description: 'ID bộ đề thi' })
-  async getExam(
+  async getExamWithResultById(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req
-  ): Promise<ResponseItem<QuestionWithUserAnswerDto[]>> {
+  ): Promise<ResponseItem<ExamWithResultDto>> {
     return this.examService.getExamWithResult(id, req.user.userId);
   }
 }
