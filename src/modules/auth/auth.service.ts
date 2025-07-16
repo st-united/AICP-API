@@ -18,6 +18,7 @@ import { SessionDto } from '../redis/dto/session.dto';
 import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
 import { ClientTypeEnum, UserRoleEnum } from '@Constant/enums';
+import { UserTrackingStatus } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -262,7 +263,7 @@ export class AuthService {
         throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
       }
 
-      await this.userService.updateUserStatus(user.id, true);
+      await this.userService.updateUserStatus(user.id, true, UserTrackingStatus.ACTIVATED);
 
       return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {

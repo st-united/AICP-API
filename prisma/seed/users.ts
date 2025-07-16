@@ -425,7 +425,7 @@ export async function seedUsers(
         password: hashedPassword,
         fullName: userData.fullName,
         provider: 'local',
-        status: Math.random() >= 0.5,
+        status: true,
         province: userProvince,
         job: {
           connect: userDomains.map((domain) => ({ id: domain.id })),
