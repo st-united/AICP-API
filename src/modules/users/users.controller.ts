@@ -39,6 +39,7 @@ import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
 import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio-validation';
 import { DownloadPortfolioFileDto } from './dto/download-portfolio-file.dto';
 import { Response } from 'express';
+import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 @ApiTags('users')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -179,5 +180,14 @@ export class UsersController {
   @ApiResponse({ status: 500, description: 'Error downloading file' })
   async downloadFile(@Query() query: DownloadPortfolioFileDto, @Res() res: Response): Promise<void> {
     return await this.usersService.downloadFile(query.url, query.filename, res);
+  }
+
+  @ApiTags('users')
+  @Patch('/student-info')
+  @ApiOperation({ summary: 'Update student info' })
+  @ApiResponse({ status: 200, description: 'Student info updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid student info' })
+  async updateStudentInfo(@Body() updateStudentInfoDto: UpdateStudentInfoDto, @Req() req) {
+    return await this.usersService.updateStudentInfo(req.user.userId, updateStudentInfoDto);
   }
 }
