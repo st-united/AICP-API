@@ -236,7 +236,7 @@ export class ExamService {
     });
 
     if (!existingExam) {
-      throw new NotFoundException('Exam not found');
+      throw new NotFoundException('Bài thi không tồn tại');
     }
 
     const [examSet, examQuestions, userAnswers] = await Promise.all([
@@ -261,9 +261,10 @@ export class ExamService {
     ]);
 
     if (!examSet) {
-      throw new NotFoundException('Exam Set not found');
+      throw new NotFoundException('Bộ đề thi không tồn tại');
     }
 
+    // Tính thời gian làm bài
     const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
     const h = Math.floor(diffMs / 3600000)
       .toString()
@@ -276,25 +277,72 @@ export class ExamService {
       .padStart(2, '0');
     const elapsedTime = `${h}:${m}:${s}`;
 
+    // Map userAnswer thành object questionId => answerOptionIds[]
     const userAnswerMap: Record<string, string[]> = {};
     userAnswers.forEach((ua) => {
       userAnswerMap[ua.questionId] = ua.selections.map((s) => s.answerOptionId);
     });
 
-    const questions = examQuestions.map((q) => ({
-      questionId: q.questionId,
-      question: q.question.content,
-      answers: q.question.answerOptions.map((opt) => ({
+    // Tính đúng, sai, bỏ qua
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skippedCount = 0;
+
+    const questions = examQuestions.map((q) => {
+      const answerOptions = q.question.answerOptions.map((opt) => ({
         id: opt.id,
         content: opt.content,
         isCorrect: opt.isCorrect,
-      })),
-      userAnswers: userAnswerMap[q.questionId] || [],
-      sequence: q.question.sequence,
-    }));
+      }));
+
+      const correctAnswers = answerOptions.filter((opt) => opt.isCorrect).map((opt) => opt.id);
+      const userSelected = userAnswerMap[q.questionId] || [];
+
+      let status: 'correct' | 'wrong' | 'skipped';
+
+      if (userSelected.length === 0) {
+        skippedCount++;
+        status = 'skipped';
+      } else {
+        const allCorrectSelected =
+          userSelected.every((ans) => correctAnswers.includes(ans)) && correctAnswers.length === userSelected.length;
+
+        if (allCorrectSelected) {
+          correctCount++;
+          status = 'correct';
+        } else {
+          wrongCount++;
+          status = 'wrong';
+        }
+      }
+
+      return {
+        questionId: q.questionId,
+        question: q.question.content,
+        answers: answerOptions,
+        userAnswers: userSelected,
+        sequence: q.question.sequence,
+        status,
+      };
+    });
 
     questions.sort((a, b) => a.sequence - b.sequence);
 
-    return new ResponseItem<ExamWithResultDto>({ elapsedTime, questions }, 'Lấy kết quả bài thi thành công');
+    const examLevel = await this.prisma.examLevel.findUnique({
+      where: { id: existingExam.examLevelId },
+    });
+
+    return new ResponseItem<ExamWithResultDto>(
+      {
+        elapsedTime,
+        questions,
+        correctCount,
+        wrongCount,
+        skippedCount,
+        level: examLevel?.name,
+        description: examLevel?.description,
+      },
+      'Lấy kết quả bài thi thành công'
+    );
   }
 }
