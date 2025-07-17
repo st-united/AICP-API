@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
-import { CompetencyDimension, Exam, ExamSet } from '@prisma/client';
+import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, SFIALevel } from '@prisma/client';
 import { examSetDefaultName } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
@@ -277,13 +277,11 @@ export class ExamService {
       .padStart(2, '0');
     const elapsedTime = `${h}:${m}:${s}`;
 
-    // Map userAnswer thành object questionId => answerOptionIds[]
     const userAnswerMap: Record<string, string[]> = {};
     userAnswers.forEach((ua) => {
       userAnswerMap[ua.questionId] = ua.selections.map((s) => s.answerOptionId);
     });
 
-    // Tính đúng, sai, bỏ qua
     let correctCount = 0;
     let wrongCount = 0;
     let skippedCount = 0;
@@ -332,6 +330,8 @@ export class ExamService {
       where: { id: existingExam.examLevelId },
     });
 
+    const result = await this.getCoursesByExamLevel(examLevel.examLevel);
+
     return new ResponseItem<ExamWithResultDto>(
       {
         elapsedTime,
@@ -341,8 +341,40 @@ export class ExamService {
         skippedCount,
         level: examLevel?.name,
         description: examLevel?.description,
+        recommendedCourses: result,
       },
       'Lấy kết quả bài thi thành công'
     );
+  }
+
+  private mapExamLevelToSFIALevel(level: ExamLevelEnum): SFIALevel {
+    const mapping: Record<ExamLevelEnum, SFIALevel> = {
+      [ExamLevelEnum.LEVEL_1_STARTER]: SFIALevel.LEVEL_1_AWARENESS,
+      [ExamLevelEnum.LEVEL_2_EXPLORER]: SFIALevel.LEVEL_2_FOUNDATION,
+      [ExamLevelEnum.LEVEL_3_PRACTITIONER]: SFIALevel.LEVEL_3_APPLICATION,
+      [ExamLevelEnum.LEVEL_4_INTEGRATOR]: SFIALevel.LEVEL_4_INTEGRATION,
+      [ExamLevelEnum.LEVEL_5_STRATEGIST]: SFIALevel.LEVEL_5_INNOVATION,
+      [ExamLevelEnum.LEVEL_6_LEADER]: SFIALevel.LEVEL_6_LEADERSHIP,
+      [ExamLevelEnum.LEVEL_7_EXPERT]: SFIALevel.LEVEL_7_MASTERY,
+    };
+    return mapping[level];
+  }
+
+  async getCoursesByExamLevel(examLevel: ExamLevelEnum) {
+    const mappedLevel = this.mapExamLevelToSFIALevel(examLevel);
+
+    const allCourses = await this.prisma.course.findMany({
+      where: {
+        isActive: true,
+      },
+    });
+
+    const filteredCourses = allCourses.filter((course) => {
+      if (!course.sfiaLevels || course.sfiaLevels.length === 0) return false;
+
+      return course.sfiaLevels.some((sfia) => SFIALevel[sfia] >= SFIALevel[mappedLevel]);
+    });
+
+    return filteredCourses;
   }
 }
