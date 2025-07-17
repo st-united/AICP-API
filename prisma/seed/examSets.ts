@@ -44,7 +44,7 @@ export async function seedExamSets(
         data: {
           name: examSetData.name,
           description: examSetData.description,
-          timeLimitMinutes: 90,
+          timeLimitMinutes: 15,
           passingScore: 3,
           frameworkId: competencyFrameworkMap[examSetData.frameworkVersion].id,
         },
