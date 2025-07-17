@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus, ExamStatus, CompetencyDimension } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
 @Injectable()
 export class AnswersService {
@@ -221,11 +221,14 @@ export class AnswersService {
         .reduce((acc, s) => acc + s.weightedScore * s.weightWithinDimension, 0)
         .toFixed(2);
 
+      const level = this.getSFIALevel(overallScore);
+
       await this.prisma.exam.update({
         where: { id: examId },
         data: {
           overallScore,
           examStatus: ExamStatus.SUBMITTED,
+          sfiaLevel: level,
         },
       });
 
@@ -258,6 +261,16 @@ export class AnswersService {
         userId,
       },
     });
+  }
+
+  private getSFIALevel(overallScore: number): SFIALevel {
+    if (overallScore < 1) return SFIALevel.LEVEL_1_AWARENESS;
+    if (overallScore < 2) return SFIALevel.LEVEL_2_FOUNDATION;
+    if (overallScore < 3) return SFIALevel.LEVEL_3_APPLICATION;
+    if (overallScore < 4) return SFIALevel.LEVEL_4_INTEGRATION;
+    if (overallScore < 5) return SFIALevel.LEVEL_5_INNOVATION;
+    if (overallScore < 6) return SFIALevel.LEVEL_6_LEADERSHIP;
+    return SFIALevel.LEVEL_7_MASTERY;
   }
 
   private async handleSelectionAnswers(userId, params: userAnswerDto) {
