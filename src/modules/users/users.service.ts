@@ -305,14 +305,19 @@ export class UsersService {
     }
     if (updateData.phoneNumber) {
       if (user.phoneNumber === updateData.phoneNumber) {
-        throw new BadRequestException('Số điện thoại này đang được bạn sử dụng');
-      }
-      const phoneExisted = await this.prisma.user.findUnique({
-        where: { phoneNumber: updateData.phoneNumber },
-      });
-      if (phoneExisted) throw new BadRequestException('Số điện thoại đã tồn tại');
-      if (user.zaloVerified) {
-        updateData['zaloVerified'] = false;
+        delete updateData.phoneNumber;
+      } else {
+        const phoneExisted = await this.prisma.user.findUnique({
+          where: { phoneNumber: updateData.phoneNumber },
+        });
+
+        if (phoneExisted) {
+          throw new BadRequestException('Số điện thoại đã tồn tại');
+        }
+
+        if (user.zaloVerified) {
+          updateData['zaloVerified'] = false;
+        }
       }
     }
 
@@ -333,7 +338,7 @@ export class UsersService {
       },
     });
 
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
+    return new ResponseItem(updatedUser, 'Cập nhật hồ sơ thành công', UserDto);
   }
 
   async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<UserDto>> {
@@ -343,24 +348,17 @@ export class UsersService {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
-    // Resize ảnh về 512x512 và convert sang JPEG (nén tốt, chất lượng tốt)
-    const resizedBuffer = await sharp(file.buffer)
-      .resize(512, 512, { fit: 'cover' }) // fit cover đảm bảo đúng 512x512, crop nếu cần
-      .jpeg({ quality: 80 })
-      .toBuffer();
+    const resizedBuffer = await sharp(file.buffer).resize(512, 512, { fit: 'cover' }).jpeg({ quality: 80 }).toBuffer();
 
-    // Kiểm tra kích thước sau khi resize
     if (resizedBuffer.length > 5 * 1024 * 1024) {
       throw new BadRequestException('Ảnh vượt quá kích thước tối đa 5MB sau khi xử lý');
     }
 
-    // Nếu có ảnh cũ => xóa
     if (user.avatarUrl) {
       const oldDest = this.googleCloudStorageService.getFileDestFromPublicUrl(user.avatarUrl);
       await this.googleCloudStorageService.deleteFile(oldDest);
     }
 
-    // Upload buffer ảnh lên GCS
     const destPath = avtPathName('avatars', uuidv4());
     const avatarUrl = await this.googleCloudStorageService.uploadBuffer(resizedBuffer, destPath, 'image/jpeg');
 
