@@ -45,10 +45,6 @@ lerna-debug.log*
 
 # k8s
 
-/k8s/services/.env
-/k8s/services/secrets
-/k8s/services-dev/.env*
-/k8s/services-dev/secrets
-/k8s/secrets
-etc/secrets/firebase-service-key.json
-.secrets
+/k8s/services*/.env*
+/k8s/services*/secrets
+etc/secrets/

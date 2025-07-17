@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, ParseUUIDPipe, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, ParseUUIDPipe, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ExamService } from './exam.service';
 import { ResponseItem } from '@app/common/dtos';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
@@ -6,6 +6,10 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@n
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
+import { Response } from 'express';
+import * as dayjs from 'dayjs';
+import { DATE_TIME } from '@Constant/datetime';
+import { ExamWithResultDto } from './dto/response/exam-with-result.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -60,5 +64,30 @@ export class ExamController {
   })
   async deleteExam(@Param('id') examId: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
     return this.examService.deleteExam(examId);
+  }
+
+  @Get(':id/download-certificate')
+  @ApiOperation({ summary: 'Tải file chứng chỉ PDF của bài thi' })
+  @ApiParam({ name: 'id', type: String, description: 'Exam ID' })
+  async downloadCertificate(@Param('id', ParseUUIDPipe) id: string, @Req() req, @Res() res: Response): Promise<void> {
+    const { buffer, date } = await this.examService.generateCertificateByExamId(id, req.user.userId);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="AICompetency_Certificate_${dayjs(date).format(DATE_TIME.DAY_YYYY_MM_DD)}.pdf"`,
+      'Content-Length': buffer.length,
+    });
+
+    res.end(buffer);
+  }
+
+  @Get(':id/result')
+  @ApiOperation({ summary: 'Lấy thông tin bộ đề thi theo ID' })
+  @ApiParam({ name: 'id', type: String, description: 'ID bộ đề thi' })
+  async getExamWithResultById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req
+  ): Promise<ResponseItem<ExamWithResultDto>> {
+    return this.examService.getExamWithResult(id, req.user.userId);
   }
 }
