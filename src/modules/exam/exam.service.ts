@@ -341,6 +341,7 @@ export class ExamService {
         skippedCount,
         level: examLevel?.name,
         description: examLevel?.description,
+        learningPath: examLevel?.learningPath,
         recommendedCourses: result,
       },
       'Lấy kết quả bài thi thành công'

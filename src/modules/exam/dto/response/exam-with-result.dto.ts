@@ -24,6 +24,9 @@ export class ExamWithResultDto {
   @ApiProperty()
   description: string;
 
+  @ApiProperty()
+  learningPath: string;
+
   @ApiProperty({ type: [CourseDto] })
   recommendedCourses: CourseDto[];
 }
