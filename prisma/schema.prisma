@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  phoneNumber        String    @unique @map("phone_number") @db.VarChar
+  phoneNumber        String?   @unique @map("phone_number") @db.VarChar
   email              String    @unique @db.VarChar
   password           String    @db.VarChar
   fullName           String    @map("full_name") @db.VarChar
@@ -22,13 +22,15 @@ model User {
   dob                DateTime? @map("dob") @db.Timestamptz(6)
   country            String?   @db.VarChar
   province           String?   @db.VarChar
-  job                String?   @db.VarChar
+
   referralCode       String?   @unique @map("referral_code") @db.VarChar
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken       String?   @unique @map("refresh_token") @db.VarChar
 
+
+  job                Domain[]    @relation("UserDomain")
   roles              UserRole[]
   userExam           Exam[]                 @relation("UserExam")
   reviewerExam       Exam[]                 @relation("ReviewerExam")
@@ -39,7 +41,7 @@ model User {
   userProgress       UserLearningProgress[]
   userPortfolio      Portfolio?             @relation("UserPortfolio")
   verifierPortfolio  Portfolio[]            @relation("VerifierPortfolio")
-  mentor             Mentor[]
+  mentor             Mentor?
   mentorBooking      MentorBooking[]
 }
 
@@ -141,6 +143,7 @@ model Course {
   description     String     @db.Text
   provider        String     @db.VarChar
   url             String     @db.Text
+  linkImage       String?    @db.Text
   courseType      String?    @default("ONLINE") @map("course_type") @db.VarChar
   durationHours   Int?       @map("duration_hours") @db.SmallInt
   difficultyLevel SFIALevel? @map("difficulty_level")
@@ -218,12 +221,14 @@ model Domain {
   courses   Course[]
   framework CompetencyFramework[]
   metrics   OrganizationalMetrics[]
+  users     User[]     @relation("UserDomain")
 }
 
 model CompetencyAspect {
   id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pillarId              String              @map("pillar_id") @db.Uuid
   name                  String              @unique @db.VarChar
+  represent             String              @db.VarChar @default("")
   description           String              @db.Text
   weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
@@ -268,6 +273,7 @@ model Exam {
   timeSpentMinutes  Int?             @map("time_spent_minutes") @db.SmallInt
   examStatus        ExamStatus       @default(IN_PROGRESS) @map("exam_status")
   completionPercent Decimal?         @default(0) @map("completion_percent") @db.Decimal(3, 2)
+  examLevelId       String?          @map("exam_level_id") @db.Uuid
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -278,6 +284,7 @@ model Exam {
   user               User                 @relation("UserExam", fields: [userId], references: [id], onDelete: Cascade)
   reviewer           User?                @relation("ReviewerExam", fields: [reviewerId], references: [id], onDelete: Cascade)
   examSet            ExamSet?             @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  examLevel          ExamLevel?           @relation(fields: [examLevelId], references: [id], onDelete: SetNull)
   examAspectSnapshot ExamAspectSnapshot[]
   examPillarSnapshot ExamPillarSnapshot[]
 }
@@ -297,14 +304,14 @@ model ExamSetQuestion {
 }
 
 model Mentor {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String    @unique @map("user_id") @db.Uuid
-  expertise  String?   @db.VarChar
-  sfiaLevel  SFIALevel @map("sfia_level")
-  maxMentees Int?      @default(5) @map("max_mentees") @db.SmallInt
-  isActive   Boolean   @default(true) @map("is_active") @db.Boolean
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String     @unique @map("user_id") @db.Uuid
+  expertise  String?    @db.VarChar
+  sfiaLevel  SFIALevel? @map("sfia_level")
+  maxMentees Int?       @default(5) @map("max_mentees") @db.SmallInt
+  isActive   Boolean    @default(true) @map("is_active") @db.Boolean
+  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   bookings         MentorBooking[]
   mentorCompetency MentorCompetency[]
@@ -563,6 +570,17 @@ model AssessmentSession {
   exam Exam @relation(fields: [examId], references: [id])
 }
 
+model ExamLevel {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examLevel    ExamLevelEnum @map("exam_level")
+  name         String    @unique @db.VarChar
+  description  String    @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  exams        Exam[]
+}
+
 enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_CHOICE
@@ -614,6 +632,17 @@ enum SFIALevel {
   LEVEL_6_LEADERSHIP
   LEVEL_7_MASTERY
 }
+
+enum ExamLevelEnum {
+  LEVEL_1_STARTER
+  LEVEL_2_EXPLORER
+  LEVEL_3_PRACTITIONER
+  LEVEL_4_INTEGRATOR
+  LEVEL_5_STRATEGIST
+  LEVEL_6_LEADER
+  LEVEL_7_EXPERT
+}
+
 
 enum ReadyToWorkTier {
   TIER_1_PRODUCTION

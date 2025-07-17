@@ -1,0 +1,35 @@
+namespace: devplus-aicp
+
+resources:
+  - ../base
+
+# secretGenerator:
+#   - name: aicp-api-env
+#     namespace: devplus-aicp
+#     envs:
+#       - .env
+#     options:
+#       disableNameSuffixHash: true
+
+#   - name: firebase-service-key
+#     namespace: devplus-aicp
+#     files:
+#       - firebase-service-key.json=./secrets/firebase-service-key.json
+#     options:
+#       disableNameSuffixHash: true
+
+#   - name: google-service-key
+#     files:
+#       - google-service-key.json=./secrets/google-service-key.json
+#     options:
+#       disableNameSuffixHash: true
+
+images:
+  - name: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api
+    newTag: 'latest'
+
+commonLabels:
+  app: aicp-api
+  version: v1
+  component: backend
+  environment: production
