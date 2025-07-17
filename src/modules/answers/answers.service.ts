@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel, ExamLevelEnum } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
 @Injectable()
 export class AnswersService {
@@ -223,12 +223,27 @@ export class AnswersService {
 
       const level = this.getSFIALevel(overallScore);
 
+      const levelNumber = level.split('_')[1];
+
+      const matchedExamLevels = Object.values(ExamLevelEnum).filter((level) =>
+        level.startsWith(`LEVEL_${levelNumber}_`)
+      );
+
+      const examLevels = await this.prisma.examLevel.findFirst({
+        where: {
+          examLevel: {
+            in: matchedExamLevels,
+          },
+        },
+      });
+
       await this.prisma.exam.update({
         where: { id: examId },
         data: {
           overallScore,
           examStatus: ExamStatus.SUBMITTED,
           sfiaLevel: level,
+          examLevelId: examLevels ? examLevels.id : null,
         },
       });
 

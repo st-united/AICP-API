@@ -145,6 +145,7 @@ model Course {
   description     String     @db.Text
   provider        String     @db.VarChar
   url             String     @db.Text
+  linkImage       String?    @db.Text
   courseType      String?    @default("ONLINE") @map("course_type") @db.VarChar
   durationHours   Int?       @map("duration_hours") @db.SmallInt
   difficultyLevel SFIALevel? @map("difficulty_level")
@@ -274,6 +275,7 @@ model Exam {
   timeSpentMinutes  Int?             @map("time_spent_minutes") @db.SmallInt
   examStatus        ExamStatus       @default(IN_PROGRESS) @map("exam_status")
   completionPercent Decimal?         @default(0) @map("completion_percent") @db.Decimal(3, 2)
+  examLevelId       String?          @map("exam_level_id") @db.Uuid
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -284,6 +286,7 @@ model Exam {
   user               User                 @relation("UserExam", fields: [userId], references: [id], onDelete: Cascade)
   reviewer           User?                @relation("ReviewerExam", fields: [reviewerId], references: [id], onDelete: Cascade)
   examSet            ExamSet?             @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  examLevel          ExamLevel?           @relation(fields: [examLevelId], references: [id], onDelete: SetNull)
   examAspectSnapshot ExamAspectSnapshot[]
   examPillarSnapshot ExamPillarSnapshot[]
 }
@@ -569,6 +572,17 @@ model AssessmentSession {
   exam Exam @relation(fields: [examId], references: [id])
 }
 
+model ExamLevel {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examLevel    ExamLevelEnum @map("exam_level")
+  name         String    @unique @db.VarChar
+  description  String    @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  exams        Exam[]
+}
+
 enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_CHOICE
@@ -623,6 +637,17 @@ enum SFIALevel {
   LEVEL_6_LEADERSHIP
   LEVEL_7_MASTERY
 }
+
+enum ExamLevelEnum {
+  LEVEL_1_STARTER
+  LEVEL_2_EXPLORER
+  LEVEL_3_PRACTITIONER
+  LEVEL_4_INTEGRATOR
+  LEVEL_5_STRATEGIST
+  LEVEL_6_LEADER
+  LEVEL_7_EXPERT
+}
+
 
 enum ReadyToWorkTier {
   TIER_1_PRODUCTION
