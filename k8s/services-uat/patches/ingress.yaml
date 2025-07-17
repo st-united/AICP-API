@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aicp-api
+spec:
+  tls:
+    - hosts:
+        - api.aicp.uat.devplus.edu.vn
+      secretName: devplus-aicp-uat-tls
+  rules:
+    - host: api.aicp.uat.devplus.edu.vn
+      http:
+        paths:
+          - backend:
+              service:
+                name: aicp-api
+                port:
+                  number: 6002
+            path: /
+            pathType: Prefix

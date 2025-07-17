@@ -20,7 +20,7 @@ export class EmailService {
   }
 
   async sendActivationEmail(fullName: string, email: string, token: string): Promise<void> {
-    const activationLink = `${this.configService.get('FE_APP_URL')}/login?activateToken=${token}`;
+    const activationLink = `${this.configService.get('FE_APP_URL')}/login?activateToken=${token}&email=${email}`;
 
     const template = this.generateEmailActivateTemplate(fullName, activationLink);
     await this.sendEmail(email, 'Kích hoạt tài khoản DevPlus', template);
@@ -34,7 +34,7 @@ export class EmailService {
   }
 
   async sendEmailNewMentor(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const activationLink = `${this.configService.get('FE_APP_URL_ADMIN')}/mentor-activation/${emailContent.token}`;
+    const activationLink = `${emailContent.url}/login?activateToken=${emailContent.token}`;
 
     const template = this.generateMentorAccountEmailTemplate(
       emailContent.email,
@@ -50,7 +50,7 @@ export class EmailService {
   }
 
   async sendEmailActivateMentorAccount(emailContent: SendEmailNewMentorDto): Promise<void> {
-    const loginLink = `${this.configService.get('FE_APP_URL_ADMIN')}/login`;
+    const loginLink = `${emailContent.url}/login`;
 
     const template = this.activateMentorAccountEmailTemplate(emailContent.fullName, loginLink);
     await this.sendEmail(emailContent.email, 'Tài khoản Mentor của bạn đã được kích hoạt', template);
@@ -59,6 +59,19 @@ export class EmailService {
   async sendEmailDeactivateMentorAccount(emailContent: SendEmailNewMentorDto): Promise<void> {
     const template = this.deactivateMentorAccountEmailTemplate(emailContent.fullName);
     await this.sendEmail(emailContent.email, 'Tài khoản Mentor của bạn đã bị vô hiệu hóa', template);
+  }
+
+  async sendActivationReminderEmail(fullName: string, email: string, token: string): Promise<void> {
+    const activationLink = `${this.configService.get('FE_APP_URL')}/login?activateToken=${token}&email=${email}`;
+    const resendLink = `${this.configService.get('FE_APP_URL')}/resend-activation`;
+
+    const template = this.generateActivationReminderTemplate(fullName, activationLink);
+    await this.sendEmail(email, 'Nhắc nhở kích hoạt tài khoản DevPlus', template);
+  }
+
+  async sendAccountDeletionEmail(fullName: string, email: string): Promise<void> {
+    const template = this.generateDeleteAccountNotificationTemplate(fullName);
+    await this.sendEmail(email, 'Thông báo xóa tài khoản', template);
   }
 
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {
@@ -70,7 +83,7 @@ export class EmailService {
         html,
       });
     } catch (error) {
-      throw new Error('Failed to send email');
+      throw new Error(error.message);
     }
   }
 
@@ -372,5 +385,188 @@ export class EmailService {
   </body>
   </html>
   `;
+  }
+
+  private generateActivationReminderTemplate(fullName: string, activationLink: string): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Kích hoạt tài khoản</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+          }
+          .container {
+            width: 100%; 
+            max-width: 700px; 
+            margin: 20px auto; 
+            background-color: #ffffff; 
+            border: 1px solid #d1d1d1; 
+            border-radius: 12px;
+          }
+          .header {
+            background-color:#002f6c; 
+            color: #ffffff; 
+            text-align: center; 
+            padding: 15px; 
+            border-radius: 8px 8px 0 0; 
+            font-size: 20px; 
+            font-weight: bold; 
+          }
+          .content {
+            text-align: center;
+            margin: 20px 32px;
+          }
+          .content p {
+            font-size: 16px;
+            color: #000000;
+            line-height: 1.6;
+            margin: 10px 0;
+          }
+          .content .greeting {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+          }
+          .btn {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: #ffffff !important;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 6px;
+            font-size: 16px;
+          }
+          .footer {
+            margin-top: 20px; 
+            text-align: center; 
+            font-size: 14px; 
+            color: #555555; 
+            border-top: 1px solid rgb(199, 198, 198); 
+            padding: 20px 10px; 
+            margin-left: 20px; 
+            margin-right: 20px;
+          }
+          p {
+            color: #000000 !important;
+            font-size: 18px !important;
+            margin: 16px 0 !important;
+            line-height: 1.6;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">Kích hoạt tài khoản của bạn</div>
+          <div class="content">
+            <p class="greeting">Xin chào ${fullName},</p>
+            <p>Cảm ơn bạn đã đăng ký tài khoản!</p>
+            <p>Bạn đã đăng ký tài khoản cách đây gần <strong>1 tháng</strong> nhưng vẫn chưa hoàn tất bước kích hoạt.</p>
+            <p>Để đảm bảo hệ thống chỉ lưu trữ các tài khoản đang hoạt động, chúng tôi sẽ xóa vĩnh viễn tài khoản của bạn trong vòng 24 giờ tới nếu không có xác nhận. Bạn vẫn có thể kích hoạt ngay bằng cách nhấn vào liên kết bên dưới:</p>
+            <a href="${activationLink}" class="btn">Kích hoạt tài khoản</a>
+            <p>Liên kết này sẽ hết hạn sau 24 giờ.<br>Nếu bạn không phải là người đã đăng ký, xin vui lòng bỏ qua email này.</p>
+            <p>Chúng tôi rất mong được đồng hành cùng bạn!<br>Nếu cần hỗ trợ, đừng ngần ngại liên hệ với chúng tôi.</p>
+            <p>Thân ái,<br/>Đội ngũ DevPlus</p>
+          </div>
+          <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateDeleteAccountNotificationTemplate(fullName: string): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>Thông báo</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              background-color: #f4f4f4;
+              margin: 0;
+              padding: 0;
+            }
+            .container {
+              width: 100%; 
+              max-width: 700px; 
+              margin: 20px auto; 
+              background-color: #ffffff; 
+              border: 1px solid #d1d1d1; 
+              border-radius: 12px;
+            }
+            .header {
+              background-color: #002f6c;
+              color: #ffffff;
+              text-align: center;
+              padding: 15px;
+              border-radius: 8px 8px 0 0;
+              font-size: 20px;
+              font-weight: bold;
+            }
+            .content {
+              text-align: center;
+              margin: 20px 32px;
+            }
+            .footer {
+              margin-top: 20px;
+              text-align: center;
+              font-size: 14px;
+              color: #555555;
+              border-top: 1px solid rgb(199, 198, 198);
+              padding: 20px 10px;
+              margin-left: 20px;
+              margin-right: 20px;
+            }
+            p {
+              color: #000000 !important;
+              font-size: 18px !important;
+              margin: 16px 0 !important;
+              line-height: 1.6;
+            }
+            .hello {
+              font-size: 18px;
+              font-weight: bold;
+              color: rgb(0, 0, 0);
+              margin-top: 10px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">Thông báo</div>
+            <div class="content">
+              <div class="hello">Xin chào ${fullName}</div>
+              <p>Cảm ơn bạn đã đăng ký tài khoản!</p>
+              <p>
+                Chúng tôi ghi nhận rằng bạn đã đăng ký tài khoản nhưng không thực hiện kích hoạt trong vòng 30 ngày kể từ ngày đăng ký.
+              </p>
+              <p>
+                Theo chính sách quản lý và quyền người dùng của hệ thống, các tài khoản không được kích hoạt trong khoảng thời gian này sẽ được tự động xóa khỏi hệ thống nhằm đảm bảo bảo mật và tối ưu hiệu suất hệ thống.
+              </p>
+              <p>
+                Nếu bạn vẫn muốn sử dụng dịch vụ của chúng tôi, vui lòng thực hiện đăng ký lại tại nền tảng chính thức của chúng tôi.
+              </p>
+              <p>
+                Chúng tôi rất mong chờ được đồng hành cùng bạn!<br />
+                Nếu bạn có bất kỳ thắc mắc nào hoặc cần hỗ trợ, vui lòng liên hệ với chúng tôi.
+              </p>
+              <p>Thân ái,<br />Đội ngũ DevPlus</p>
+            </div>
+            <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+          </div>
+        </body>
+      </html>
+    `;
   }
 }

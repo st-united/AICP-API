@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aicp-api
+spec:
+  serviceName: aicp-api
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aicp-api
+  template:
+    spec:
+      initContainers:
+        - name: db-migration
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:uat-latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Checking database connection..."
+              until nc -z postgres-aicp-postgresql.devplus-aicp-uat.svc.cluster.local 5432; do
+                echo "Waiting for database to be ready..."
+                sleep 5
+              done
+              echo "Database connected successfully"
+              echo "Running migrations..."
+              yarn prisma migrate deploy
+              echo "Migration completed successfully"
+
+              echo "Running seed (will skip if data exists)..."
+              yarn db:seed:k8s || echo "Seed failed or skipped"
+              echo "Init container completed"
+          envFrom:
+            - secretRef:
+                name: aicp-api-env
+            - configMapRef:
+                name: aicp-api-config
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+          resources:
+            requests:
+              memory: '64Mi'
+              cpu: '50m'
+            limits:
+              memory: '128Mi'
+              cpu: '100m'
+      containers:
+        - name: aicp-api
+          image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:uat-latest
+          envFrom:
+            - secretRef:
+                name: aicp-api-env
+            - configMapRef:
+                name: aicp-api-config
+          volumeMounts:
+            - name: storage-volume
+              mountPath: /app/server/storage
+            - name: firebase-service-key
+              mountPath: /app/secrets
+              readOnly: true
+            - name: google-service-key
+              mountPath: /app/etc
+              readOnly: true
+            - name: tmp-volume
+              mountPath: /tmp
+            - name: cache-volume
+              mountPath: /app/.cache
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsGroup: 1000
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              memory: 750Mi
+              cpu: '1'
+            limits:
+              memory: 1Gi
+              cpu: '2'
+      volumes:
+        - name: firebase-service-key
+          secret:
+            secretName: firebase-service-key
+        - name: google-service-key
+          secret:
+            secretName: google-service-key
+        - name: tmp-volume
+          emptyDir: {}
+        - name: cache-volume
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: storage-volume
+      spec:
+        accessModes: ['ReadWriteOnce']
+        storageClassName: standard-rwo
+        resources:
+          requests:
+            storage: 5Gi

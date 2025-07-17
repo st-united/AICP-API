@@ -40,5 +40,11 @@ lerna-debug.log*
 
 /etc
 /etc/secrets
-/etc/secrets/google-service-key.json
-/etc/secrets/firebase-service-key.json
+/k8s/postgres/values.yaml
+/k8s/redis/values.yaml
+
+# k8s
+
+/k8s/services*/.env*
+/k8s/services*/secrets
+etc/secrets/

@@ -18,6 +18,7 @@ import { SessionDto } from '../redis/dto/session.dto';
 import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
 import { ClientTypeEnum, UserRoleEnum } from '@Constant/enums';
+import { UserTrackingStatus } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -47,12 +48,12 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException('Tài khoản không đúng');
 
-    if (!user.status) throw new UnauthorizedException('Tài khoản không được kích hoạt');
+    if (!user.status) throw new UnauthorizedException('Tài khoản chưa được kích hoạt');
 
     const hasMentorRole = user.roles.some((r) => r.role.name === UserRoleEnum.MENTOR);
 
     if (hasMentorRole && user.mentor && user.mentor.isActive === false) {
-      throw new UnauthorizedException('Tài khoản mentor của bạn đã bị khóa');
+      throw new UnauthorizedException('Tài khoản mentor chưa được kích hoạt');
     }
 
     const comparePassword = bcrypt.compareSync(credentialsDto.password, user.password);
@@ -258,11 +259,124 @@ export class AuthService {
         throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
       }
 
-      await this.userService.updateUserStatus(user.id, true);
+      await this.userService.updateUserStatus(user.id, true, UserTrackingStatus.ACTIVATED);
 
       return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {
-      throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn' + error);
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException(`Mã kích hoạt đã hết hạn`);
+      }
+      throw new BadRequestException('Mã kích hoạt không hợp lệ');
     }
+  }
+
+  async resendActivationEmail(email: string): Promise<ResponseItem<null>> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: email,
+        deletedAt: null,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại trong hệ thống');
+    }
+
+    if (user.status) {
+      throw new BadRequestException('Tài khoản đã được kích hoạt trước đó');
+    }
+
+    const resendKey = `resend_activation_email:${user.id}`;
+    const alreadySent = await this.redisService.getValue(resendKey);
+    if (alreadySent) {
+      throw new BadRequestException('Email kích hoạt đã được gửi trước đó. Vui lòng kiểm tra hộp thư của bạn.');
+    }
+
+    const activationToken = this.tokenService.generateActivationToken(user.id);
+
+    await this.emailService.sendActivationEmail(user.fullName, user.email, activationToken);
+    await this.redisService.setValue(resendKey, 'sent', 86400);
+
+    return new ResponseItem(null, 'Email kích hoạt đã được gửi lại thành công. Vui lòng kiểm tra hộp thư của bạn.');
+  }
+
+  async sendActivationReminders(): Promise<void> {
+    const twentyNineDaysAgo = new Date();
+    twentyNineDaysAgo.setDate(twentyNineDaysAgo.getDate() - 29);
+    const inactiveUsers = await this.getInactiveUsers(twentyNineDaysAgo);
+    for (const user of inactiveUsers) {
+      try {
+        if (await this.shouldSendReminder(user.id)) {
+          const activationToken = this.tokenService.generateActivationToken(user.id);
+          await this.emailService.sendActivationReminderEmail(user.fullName, user.email, activationToken);
+        }
+      } catch {
+        await this.redisService.deleteValue(`activation_reminder_sent:${user.id}`);
+      }
+    }
+  }
+
+  async deleteInactiveAccounts(): Promise<void> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const inactiveUsers = await this.getInactiveUsers(thirtyDaysAgo);
+    for (const user of inactiveUsers) {
+      try {
+        if (await this.shouldDeleteAccount(user.id)) {
+          await this.emailService.sendAccountDeletionEmail(user.fullName, user.email);
+          await this.softDeleteUser(user.id);
+        }
+      } catch {
+        await this.redisService.deleteValue(`deletion_notification_sent:${user.id}`);
+      }
+    }
+  }
+
+  private async getInactiveUsers(date: Date) {
+    return await this.prisma.user.findMany({
+      where: {
+        status: false,
+        deletedAt: null,
+        createdAt: { lte: date },
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+      },
+    });
+  }
+
+  private async shouldSendReminder(userId: string): Promise<boolean> {
+    const reminderKey = `activation_reminder_sent:${userId}`;
+    const existingReminder = await this.redisService.getValue(reminderKey);
+
+    if (existingReminder) return false;
+
+    const wasSet = await this.redisService.setIfNotExists(reminderKey, 'sent');
+    return wasSet;
+  }
+
+  private async shouldDeleteAccount(userId: string): Promise<boolean> {
+    const reminderKey = `activation_reminder_sent:${userId}`;
+    const deletionKey = `deletion_notification_sent:${userId}`;
+
+    const hasReminderSent = await this.redisService.getValue(reminderKey);
+    const hasDeletionSent = await this.redisService.getValue(deletionKey);
+
+    if (!hasReminderSent || hasDeletionSent) return false;
+
+    const wasSet = await this.redisService.setIfNotExists(deletionKey, 'sent');
+    return wasSet;
+  }
+
+  private async softDeleteUser(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        deletedAt: new Date(),
+        status: false,
+      },
+    });
   }
 }
