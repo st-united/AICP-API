@@ -1,4 +1,4 @@
-import { PrismaClient, CompetencyAspect, Domain } from '@prisma/client';
+import { PrismaClient, CompetencyAspect, Domain, SFIALevel } from '@prisma/client';
 import { link } from 'joi';
 
 export async function seedCourses(prisma: PrismaClient, categories: CompetencyAspect[], domains: Domain[]) {
@@ -14,6 +14,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       url: 'https://learn.devplus.edu.vn/',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Information Technology',
+      sfiaLevels: [SFIALevel.LEVEL_1_AWARENESS, SFIALevel.LEVEL_2_FOUNDATION, SFIALevel.LEVEL_3_APPLICATION],
     },
     {
       title: 'APPLY AI FOR DEV',
@@ -23,6 +24,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       url: 'https://learn.devplus.edu.vn/',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Information Technology',
+      sfiaLevels: [SFIALevel.LEVEL_4_INTEGRATION, SFIALevel.LEVEL_5_INNOVATION, SFIALevel.LEVEL_6_LEADERSHIP],
     },
     {
       title: 'Introduction to AI Ethics',
@@ -82,6 +84,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       url: courseData.url,
       aspectId: categoryMap[courseData.category].id,
       domainId: domainMap[courseData.domain].id,
+      sfiaLevels: courseData.sfiaLevels ?? [],
     })),
   });
 }

@@ -149,6 +149,7 @@ model Course {
   difficultyLevel SFIALevel? @map("difficulty_level")
   aspectId        String     @map("aspect_id") @db.Uuid
   domainId        String?    @db.Uuid
+  sfiaLevels  SFIALevel[]  @map("sfia_level")
   isActive        Boolean    @default(true) @map("is_active") @db.Boolean
   createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
