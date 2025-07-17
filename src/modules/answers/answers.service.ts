@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel, ExamLevelEnum } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
 @Injectable()
 export class AnswersService {
@@ -223,12 +223,27 @@ export class AnswersService {
 
       const level = this.getSFIALevel(overallScore);
 
+      const levelNumber = level.split('_')[1];
+
+      const matchedExamLevels = Object.values(ExamLevelEnum).filter((level) =>
+        level.startsWith(`LEVEL_${levelNumber}_`)
+      );
+
+      const examLevels = await this.prisma.examLevel.findFirst({
+        where: {
+          examLevel: {
+            in: matchedExamLevels,
+          },
+        },
+      });
+
       await this.prisma.exam.update({
         where: { id: examId },
         data: {
           overallScore,
           examStatus: ExamStatus.SUBMITTED,
           sfiaLevel: level,
+          examLevelId: examLevels ? examLevels.id : null,
         },
       });
 
@@ -264,12 +279,12 @@ export class AnswersService {
   }
 
   private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore < 1) return SFIALevel.LEVEL_1_AWARENESS;
-    if (overallScore < 2) return SFIALevel.LEVEL_2_FOUNDATION;
-    if (overallScore < 3) return SFIALevel.LEVEL_3_APPLICATION;
-    if (overallScore < 4) return SFIALevel.LEVEL_4_INTEGRATION;
-    if (overallScore < 5) return SFIALevel.LEVEL_5_INNOVATION;
-    if (overallScore < 6) return SFIALevel.LEVEL_6_LEADERSHIP;
+    if (overallScore < 2) return SFIALevel.LEVEL_1_AWARENESS;
+    if (overallScore < 3) return SFIALevel.LEVEL_2_FOUNDATION;
+    if (overallScore < 4) return SFIALevel.LEVEL_3_APPLICATION;
+    if (overallScore < 5) return SFIALevel.LEVEL_4_INTEGRATION;
+    if (overallScore < 6) return SFIALevel.LEVEL_5_INNOVATION;
+    if (overallScore < 7) return SFIALevel.LEVEL_6_LEADERSHIP;
     return SFIALevel.LEVEL_7_MASTERY;
   }
 
