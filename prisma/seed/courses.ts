@@ -12,8 +12,10 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
         'Chương trình đào tạo được thiết kế để giúp học viên làm rõ nhận thức về AI, xây dựng tư duy sẵn sàng và định vị bản thân trong thời đại kỷ nguyên số. Tham gia để bắt đầu hành trình chuyển đồi cùng AI đầy cảm hứng!',
       provider: 'Coursera',
       url: 'https://learn.devplus.edu.vn/',
+      linkImage:
+        'https://cdn.prod.website-files.com/66c6452d74566f59fa0c6757/682319e4c0a4c6a7346a4769_Visual%20of%20AI-driven%20mindset%20shift%20for%20business%20growth%20with%20Sarvadhi%20branding.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
-      domain: 'Information Technology',
+      domain: 'Công nghệ thông tin',
       sfiaLevels: [SFIALevel.LEVEL_1_AWARENESS, SFIALevel.LEVEL_2_FOUNDATION, SFIALevel.LEVEL_3_APPLICATION],
     },
     {
@@ -22,8 +24,10 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
         'Chương trình đào tạo được thiết kế để trang bị cho học viên kỹ năng ứng dụng AI thực tiễn trong phát triển phần mềm, mở ra cơ hội nâng cao hiệu suất và tối ưu hóa công việc. Bạn đã sẵn sàng trở thành một lập trình viên AI - Powered, dẫn đầu trong kỷ nguyên công nghệ mới chưa?',
       provider: 'Coursera',
       url: 'https://learn.devplus.edu.vn/',
+      linkImage:
+        'https://eluminoustechnologies.com/blog/wp-content/uploads/2023/08/How-to-Use-AI-in-Web-Development.webp',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
-      domain: 'Information Technology',
+      domain: 'Công nghệ thông tin',
       sfiaLevels: [SFIALevel.LEVEL_4_INTEGRATION, SFIALevel.LEVEL_5_INNOVATION, SFIALevel.LEVEL_6_LEADERSHIP],
     },
     {
@@ -82,6 +86,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       description: courseData.description,
       provider: courseData.provider,
       url: courseData.url,
+      linkImage: courseData.linkImage || null,
       aspectId: categoryMap[courseData.category].id,
       domainId: domainMap[courseData.domain].id,
       sfiaLevels: courseData.sfiaLevels ?? [],
