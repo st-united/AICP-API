@@ -287,7 +287,7 @@ model Exam {
   user               User                 @relation("UserExam", fields: [userId], references: [id], onDelete: Cascade)
   reviewer           User?                @relation("ReviewerExam", fields: [reviewerId], references: [id], onDelete: Cascade)
   examSet            ExamSet?             @relation(fields: [examSetId], references: [id], onDelete: Cascade)
-  examLevel          ExamLevel?           @relation(fields: [examLevelId], references: [id], onDelete: SetNull)
+  examLevel          ExamLevel?           @relation(fields: [examLevelId], references: [id], onDelete: Cascade)
   examAspectSnapshot ExamAspectSnapshot[]
   examPillarSnapshot ExamPillarSnapshot[]
 }
