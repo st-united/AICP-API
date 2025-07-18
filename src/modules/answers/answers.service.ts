@@ -220,11 +220,8 @@ export class AnswersService {
       const overallScore = +Object.values(totalScorePerPillar)
         .reduce((acc, s) => acc + s.weightedScore * s.weightWithinDimension, 0)
         .toFixed(2);
-
       const level = this.getSFIALevel(overallScore);
-
       const levelNumber = level.split('_')[1];
-
       const matchedExamLevels = Object.values(ExamLevelEnum).filter((level) =>
         level.startsWith(`LEVEL_${levelNumber}_`)
       );
@@ -279,7 +276,6 @@ export class AnswersService {
   }
 
   private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore <= 1) return null;
     if (overallScore <= 2) return SFIALevel.LEVEL_1_AWARENESS;
     if (overallScore <= 3) return SFIALevel.LEVEL_2_FOUNDATION;
     if (overallScore <= 4) return SFIALevel.LEVEL_3_APPLICATION;
