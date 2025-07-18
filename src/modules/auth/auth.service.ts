@@ -156,6 +156,7 @@ export class AuthService {
           password: hashedPassword,
           phoneNumber: null,
           status: true,
+          statusTracking: UserTrackingStatus.ACTIVATED,
         },
       });
 
