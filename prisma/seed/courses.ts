@@ -32,7 +32,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       provider: 'Coursera',
       url: 'https://www.coursera.org/learn/ai-ethics',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
-      domain: 'General',
+      domain: 'Đa lĩnh vực',
     },
     {
       title: 'Machine Learning with Python',
@@ -40,7 +40,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       provider: 'edX',
       url: 'https://www.edx.org/learn/machine-learning',
       category: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Critical Thinking & Ethical Reasoning)',
-      domain: 'General',
+      domain: 'Đa lĩnh vực',
     },
     {
       title: 'AI for Healthcare',
@@ -48,7 +48,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       provider: 'Udacity',
       url: 'https://www.udacity.com/course/ai-for-healthcare',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
-      domain: 'Healthcare',
+      domain: 'Y tế',
     },
     {
       title: 'Financial Analysis with AI',
@@ -56,7 +56,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       provider: 'Udemy',
       url: 'https://www.udemy.com/course/financial-analysis-ai',
       category: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Critical Thinking & Ethical Reasoning)',
-      domain: 'Finance',
+      domain: 'Tài chính',
     },
     {
       title: 'Critical Thinking for AI Implementation',
@@ -64,7 +64,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       provider: 'LinkedIn Learning',
       url: 'https://www.linkedin.com/learning/critical-thinking-ai',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
-      domain: 'General',
+      domain: 'Đa lĩnh vực',
     },
     {
       title: 'AI in Information Technology',
@@ -72,7 +72,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       provider: 'Coursera',
       url: 'https://www.coursera.org/learn/ai-Information Technology',
       category: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Critical Thinking & Ethical Reasoning)',
-      domain: 'Information Technology',
+      domain: 'Công nghệ thông tin',
     },
   ];
 

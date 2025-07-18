@@ -100,6 +100,38 @@ export class RedisService implements OnModuleDestroy {
   }
 
   /**
+   * Sets a permanent value in Redis (no expiration)
+   * @param key - The key to set the value for
+   * @param value - The value to store
+   * @throws {Error} If Redis operation fails
+   */
+  async setPermanentValue(key: string, value: string) {
+    try {
+      await this.redisClient.set(key, value);
+    } catch (error) {
+      Logger.error(`Error setting permanent value: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Atomic check-and-set operation to prevent race conditions
+   * @param key - The key to check and set
+   * @param value - The value to set if key doesn't exist
+   * @returns {Promise<boolean>} True if the value was set, false if it already existed
+   * @throws {Error} If Redis operation fails
+   */
+  async setIfNotExists(key: string, value: string): Promise<boolean> {
+    try {
+      const result = await this.redisClient.set(key, value, 'NX');
+      return result === 'OK';
+    } catch (error) {
+      Logger.error(`Error in setIfNotExists: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
    * Deletes a value from Redis by key
    * @param key - The key to delete
    * @returns {Promise<number>} The number of keys deleted
