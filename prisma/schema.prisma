@@ -31,7 +31,6 @@ model User {
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken       String?   @unique @map("refresh_token") @db.VarChar
 
-
   job                Domain[]    @relation("UserDomain")
   roles              UserRole[]
   userExam           Exam[]                 @relation("UserExam")
@@ -46,6 +45,7 @@ model User {
   mentor             Mentor?
   mentorBooking      MentorBooking[]
 }
+
 
 model Role {
   id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -578,6 +578,7 @@ model ExamLevel {
   examLevel    ExamLevelEnum @map("exam_level")
   name         String    @unique @db.VarChar
   description  String    @db.Text
+  learningPath String?    @map("learning_path") @db.Text
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
