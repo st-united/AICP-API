@@ -31,6 +31,10 @@ model User {
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
   refreshToken       String?   @unique @map("refresh_token") @db.VarChar
 
+  isStudent          Boolean?  @map("is_student") @db.Boolean
+  university         String?   @db.VarChar
+  studentCode        String?   @map("student_code") @db.VarChar
+
   job                Domain[]    @relation("UserDomain")
   roles              UserRole[]
   userExam           Exam[]                 @relation("UserExam")
