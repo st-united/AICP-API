@@ -105,6 +105,11 @@ export class ExamService {
           id: true,
           examStatus: true,
           sfiaLevel: true,
+          examLevel: {
+            select: {
+              examLevel: true,
+            },
+          },
           createdAt: true,
         },
       });
@@ -124,6 +129,11 @@ export class ExamService {
           id: true,
           startedAt: true,
           sfiaLevel: true,
+          examLevel: {
+            select: {
+              examLevel: true,
+            },
+          },
           overallScore: true,
           examStatus: true,
           createdAt: true,
