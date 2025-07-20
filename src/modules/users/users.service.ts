@@ -317,6 +317,9 @@ export class UsersService {
 
         if (user.zaloVerified) {
           updateData['zaloVerified'] = false;
+        } else {
+          const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + user.id + ':' + user.phoneNumber;
+          await this.redisService.deleteValue(otpKey);
         }
       }
     }
