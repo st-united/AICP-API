@@ -15,8 +15,6 @@ import {
   OtpInvalidException,
 } from './exceptions/zalo-otp.exception';
 import { ConfigService } from '@nestjs/config';
-const OTP_KEY_PREFIX = 'zalo-otp:';
-const OTP_TIMESTAMP_PREFIX = 'zalo-otp-timestamp:';
 @Injectable()
 export class ZaloOtpService {
   private readonly logger = new Logger(ZaloOtpService.name);
@@ -45,7 +43,7 @@ export class ZaloOtpService {
       const res = await axios.post('https://oauth.zaloapp.com/v4/oa/access_token', data, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          secret_key: process.env.ZALO_APP_SECRET,
+          secret_key: process.env.ZALO_APP_SECRET_KEY,
         },
       });
 
@@ -90,8 +88,13 @@ export class ZaloOtpService {
 
   async canSendOtp(userId: string, phoneNumber: string): Promise<boolean> {
     try {
-      const timestampKey = OTP_TIMESTAMP_PREFIX + userId + ':' + phoneNumber;
-      const lastSent = await this.redisService.getValue(timestampKey);
+      const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
+      const otpData = await this.redisService.getValue(otpKey);
+
+      if (!otpData) return true;
+
+      const data = JSON.parse(otpData);
+      const lastSent = data.timestamp;
 
       if (!lastSent) return true;
 
@@ -108,11 +111,13 @@ export class ZaloOtpService {
 
   async saveOtp(userId: string, phoneNumber: string, otp: string): Promise<void> {
     try {
-      const otpKey = OTP_KEY_PREFIX + userId + ':' + phoneNumber;
-      const timestampKey = OTP_TIMESTAMP_PREFIX + userId + ':' + phoneNumber;
+      const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
       const ttl = parseInt(this.configService.get<string>('OTP_TTL_SECONDS'));
-      await this.redisService.setValue(otpKey, otp, ttl);
-      await this.redisService.setValue(timestampKey, Date.now().toString(), ttl);
+      const otpData = {
+        otp: otp,
+        timestamp: Date.now().toString(),
+      };
+      await this.redisService.setValue(otpKey, JSON.stringify(otpData), ttl);
 
       this.logger.log(`OTP saved for user ${userId}, phone ${phoneNumber}`);
     } catch (error) {
@@ -210,8 +215,15 @@ export class ZaloOtpService {
     const user = await this.getUserById(userId, { phoneNumber: true });
     const { phoneNumber } = user;
 
-    const timestampKey = OTP_TIMESTAMP_PREFIX + userId + ':' + phoneNumber;
-    const lastSent = await this.redisService.getValue(timestampKey);
+    const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
+    const otpData = await this.redisService.getValue(otpKey);
+
+    if (!otpData) {
+      return new ResponseItem({ canSend: true }, 'Có thể gửi OTP ngay lập tức', CanSendOtpResponseDto);
+    }
+
+    const data = JSON.parse(otpData);
+    const lastSent = data.timestamp;
 
     if (!lastSent) {
       return new ResponseItem({ canSend: true }, 'Có thể gửi OTP ngay lập tức', CanSendOtpResponseDto);
@@ -248,12 +260,15 @@ export class ZaloOtpService {
       throw new BadRequestException('Số điện thoại đã được xác thực Zalo.');
     }
 
-    const otpKey = OTP_KEY_PREFIX + userId + ':' + phoneNumber;
-    const savedOtp = await this.redisService.getValue(otpKey);
+    const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
+    const otpData = await this.redisService.getValue(otpKey);
 
-    if (!savedOtp) {
+    if (!otpData) {
       throw new OtpExpiredException();
     }
+
+    const data = JSON.parse(otpData);
+    const savedOtp = data.otp;
 
     if (savedOtp === otp) {
       await this.redisService.deleteValue(otpKey);
