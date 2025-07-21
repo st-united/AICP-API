@@ -445,4 +445,31 @@ export class AnswersService {
   private isNonEmpty(obj: any): boolean {
     return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
   }
+
+  async autoSubmitExpiredExams(): Promise<void> {
+    const now = new Date();
+
+    const expiredExams = await this.prisma.exam.findMany({
+      where: {
+        examStatus: ExamStatus.IN_PROGRESS,
+        finishedAt: {
+          lte: now,
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!expiredExams.length) return;
+
+    const updatePromises = expiredExams.map((exam) =>
+      this.update(exam.userId, exam.id).catch((error) => {
+        console.error(`[AutoSubmit] Failed examId=${exam.id} userId=${exam.userId}`, error.message);
+      })
+    );
+
+    await Promise.all(updatePromises);
+  }
 }
