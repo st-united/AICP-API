@@ -448,12 +448,13 @@ export class AnswersService {
 
   async autoSubmitExpiredExams(): Promise<void> {
     const now = new Date();
+    const tenSecondsAgo = new Date(now.getTime() - 10_000);
 
     const expiredExams = await this.prisma.exam.findMany({
       where: {
         examStatus: ExamStatus.IN_PROGRESS,
         finishedAt: {
-          lte: now,
+          lte: tenSecondsAgo,
         },
       },
       select: {
