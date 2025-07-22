@@ -20,6 +20,7 @@ import { JwtAccessTokenGuard } from './guards/jwt-access-token.guard';
 import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { ResendActivationEmailDto } from './dto/resend-activation-email.dto';
 import { ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { UserAndSessionPayloadDto, UserPayloadDto } from './dto/user-payload.dto';
 import { ClientTypeEnum } from '@Constant/enums';
@@ -106,5 +107,34 @@ export class AuthController {
   @Get('activate')
   async activateAccount(@Query('token') token: string) {
     return await this.authService.activateAccount(token);
+  }
+
+  @Post('resend-activation-email')
+  @ApiOperation({ summary: 'Resend activation email' })
+  @ApiResponse({ status: 200, description: 'Activation email sent successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid email or account already activated' })
+  @ApiBody({ type: ResendActivationEmailDto })
+  async resendActivationEmail(@Body() resendActivationEmailDto: ResendActivationEmailDto) {
+    return await this.authService.resendActivationEmail(resendActivationEmailDto.email);
+  }
+
+  @Post('send-activation-reminders')
+  @ApiOperation({
+    summary: 'Manually trigger activation reminders (Admin only) - Each user receives only one reminder',
+  })
+  @ApiResponse({ status: 200, description: 'Activation reminders sent successfully' })
+  async sendActivationReminders() {
+    await this.authService.sendActivationReminders();
+    return new ResponseItem(null, 'Đã gửi email nhắc nhở thành công.');
+  }
+
+  @Post('delete-inactive-accounts')
+  @ApiOperation({
+    summary: 'Manually trigger deletion of inactive accounts (Admin only) - Deletes accounts after 30 days',
+  })
+  @ApiResponse({ status: 200, description: 'Account deletion completed successfully' })
+  async deleteInactiveAccounts() {
+    await this.authService.deleteInactiveAccounts();
+    return new ResponseItem(null, 'Đã xóa tài khoản thành công.');
   }
 }

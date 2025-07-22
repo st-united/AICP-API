@@ -6,21 +6,26 @@ import {
   CompetencyPillar,
   CompetencyAspect,
   CompetencyDimension,
+  ExamLevel,
 } from '@prisma/client';
 
 export async function seedExams(
   prisma: PrismaClient,
   userMap: { [email: string]: { id: string } },
   examSets: ExamSet[],
+  examLevels: ExamLevel[],
   competencyPillars: CompetencyPillar[],
   competencyAspects: CompetencyAspect[]
 ) {
   const examSetMap = Object.fromEntries(examSets.map((es) => [es.name, es]));
 
+  const examLevelMap = Object.fromEntries(examLevels.map((es) => [es.examLevel, es]));
+
   const examData = [
     {
       email: 'user1@example.com',
       emailMentor: 'mentor1@example.com',
+      examLevelName: 'LEVEL_5_STRATEGIST',
       examSetName: 'AI Foundations Assessment',
       startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
@@ -53,6 +58,7 @@ export async function seedExams(
     {
       email: 'user2@example.com',
       emailMentor: 'mentor2@example.com',
+      examLevelName: 'LEVEL_5_STRATEGIST',
       examSetName: 'AI Ethics and Impact',
       startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
@@ -84,6 +90,7 @@ export async function seedExams(
     {
       email: 'user2@example.com',
       emailMentor: 'mentor2@example.com',
+      examLevelName: 'LEVEL_5_STRATEGIST',
       examSetName: 'AI Foundations Assessment',
       startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
@@ -115,6 +122,7 @@ export async function seedExams(
     {
       email: 'user@example.com',
       emailMentor: 'mentor3@example.com',
+      examLevelName: 'LEVEL_6_LEADER',
       examSetName: 'AI INPUT TEST',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000),
@@ -165,6 +173,7 @@ export async function seedExams(
         overallScore: data.overallScore,
         timeSpentMinutes: Math.floor((data.finishedAt.getTime() - data.startedAt.getTime()) / 1000 / 60),
         completionPercent: 1,
+        examLevelId: examLevelMap[data.examLevelName].id,
         readyToWorkTier: ReadyToWorkTier.NOT_READY,
         sfiaLevel: sfiaLevels[Math.floor(Math.random() * sfiaLevels.length)],
       },

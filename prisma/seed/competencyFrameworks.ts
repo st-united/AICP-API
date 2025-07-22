@@ -5,28 +5,28 @@ export async function seedCompetencyFrameworks(prisma: PrismaClient, domains: Do
 
   const competencyFrameworkName = [
     {
-      domainName: 'Healthcare',
-      name: 'Healthcare',
+      domainName: 'Y tế',
+      name: 'Y tế',
       version: '1.0',
     },
     {
-      domainName: 'Finance',
-      name: 'Finance',
+      domainName: 'Tài chính',
+      name: 'Tài chính',
       version: '2.0',
     },
     {
-      domainName: 'Education',
-      name: 'Education',
+      domainName: 'Giáo dục',
+      name: 'Giáo dục',
       version: '3.0',
     },
     {
-      domainName: 'Information Technology',
-      name: 'Information Technology',
+      domainName: 'Công nghệ thông tin',
+      name: 'Công nghệ thông tin',
       version: '4.0',
     },
     {
-      domainName: 'General',
-      name: 'General',
+      domainName: 'Đa lĩnh vực',
+      name: 'Đa lĩnh vực',
       version: '5.0',
     },
   ];

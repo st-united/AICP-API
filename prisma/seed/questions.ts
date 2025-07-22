@@ -6,26 +6,26 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
 
   const questionsData = [
     // A1. KHẢ NĂNG THÍCH ỨNG & TƯ DUY PHÁT TRIỂN
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'AI đang thay đổi thế giới công việc. Cách tiếp cận hiệu quả nhất cho người mới bắt đầu là gì?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        {
-          content: 'Tập trung vào việc nâng cao kỹ năng chuyên môn hiện tại vì AI chỉ là công cụ hỗ trợ',
-          isCorrect: false,
-        },
-        {
-          content: 'Bắt đầu tìm hiểu các công cụ AI cơ bản để hiểu cách chúng có thể tăng cường công việc',
-          isCorrect: true,
-        },
-        { content: 'Theo dõi xu hướng AI qua các nguồn tin tức và chờ đợi hướng dẫn từ tổ chức', isCorrect: false },
-        { content: 'Nghiên cứu kỹ về lý thuyết AI trước khi thử nghiệm bất kỳ ứng dụng nào', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content: 'AI đang thay đổi thế giới công việc. Cách tiếp cận hiệu quả nhất cho người mới bắt đầu là gì?',
+    //   level: SFIALevel.LEVEL_1_AWARENESS,
+    //   competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Level 1)',
+    //   estimatedTimeMinutes: 1,
+    //   difficultyWeight: 1,
+    //   answerOptions: [
+    //     {
+    //       content: 'Tập trung vào việc nâng cao kỹ năng chuyên môn hiện tại vì AI chỉ là công cụ hỗ trợ',
+    //       isCorrect: false,
+    //     },
+    //     {
+    //       content: 'Bắt đầu tìm hiểu các công cụ AI cơ bản để hiểu cách chúng có thể tăng cường công việc',
+    //       isCorrect: true,
+    //     },
+    //     { content: 'Theo dõi xu hướng AI qua các nguồn tin tức và chờ đợi hướng dẫn từ tổ chức', isCorrect: false },
+    //     { content: 'Nghiên cứu kỹ về lý thuyết AI trước khi thử nghiệm bất kỳ ứng dụng nào', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content:
@@ -116,29 +116,29 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // A2. TỰ HỌC & CẢI TIẾN LIÊN TỤC
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Tại sao việc cập nhật kiến thức về AI quan trọng đối với các chuyên gia?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      competentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        {
-          content: 'Công nghệ AI phát triển nhanh chóng và tác động đến hầu hết các ngành và chức năng công việc',
-          isCorrect: true,
-        },
-        {
-          content: 'Các công ty ngày càng kỳ vọng nhân viên có hiểu biết cơ bản về các công cụ hiện đại',
-          isCorrect: false,
-        },
-        {
-          content: 'Kiến thức AI đang trở thành yêu cầu tiêu chuẩn cho các cơ hội thăng tiến nghề nghiệp',
-          isCorrect: false,
-        },
-        { content: 'Xu hướng công nghệ luôn có tính chu kỳ nên quan trọng để đi trước đường cong', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content: 'Tại sao việc cập nhật kiến thức về AI quan trọng đối với các chuyên gia?',
+    //   level: SFIALevel.LEVEL_1_AWARENESS,
+    //   competentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 1)',
+    //   estimatedTimeMinutes: 1,
+    //   difficultyWeight: 1,
+    //   answerOptions: [
+    //     {
+    //       content: 'Công nghệ AI phát triển nhanh chóng và tác động đến hầu hết các ngành và chức năng công việc',
+    //       isCorrect: true,
+    //     },
+    //     {
+    //       content: 'Các công ty ngày càng kỳ vọng nhân viên có hiểu biết cơ bản về các công cụ hiện đại',
+    //       isCorrect: false,
+    //     },
+    //     {
+    //       content: 'Kiến thức AI đang trở thành yêu cầu tiêu chuẩn cho các cơ hội thăng tiến nghề nghiệp',
+    //       isCorrect: false,
+    //     },
+    //     { content: 'Xu hướng công nghệ luôn có tính chu kỳ nên quan trọng để đi trước đường cong', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content:
@@ -207,23 +207,23 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // A3. TƯ DUY PHẢN BIỆN & LÝ LUẬN ĐẠO ĐỨC
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Khi các hệ thống AI đưa ra quyết định bất công, nguyên nhân gốc thường là gì?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        { content: 'Dữ liệu huấn luyện phản ánh sự bất bình đẳng lịch sử và các mẫu xã hội', isCorrect: true },
-        {
-          content: 'Các thuật toán AI được thiết kế với sở thích cố hữu cho một số kết quả nhất định',
-          isCorrect: false,
-        },
-        { content: 'Sức mạnh xử lý máy tính không đủ để xử lý việc ra quyết định phức tạp', isCorrect: false },
-        { content: 'Các hệ thống AI thiếu bối cảnh thế giới thực về sự tinh tế xã hội và văn hóa', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content: 'Khi các hệ thống AI đưa ra quyết định bất công, nguyên nhân gốc thường là gì?',
+    //   level: SFIALevel.LEVEL_1_AWARENESS,
+    //   competentcySkillName: 'Tư Duy Phản Biện & Lý Luận Đạo Đức (Level 1)',
+    //   estimatedTimeMinutes: 1,
+    //   difficultyWeight: 1,
+    //   answerOptions: [
+    //     { content: 'Dữ liệu huấn luyện phản ánh sự bất bình đẳng lịch sử và các mẫu xã hội', isCorrect: true },
+    //     {
+    //       content: 'Các thuật toán AI được thiết kế với sở thích cố hữu cho một số kết quả nhất định',
+    //       isCorrect: false,
+    //     },
+    //     { content: 'Sức mạnh xử lý máy tính không đủ để xử lý việc ra quyết định phức tạp', isCorrect: false },
+    //     { content: 'Các hệ thống AI thiếu bối cảnh thế giới thực về sự tinh tế xã hội và văn hóa', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.SINGLE_CHOICE,
       content: 'Sử dụng ChatGPT để hỗ trợ viết luận cho bài tập học thuật. Phương pháp phù hợp?',
@@ -359,30 +359,30 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // A4. TRÍ TUỆ RANH GIỚI CON NGƯỜI-AI
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Trong bối cảnh kinh doanh, khi nào việc giám sát của con người đối với các quyết định AI quan trọng nhất?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      competentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        {
-          content: 'Khi các quyết định có tác động đáng kể đến phúc lợi, an toàn hoặc cơ hội sống của con người',
-          isCorrect: true,
-        },
-        { content: 'Khi điểm tin cậy AI giảm xuống dưới ngưỡng được xác định trước', isCorrect: false },
-        {
-          content: 'Khi xử lý các giao dịch tài chính có giá trị cao hoặc quyết định kinh doanh chiến lược',
-          isCorrect: false,
-        },
-        {
-          content: 'Khi các hệ thống AI mới được triển khai và chưa có hồ sơ theo dõi đã được chứng minh',
-          isCorrect: false,
-        },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content:
+    //     'Trong bối cảnh kinh doanh, khi nào việc giám sát của con người đối với các quyết định AI quan trọng nhất?',
+    //   level: SFIALevel.LEVEL_1_AWARENESS,
+    //   competentcySkillName: 'Trí Tuệ Ranh Giới Con Người-AI (Level 1)',
+    //   estimatedTimeMinutes: 1,
+    //   difficultyWeight: 1,
+    //   answerOptions: [
+    //     {
+    //       content: 'Khi các quyết định có tác động đáng kể đến phúc lợi, an toàn hoặc cơ hội sống của con người',
+    //       isCorrect: true,
+    //     },
+    //     { content: 'Khi điểm tin cậy AI giảm xuống dưới ngưỡng được xác định trước', isCorrect: false },
+    //     {
+    //       content: 'Khi xử lý các giao dịch tài chính có giá trị cao hoặc quyết định kinh doanh chiến lược',
+    //       isCorrect: false,
+    //     },
+    //     {
+    //       content: 'Khi các hệ thống AI mới được triển khai và chưa có hồ sơ theo dõi đã được chứng minh',
+    //       isCorrect: false,
+    //     },
+    //   ],
+    // },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
@@ -457,26 +457,26 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // A5. NHẬN THỨC RỦI RO & QUẢN TRỊ AI
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Mối quan tâm chính khi sử dụng các công cụ AI công cộng (ChatGPT) với dữ liệu công ty?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      competentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        { content: 'Khả năng lộ thông tin nhạy cảm cho các hệ thống bên thứ ba', isCorrect: true },
-        {
-          content: 'Sự không chính xác trong phản hồi AI dẫn đến thông tin sai lệch trong kinh doanh',
-          isCorrect: false,
-        },
-        {
-          content: 'Sự phụ thuộc vào các hệ thống bên ngoài cho các quy trình kinh doanh quan trọng',
-          isCorrect: false,
-        },
-        { content: 'Chi phí liên quan đến đăng ký premium và các tính năng doanh nghiệp', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content: 'Mối quan tâm chính khi sử dụng các công cụ AI công cộng (ChatGPT) với dữ liệu công ty?',
+    //   level: SFIALevel.LEVEL_1_AWARENESS,
+    //   competentcySkillName: 'Nhận Thức Rủi Ro & Quản Trị AI (Level 1)',
+    //   estimatedTimeMinutes: 1,
+    //   difficultyWeight: 1,
+    //   answerOptions: [
+    //     { content: 'Khả năng lộ thông tin nhạy cảm cho các hệ thống bên thứ ba', isCorrect: true },
+    //     {
+    //       content: 'Sự không chính xác trong phản hồi AI dẫn đến thông tin sai lệch trong kinh doanh',
+    //       isCorrect: false,
+    //     },
+    //     {
+    //       content: 'Sự phụ thuộc vào các hệ thống bên ngoài cho các quy trình kinh doanh quan trọng',
+    //       isCorrect: false,
+    //     },
+    //     { content: 'Chi phí liên quan đến đăng ký premium và các tính năng doanh nghiệp', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content:
@@ -544,34 +544,34 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // B1. GIAO TIẾP AI & PROMPT ENGINEERING
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'ChatGPT hỗ trợ động não cho bài luận về biến đổi khí hậu. Lệnh hiệu quả nhất?',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      competentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 2)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        {
-          content: 'Phân tích các tác động lớn của biến đổi khí hậu và khuyến nghị các giải pháp toàn diện',
-          isCorrect: false,
-        },
-        {
-          content:
-            'Tạo ra 8 góc nhìn độc đáo về tác động biến đổi khí hậu trên các lĩnh vực khác nhau (kinh tế, công nghệ, xã hội, sức khỏe) bao gồm cả thách thức và cơ hội',
-          isCorrect: true,
-        },
-        {
-          content:
-            'Tạo dàn ý chi tiết cho bài luận học thuật bao gồm nguyên nhân, tác động và chiến lược giảm thiểu biến đổi khí hậu',
-          isCorrect: false,
-        },
-        {
-          content: 'Liệt kê 10 vấn đề biến đổi khí hậu quan trọng nhất với giải thích chi tiết và bằng chứng hỗ trợ',
-          isCorrect: false,
-        },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content: 'ChatGPT hỗ trợ động não cho bài luận về biến đổi khí hậu. Lệnh hiệu quả nhất?',
+    //   level: SFIALevel.LEVEL_2_FOUNDATION,
+    //   competentcySkillName: 'Giao Tiếp AI & Prompt Engineering (Level 2)',
+    //   estimatedTimeMinutes: 2,
+    //   difficultyWeight: 2,
+    //   answerOptions: [
+    //     {
+    //       content: 'Phân tích các tác động lớn của biến đổi khí hậu và khuyến nghị các giải pháp toàn diện',
+    //       isCorrect: false,
+    //     },
+    //     {
+    //       content:
+    //         'Tạo ra 8 góc nhìn độc đáo về tác động biến đổi khí hậu trên các lĩnh vực khác nhau (kinh tế, công nghệ, xã hội, sức khỏe) bao gồm cả thách thức và cơ hội',
+    //       isCorrect: true,
+    //     },
+    //     {
+    //       content:
+    //         'Tạo dàn ý chi tiết cho bài luận học thuật bao gồm nguyên nhân, tác động và chiến lược giảm thiểu biến đổi khí hậu',
+    //       isCorrect: false,
+    //     },
+    //     {
+    //       content: 'Liệt kê 10 vấn đề biến đổi khí hậu quan trọng nhất với giải thích chi tiết và bằng chứng hỗ trợ',
+    //       isCorrect: false,
+    //     },
+    //   ],
+    // },
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content: 'Các kỹ thuật cải thiện chất lượng tạo mã từ LLM? (Chọn các phương pháp hiệu quả)',
@@ -632,24 +632,24 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // B2. NGHIÊN CỨU & TỔNG HỢP THÔNG TIN
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'ChatGPT cung cấp dữ liệu thống kê về "việc áp dụng AI trong các công ty Việt Nam" cho bài tập học thuật. Bước xác minh đầu tiên?',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      competentcySkillName: 'Nghiên Cứu & Tổng Hợp Thông Tin (Level 2)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        { content: 'Sử dụng dữ liệu ngay lập tức vì tỷ lệ chính xác của ChatGPT thường cao', isCorrect: false },
-        {
-          content: 'Tham chiếu chéo với các nguồn có thẩm quyền như báo cáo chính phủ và khảo sát ngành',
-          isCorrect: true,
-        },
-        { content: 'Yêu cầu ChatGPT cung cấp trích dẫn cụ thể và tài liệu nguồn', isCorrect: false },
-        { content: 'Kiểm tra thông tin so với thống kê áp dụng AI quốc tế', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content:
+    //     'ChatGPT cung cấp dữ liệu thống kê về "việc áp dụng AI trong các công ty Việt Nam" cho bài tập học thuật. Bước xác minh đầu tiên?',
+    //   level: SFIALevel.LEVEL_2_FOUNDATION,
+    //   competentcySkillName: 'Nghiên Cứu & Tổng Hợp Thông Tin (Level 2)',
+    //   estimatedTimeMinutes: 2,
+    //   difficultyWeight: 2,
+    //   answerOptions: [
+    //     { content: 'Sử dụng dữ liệu ngay lập tức vì tỷ lệ chính xác của ChatGPT thường cao', isCorrect: false },
+    //     {
+    //       content: 'Tham chiếu chéo với các nguồn có thẩm quyền như báo cáo chính phủ và khảo sát ngành',
+    //       isCorrect: true,
+    //     },
+    //     { content: 'Yêu cầu ChatGPT cung cấp trích dẫn cụ thể và tài liệu nguồn', isCorrect: false },
+    //     { content: 'Kiểm tra thông tin so với thống kê áp dụng AI quốc tế', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
@@ -673,27 +673,27 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // B3. LÀM VIỆC NHÓM & HỢP TÁC AI-CON NGƯỜI
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content:
-        'Bạn cùng lớp yêu cầu phản hồi về dự án AI của họ. Mã hoạt động nhưng sử dụng phương pháp không hiệu quả. Phản hồi mang tính xây dựng nhất?',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      competentcySkillName: 'Làm Việc Nhóm & Hợp Tác AI-Con Người (Level 2)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        {
-          content: 'Khởi đầu tuyệt vời! Đây là các đề xuất tối ưu hóa có thể cải thiện hiệu suất: ...',
-          isCorrect: true,
-        },
-        {
-          content: 'Nền tảng tốt. Hãy xem xét các phương pháp thay thế này để có hiệu quả tốt hơn: [đề xuất cụ thể]',
-          isCorrect: false,
-        },
-        { content: 'Trông ổn', isCorrect: false },
-        { content: 'Chỉ ra các vấn đề mà không đưa ra đề xuất cải thiện cụ thể', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content:
+    //     'Bạn cùng lớp yêu cầu phản hồi về dự án AI của họ. Mã hoạt động nhưng sử dụng phương pháp không hiệu quả. Phản hồi mang tính xây dựng nhất?',
+    //   level: SFIALevel.LEVEL_2_FOUNDATION,
+    //   competentcySkillName: 'Làm Việc Nhóm & Hợp Tác AI-Con Người (Level 2)',
+    //   estimatedTimeMinutes: 2,
+    //   difficultyWeight: 2,
+    //   answerOptions: [
+    //     {
+    //       content: 'Khởi đầu tuyệt vời! Đây là các đề xuất tối ưu hóa có thể cải thiện hiệu suất: ...',
+    //       isCorrect: true,
+    //     },
+    //     {
+    //       content: 'Nền tảng tốt. Hãy xem xét các phương pháp thay thế này để có hiệu quả tốt hơn: [đề xuất cụ thể]',
+    //       isCorrect: false,
+    //     },
+    //     { content: 'Trông ổn', isCorrect: false },
+    //     { content: 'Chỉ ra các vấn đề mà không đưa ra đề xuất cải thiện cụ thể', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
@@ -717,20 +717,20 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // B4. HIỂU BIẾT DỮ LIỆU & XÁC THỰC
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Dự án học máy (Machine Learning) yêu cầu bộ dữ liệu hiệu suất sinh viên. Nguồn phù hợp nhất?',
-      level: SFIALevel.LEVEL_2_FOUNDATION,
-      competentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 2)',
-      estimatedTimeMinutes: 2,
-      difficultyWeight: 2,
-      answerOptions: [
-        { content: 'Các bài đăng trên mạng xã hội về hiệu suất học tập và điểm số', isCorrect: false },
-        { content: 'Bộ dữ liệu giáo dục công khai từ các cơ quan chính phủ hoặc tổ chức nghiên cứu', isCorrect: true },
-        { content: 'Dữ liệu sinh viên riêng tư từ cơ sở dữ liệu nội bộ của trường đại học bạn', isCorrect: false },
-        { content: 'Dữ liệu tổng hợp được tạo ra dựa trên các giả định giáo dục', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content: 'Dự án học máy (Machine Learning) yêu cầu bộ dữ liệu hiệu suất sinh viên. Nguồn phù hợp nhất?',
+    //   level: SFIALevel.LEVEL_2_FOUNDATION,
+    //   competentcySkillName: 'Hiểu Biết Dữ Liệu & Xác Thực (Level 2)',
+    //   estimatedTimeMinutes: 2,
+    //   difficultyWeight: 2,
+    //   answerOptions: [
+    //     { content: 'Các bài đăng trên mạng xã hội về hiệu suất học tập và điểm số', isCorrect: false },
+    //     { content: 'Bộ dữ liệu giáo dục công khai từ các cơ quan chính phủ hoặc tổ chức nghiên cứu', isCorrect: true },
+    //     { content: 'Dữ liệu sinh viên riêng tư từ cơ sở dữ liệu nội bộ của trường đại học bạn', isCorrect: false },
+    //     { content: 'Dữ liệu tổng hợp được tạo ra dựa trên các giả định giáo dục', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.SINGLE_CHOICE,
       content:
@@ -793,23 +793,23 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
       ],
     },
     // C1. THÀNH THẠO CÔNG CỤ AI CỐT LỜI
-    {
-      type: QuestionType.SINGLE_CHOICE,
-      content: 'Công cụ AI tốt nhất để bắt đầu cho sinh viên không có kinh nghiệm trước đó?',
-      level: SFIALevel.LEVEL_1_AWARENESS,
-      competentcySkillName: 'Thành Thạo Công Cụ AI Cốt Lõi (Level 1)',
-      estimatedTimeMinutes: 1,
-      difficultyWeight: 1,
-      answerOptions: [
-        { content: 'ChatGPT phiên bản miễn phí với cơ bản AI đối thoại và ứng dụng đa mục đích', isCorrect: true },
-        {
-          content: 'Claude.ai phiên bản miễn phí cung cấp các phong cách và phương pháp tương tác AI khác nhau',
-          isCorrect: false,
-        },
-        { content: 'Bing Chat cung cấp tích hợp thông tin thời gian thực với khả năng AI', isCorrect: false },
-        { content: 'Google Gemini với tích hợp hệ sinh thái Google và các tính năng hợp tác', isCorrect: false },
-      ],
-    },
+    // {
+    //   type: QuestionType.SINGLE_CHOICE,
+    //   content: 'Công cụ AI tốt nhất để bắt đầu cho sinh viên không có kinh nghiệm trước đó?',
+    //   level: SFIALevel.LEVEL_1_AWARENESS,
+    //   competentcySkillName: 'Thành Thạo Công Cụ AI Cốt Lõi (Level 1)',
+    //   estimatedTimeMinutes: 1,
+    //   difficultyWeight: 1,
+    //   answerOptions: [
+    //     { content: 'ChatGPT phiên bản miễn phí với cơ bản AI đối thoại và ứng dụng đa mục đích', isCorrect: true },
+    //     {
+    //       content: 'Claude.ai phiên bản miễn phí cung cấp các phong cách và phương pháp tương tác AI khác nhau',
+    //       isCorrect: false,
+    //     },
+    //     { content: 'Bing Chat cung cấp tích hợp thông tin thời gian thực với khả năng AI', isCorrect: false },
+    //     { content: 'Google Gemini với tích hợp hệ sinh thái Google và các tính năng hợp tác', isCorrect: false },
+    //   ],
+    // },
     {
       type: QuestionType.MULTIPLE_CHOICE,
       content:

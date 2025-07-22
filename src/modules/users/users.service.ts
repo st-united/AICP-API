@@ -28,7 +28,7 @@ import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { Prisma } from '@prisma/client';
+import { Prisma, User, UserTrackingStatus } from '@prisma/client';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
@@ -42,6 +42,7 @@ import {
 } from '@app/validations/portfolio-validation';
 import { Response } from 'express';
 import * as sharp from 'sharp';
+import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -303,23 +304,42 @@ export class UsersService {
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+    if (updateData.phoneNumber) {
+      if (user.phoneNumber === updateData.phoneNumber) {
+        delete updateData.phoneNumber;
+      } else {
+        const phoneExisted = await this.prisma.user.findUnique({
+          where: { phoneNumber: updateData.phoneNumber },
+        });
 
-    const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+        if (phoneExisted) {
+          throw new BadRequestException('Số điện thoại đã tồn tại');
+        }
+
+        if (user.zaloVerified) {
+          updateData['zaloVerified'] = false;
+        }
+      }
+    }
+
+    const updateDataWithJob: any = { ...updateData };
+
+    if (job !== undefined && job !== null) {
+      const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+      updateDataWithJob.job = {
+        set: domainIds.map((domainId) => ({ id: domainId })),
+      };
+    }
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: {
-        ...updateData,
-        job: {
-          set: domainIds.map((domainId) => ({ id: domainId })),
-        },
-      },
+      data: updateDataWithJob,
       include: {
         job: true,
       },
     });
 
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
+    return new ResponseItem(updatedUser, 'Cập nhật hồ sơ thành công', UserDto);
   }
 
   async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<UserDto>> {
@@ -329,24 +349,17 @@ export class UsersService {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
-    // Resize ảnh về 512x512 và convert sang JPEG (nén tốt, chất lượng tốt)
-    const resizedBuffer = await sharp(file.buffer)
-      .resize(512, 512, { fit: 'cover' }) // fit cover đảm bảo đúng 512x512, crop nếu cần
-      .jpeg({ quality: 80 })
-      .toBuffer();
+    const resizedBuffer = await sharp(file.buffer).resize(512, 512, { fit: 'cover' }).jpeg({ quality: 80 }).toBuffer();
 
-    // Kiểm tra kích thước sau khi resize
     if (resizedBuffer.length > 5 * 1024 * 1024) {
       throw new BadRequestException('Ảnh vượt quá kích thước tối đa 5MB sau khi xử lý');
     }
 
-    // Nếu có ảnh cũ => xóa
     if (user.avatarUrl) {
       const oldDest = this.googleCloudStorageService.getFileDestFromPublicUrl(user.avatarUrl);
       await this.googleCloudStorageService.deleteFile(oldDest);
     }
 
-    // Upload buffer ảnh lên GCS
     const destPath = avtPathName('avatars', uuidv4());
     const avatarUrl = await this.googleCloudStorageService.uploadBuffer(resizedBuffer, destPath, 'image/jpeg');
 
@@ -383,10 +396,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async updateUserStatus(id: string, status: boolean): Promise<string> {
+  async updateUserStatus(id: string, status: boolean, statusTracking: UserTrackingStatus): Promise<string> {
     await this.prisma.user.update({
       where: { id },
-      data: { status },
+      data: { status, statusTracking },
     });
 
     return 'Cập nhật trạng thái thành công';
@@ -525,6 +538,13 @@ export class UsersService {
           },
         });
 
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            statusTracking: UserTrackingStatus.PROFILE_COMPLETED,
+          },
+        });
+
         return new ResponseItem(newPortfolio, 'Hồ sơ tạo thành công', GetPortfolioResponseDto);
       } catch (error) {
         if (error instanceof HttpException) throw error;
@@ -607,6 +627,19 @@ export class UsersService {
         },
       });
 
+      const hasAnyField =
+        Boolean(portfolioDto.linkedInUrl?.trim()) ||
+        Boolean(portfolioDto.githubUrl?.trim()) ||
+        (Array.isArray(certificateFiles) && certificateFiles.length > 0) ||
+        (Array.isArray(experienceFiles) && experienceFiles.length > 0);
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          statusTracking: hasAnyField ? UserTrackingStatus.PROFILE_COMPLETED : UserTrackingStatus.PROFILE_PENDING,
+        },
+      });
+
       return new ResponseItem(updatedPortfolio, 'Hồ sơ cập nhật thành công', GetPortfolioResponseDto);
     } catch (error) {
       if (error instanceof HttpException) throw error;
@@ -683,5 +716,22 @@ export class UsersService {
       }
       throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
+  }
+
+  async updateStudentInfo(userId: string, updateStudentInfoDto: UpdateStudentInfoDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('Người dùng không tồn tại');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        university: updateStudentInfoDto.university,
+        studentCode: updateStudentInfoDto.studentCode,
+        isStudent: updateStudentInfoDto.isStudent,
+      },
+    });
+    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
   }
 }
