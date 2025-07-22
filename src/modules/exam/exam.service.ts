@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
-import { CompetencyDimension, Exam, ExamSet } from '@prisma/client';
+import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, SFIALevel } from '@prisma/client';
 import { examSetDefaultName } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
@@ -15,6 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { formatLevel } from '@Constant/format';
 import { DATE_TIME } from '@Constant/datetime';
+import { ExamWithResultDto } from './dto/response/exam-with-result.dto';
 
 @Injectable()
 export class ExamService {
@@ -104,6 +105,11 @@ export class ExamService {
           id: true,
           examStatus: true,
           sfiaLevel: true,
+          examLevel: {
+            select: {
+              examLevel: true,
+            },
+          },
           createdAt: true,
         },
       });
@@ -123,6 +129,11 @@ export class ExamService {
           id: true,
           startedAt: true,
           sfiaLevel: true,
+          examLevel: {
+            select: {
+              examLevel: true,
+            },
+          },
           overallScore: true,
           examStatus: true,
           createdAt: true,
@@ -296,5 +307,154 @@ export class ExamService {
       buffer: buffer,
       date: exam.updatedAt,
     };
+  }
+
+  async getExamWithResult(examId: string, userId: string): Promise<ResponseItem<ExamWithResultDto>> {
+    const existingExam = await this.prisma.exam.findUnique({
+      where: { id: examId, userId },
+    });
+
+    if (!existingExam) {
+      throw new NotFoundException('Bài thi không tồn tại');
+    }
+
+    const [examSet, examQuestions, userAnswers] = await Promise.all([
+      this.prisma.examSet.findUnique({ where: { id: existingExam.examSetId } }),
+      this.prisma.examSetQuestion.findMany({
+        where: { examSetId: existingExam.examSetId },
+        include: {
+          question: {
+            include: { answerOptions: true },
+          },
+        },
+      }),
+      this.prisma.userAnswer.findMany({
+        where: {
+          userId,
+          examId,
+        },
+        include: {
+          selections: true,
+        },
+      }),
+    ]);
+
+    if (!examSet) {
+      throw new NotFoundException('Bộ đề thi không tồn tại');
+    }
+
+    // Tính thời gian làm bài
+    const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
+    const h = Math.floor(diffMs / 3600000)
+      .toString()
+      .padStart(2, '0');
+    const m = Math.floor((diffMs % 3600000) / 60000)
+      .toString()
+      .padStart(2, '0');
+    const s = Math.floor((diffMs % 60000) / 1000)
+      .toString()
+      .padStart(2, '0');
+    const elapsedTime = `${h}:${m}:${s}`;
+
+    const userAnswerMap: Record<string, string[]> = {};
+    userAnswers.forEach((ua) => {
+      userAnswerMap[ua.questionId] = ua.selections.map((s) => s.answerOptionId);
+    });
+
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skippedCount = 0;
+
+    const questions = examQuestions.map((q) => {
+      const answerOptions = q.question.answerOptions.map((opt) => ({
+        id: opt.id,
+        content: opt.content,
+        isCorrect: opt.isCorrect,
+      }));
+
+      const correctAnswers = answerOptions.filter((opt) => opt.isCorrect).map((opt) => opt.id);
+      const userSelected = userAnswerMap[q.questionId] || [];
+
+      let status: 'correct' | 'wrong' | 'skipped';
+
+      if (userSelected.length === 0) {
+        skippedCount++;
+        status = 'skipped';
+      } else {
+        const allCorrectSelected =
+          userSelected.every((ans) => correctAnswers.includes(ans)) && correctAnswers.length === userSelected.length;
+
+        if (allCorrectSelected) {
+          correctCount++;
+          status = 'correct';
+        } else {
+          wrongCount++;
+          status = 'wrong';
+        }
+      }
+
+      return {
+        questionId: q.questionId,
+        question: q.question.content,
+        answers: answerOptions,
+        userAnswers: userSelected,
+        sequence: q.question.sequence,
+        status,
+      };
+    });
+
+    questions.sort((a, b) => a.sequence - b.sequence);
+
+    const examLevel = await this.prisma.examLevel.findUnique({
+      where: { id: existingExam.examLevelId },
+    });
+
+    const result = await this.getCoursesByExamLevel(examLevel.examLevel);
+
+    return new ResponseItem<ExamWithResultDto>(
+      {
+        elapsedTime,
+        questions,
+        correctCount,
+        wrongCount,
+        skippedCount,
+        level: examLevel?.name,
+        description: examLevel?.description,
+        learningPath: examLevel?.learningPath,
+        recommendedCourses: result,
+      },
+      'Lấy kết quả bài thi thành công'
+    );
+  }
+
+  private mapExamLevelToSFIALevel(level: ExamLevelEnum): SFIALevel {
+    const mapping: Record<ExamLevelEnum, SFIALevel> = {
+      [ExamLevelEnum.LEVEL_1_STARTER]: SFIALevel.LEVEL_1_AWARENESS,
+      [ExamLevelEnum.LEVEL_2_EXPLORER]: SFIALevel.LEVEL_2_FOUNDATION,
+      [ExamLevelEnum.LEVEL_3_PRACTITIONER]: SFIALevel.LEVEL_3_APPLICATION,
+      [ExamLevelEnum.LEVEL_4_INTEGRATOR]: SFIALevel.LEVEL_4_INTEGRATION,
+      [ExamLevelEnum.LEVEL_5_STRATEGIST]: SFIALevel.LEVEL_5_INNOVATION,
+      [ExamLevelEnum.LEVEL_6_LEADER]: SFIALevel.LEVEL_6_LEADERSHIP,
+      [ExamLevelEnum.LEVEL_7_EXPERT]: SFIALevel.LEVEL_7_MASTERY,
+    };
+    return mapping[level];
+  }
+
+  async getCoursesByExamLevel(examLevel: ExamLevelEnum) {
+    const mappedLevel = this.mapExamLevelToSFIALevel(examLevel);
+
+    const allCourses = await this.prisma.course.findMany({
+      where: {
+        isActive: true,
+      },
+    });
+
+    const filteredCourses = allCourses.filter((course) => {
+      if (!course.sfiaLevels || course.sfiaLevels.length === 0) return false;
+
+      return course.sfiaLevels.some((sfia) => SFIALevel[sfia] >= SFIALevel[mappedLevel]);
+    });
+
+    return filteredCourses;
   }
 }

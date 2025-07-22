@@ -42,6 +42,7 @@ import {
 } from '@app/validations/portfolio-validation';
 import { Response } from 'express';
 import * as sharp from 'sharp';
+import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -305,14 +306,19 @@ export class UsersService {
     }
     if (updateData.phoneNumber) {
       if (user.phoneNumber === updateData.phoneNumber) {
-        throw new BadRequestException('Số điện thoại này đang được bạn sử dụng');
-      }
-      const phoneExisted = await this.prisma.user.findUnique({
-        where: { phoneNumber: updateData.phoneNumber },
-      });
-      if (phoneExisted) throw new BadRequestException('Số điện thoại đã tồn tại');
-      if (user.zaloVerified) {
-        updateData['zaloVerified'] = false;
+        delete updateData.phoneNumber;
+      } else {
+        const phoneExisted = await this.prisma.user.findUnique({
+          where: { phoneNumber: updateData.phoneNumber },
+        });
+
+        if (phoneExisted) {
+          throw new BadRequestException('Số điện thoại đã tồn tại');
+        }
+
+        if (user.zaloVerified) {
+          updateData['zaloVerified'] = false;
+        }
       }
     }
 
@@ -333,7 +339,7 @@ export class UsersService {
       },
     });
 
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
+    return new ResponseItem(updatedUser, 'Cập nhật hồ sơ thành công', UserDto);
   }
 
   async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<UserDto>> {
@@ -343,24 +349,17 @@ export class UsersService {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
-    // Resize ảnh về 512x512 và convert sang JPEG (nén tốt, chất lượng tốt)
-    const resizedBuffer = await sharp(file.buffer)
-      .resize(512, 512, { fit: 'cover' }) // fit cover đảm bảo đúng 512x512, crop nếu cần
-      .jpeg({ quality: 80 })
-      .toBuffer();
+    const resizedBuffer = await sharp(file.buffer).resize(512, 512, { fit: 'cover' }).jpeg({ quality: 80 }).toBuffer();
 
-    // Kiểm tra kích thước sau khi resize
     if (resizedBuffer.length > 5 * 1024 * 1024) {
       throw new BadRequestException('Ảnh vượt quá kích thước tối đa 5MB sau khi xử lý');
     }
 
-    // Nếu có ảnh cũ => xóa
     if (user.avatarUrl) {
       const oldDest = this.googleCloudStorageService.getFileDestFromPublicUrl(user.avatarUrl);
       await this.googleCloudStorageService.deleteFile(oldDest);
     }
 
-    // Upload buffer ảnh lên GCS
     const destPath = avtPathName('avatars', uuidv4());
     const avatarUrl = await this.googleCloudStorageService.uploadBuffer(resizedBuffer, destPath, 'image/jpeg');
 
@@ -717,5 +716,22 @@ export class UsersService {
       }
       throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
+  }
+
+  async updateStudentInfo(userId: string, updateStudentInfoDto: UpdateStudentInfoDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('Người dùng không tồn tại');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        university: updateStudentInfoDto.university,
+        studentCode: updateStudentInfoDto.studentCode,
+        isStudent: updateStudentInfoDto.isStudent,
+      },
+    });
+    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
   }
 }
