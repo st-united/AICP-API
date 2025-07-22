@@ -243,22 +243,22 @@ export class ExamService {
 
     if (!exam) throw new NotFoundException('Exam not found');
 
-    const templatePath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.hbs');
+    const templatePath = path.resolve(process.cwd(), './templates/certificate/certificate.hbs');
     const template = fs.readFileSync(templatePath, 'utf-8');
 
-    const cssPath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.css');
+    const cssPath = path.resolve(process.cwd(), './templates/certificate/certificate.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    const logoBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/logo.png', {
+    const logoBase64 = fs.readFileSync('./templates/certificate/images/logo.png', {
       encoding: 'base64',
     });
-    const stampBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/stamp.png', {
+    const stampBase64 = fs.readFileSync('./templates/certificate/images/stamp.png', {
       encoding: 'base64',
     });
-    const backgroundBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/background.png', {
+    const backgroundBase64 = fs.readFileSync('./templates/certificate/images/background.png', {
       encoding: 'base64',
     });
-    const medalBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/medal.png', {
+    const medalBase64 = fs.readFileSync('./templates/certificate/images/medal.png', {
       encoding: 'base64',
     });
 
