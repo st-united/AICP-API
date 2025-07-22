@@ -33,6 +33,5 @@ commonLabels:
   environment: development
 
 patches:
-  # - path: namespace.yaml
   - path: patches/ingress.yaml
   - path: patches/statefulSet.yaml
