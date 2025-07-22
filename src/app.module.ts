@@ -14,8 +14,6 @@ import { MentorsModule } from './modules/mentors/mentors.module';
 import { AnswersModule } from '@AnswersModule/answers.module';
 import { ExamSetsModule } from './modules/exam-sets/exam-sets.module';
 import { ExamModule } from './modules/exam/exam.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { ZaloOtpModule } from './modules/zalo-otp/zalo-otp.module';
 import { DomainModule } from './modules/domain/domain.module';
 
@@ -58,10 +56,6 @@ import { DomainModule } from './modules/domain/domain.module';
     ExamSetsModule,
     ExamModule,
     ZaloOtpModule,
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      serveRoot: '/',
-    }),
     DomainModule,
   ],
   providers: [
