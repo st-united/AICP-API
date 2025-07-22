@@ -11,7 +11,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       description:
         'Chương trình đào tạo được thiết kế để giúp học viên làm rõ nhận thức về AI, xây dựng tư duy sẵn sàng và định vị bản thân trong thời đại kỷ nguyên số. Tham gia để bắt đầu hành trình chuyển đồi cùng AI đầy cảm hứng!',
       provider: 'Coursera',
-      url: 'https://learn.devplus.edu.vn/',
+      url: 'https://learn.devplus.edu.vn/course/view.php?id=31',
       linkImage: 'https://learn.devplus.edu.vn/pluginfile.php/2785/block_html/content/FT01.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Công nghệ thông tin',
@@ -22,7 +22,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       description:
         'Chương trình đào tạo được thiết kế để trang bị cho học viên kỹ năng ứng dụng AI thực tiễn trong phát triển phần mềm, mở ra cơ hội nâng cao hiệu suất và tối ưu hóa công việc. Bạn đã sẵn sàng trở thành một lập trình viên AI - Powered, dẫn đầu trong kỷ nguyên công nghệ mới chưa?',
       provider: 'Coursera',
-      url: 'https://learn.devplus.edu.vn/',
+      url: 'https://learn.devplus.edu.vn/course/view.php?id=32',
       linkImage: 'https://learn.devplus.edu.vn/pluginfile.php/2789/block_html/content/FT02.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Công nghệ thông tin',
