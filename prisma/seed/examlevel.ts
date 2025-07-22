@@ -6,6 +6,8 @@ export async function seedExamLevels(prisma: PrismaClient) {
       name: 'LEVEL_1 - STARTER',
       description:
         'Bạn đang bước vào thế giới AI với sự tò mò và cởi mở. Ở level này, bạn có thể hiểu được khái niệm cơ bản về AI, biết AI là gì và có thể ứng dụng vào đâu. Tuy chưa thực hành nhiều, nhưng bạn đã nhận ra tiềm năng của AI và có động lực học hỏi',
+      learningPath:
+        'Bạn nên khám phá các tài liệu về ứng dụng AI trong công việc đồng thời tham gia các khóa học nhập môn để củng cố kiến thức nền tảng và rèn luyện kỹ năng thực tiễn',
       examLevel: ExamLevelEnum.LEVEL_1_STARTER,
     },
     {

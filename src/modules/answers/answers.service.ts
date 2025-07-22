@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel, ExamLevelEnum } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
 @Injectable()
 export class AnswersService {
@@ -220,8 +220,19 @@ export class AnswersService {
       const overallScore = +Object.values(totalScorePerPillar)
         .reduce((acc, s) => acc + s.weightedScore * s.weightWithinDimension, 0)
         .toFixed(2);
-
       const level = this.getSFIALevel(overallScore);
+      const levelNumber = level.split('_')[1];
+      const matchedExamLevels = Object.values(ExamLevelEnum).filter((level) =>
+        level.startsWith(`LEVEL_${levelNumber}_`)
+      );
+
+      const examLevels = await this.prisma.examLevel.findFirst({
+        where: {
+          examLevel: {
+            in: matchedExamLevels,
+          },
+        },
+      });
 
       await this.prisma.exam.update({
         where: { id: examId },
@@ -229,6 +240,7 @@ export class AnswersService {
           overallScore,
           examStatus: ExamStatus.SUBMITTED,
           sfiaLevel: level,
+          examLevelId: examLevels ? examLevels.id : null,
         },
       });
 
@@ -264,7 +276,6 @@ export class AnswersService {
   }
 
   private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore <= 1) return null;
     if (overallScore <= 2) return SFIALevel.LEVEL_1_AWARENESS;
     if (overallScore <= 3) return SFIALevel.LEVEL_2_FOUNDATION;
     if (overallScore <= 4) return SFIALevel.LEVEL_3_APPLICATION;
@@ -433,5 +444,33 @@ export class AnswersService {
 
   private isNonEmpty(obj: any): boolean {
     return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+  }
+
+  async autoSubmitExpiredExams(): Promise<void> {
+    const now = new Date();
+    const tenSecondsAgo = new Date(now.getTime() - 10_000);
+
+    const expiredExams = await this.prisma.exam.findMany({
+      where: {
+        examStatus: ExamStatus.IN_PROGRESS,
+        finishedAt: {
+          lte: tenSecondsAgo,
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!expiredExams.length) return;
+
+    const updatePromises = expiredExams.map((exam) =>
+      this.update(exam.userId, exam.id).catch((error) => {
+        console.error(`[AutoSubmit] Failed examId=${exam.id} userId=${exam.userId}`, error.message);
+      })
+    );
+
+    await Promise.all(updatePromises);
   }
 }
