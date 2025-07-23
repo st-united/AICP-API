@@ -21,7 +21,18 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-RUN apk update && apk upgrade && apk add --no-cache bash git openjpeg-tools
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    bash git openjpeg-tools \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # Copy package files and new lock file
 COPY package*.json ./
@@ -35,6 +46,7 @@ RUN yarn cache clean && \
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/public ./public
 
 # Expose port
 EXPOSE 6002
