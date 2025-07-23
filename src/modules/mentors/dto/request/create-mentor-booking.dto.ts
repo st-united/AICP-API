@@ -7,6 +7,9 @@ export class CreateMentorBookingDto {
   userId: string;
 
   @IsString()
+  examId: string;
+
+  @IsString()
   mentorId: string;
 
   @IsDateString()

@@ -55,28 +55,4 @@ export class BookingService {
       totalPages: Math.ceil(total / limit),
     };
   }
-
-  async getDetail(id: string) {
-    return this.prisma.mentorBooking.findUnique({
-      where: { id },
-      include: {
-        user: true,
-        exam: true,
-      },
-    });
-  }
-
-  async addToMyList(userIds: string[], mentorId: string) {
-    const result = await this.prisma.mentorBooking.updateMany({
-      where: {
-        userId: { in: userIds },
-        mentorId,
-      },
-      data: {
-        status: MentorBookingStatus.COMPLETED,
-      },
-    });
-
-    return { count: result.count };
-  }
 }
