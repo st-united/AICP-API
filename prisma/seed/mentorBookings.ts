@@ -3,6 +3,7 @@ import { PrismaClient, MentorBookingStatus } from '@prisma/client';
 export async function seedMentorBookings(
   prisma: PrismaClient,
   userMap: { [email: string]: { id: string } },
+  examMap: { [userId: string]: { id: string } },
   mentors: any[]
 ) {
   const mentorEmails = mentors.map((mentor) => mentor.user.email);
@@ -49,10 +50,16 @@ export async function seedMentorBookings(
   const mentorEmailMap = Object.fromEntries(mentors.map((mentor) => [mentor.user.email, mentor]));
 
   for (const bookingData of mentorBookingsData) {
+    const userId = userMap[bookingData.userEmail]?.id;
+    const examId = examMap[userId]?.id;
+    if (!examId) {
+      continue;
+    }
     await prisma.mentorBooking.create({
       data: {
-        userId: userMap[bookingData.userEmail].id,
+        userId: userId,
         mentorId: mentorEmailMap[bookingData.mentorEmail].id,
+        examId: examId,
         scheduledAt: bookingData.scheduledAt,
         status: bookingData.status,
         notes: bookingData.notes,
