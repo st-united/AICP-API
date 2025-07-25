@@ -82,6 +82,9 @@ spec:
         - name: firebase-service-key
           secret:
             secretName: firebase-service-key
+        - name: google-service-key
+          secret:
+            secretName: google-service-key
         - name: tmp-volume
           emptyDir: {}
         - name: cache-volume

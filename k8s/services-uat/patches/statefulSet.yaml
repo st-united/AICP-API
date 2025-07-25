@@ -33,8 +33,6 @@ spec:
           envFrom:
             - secretRef:
                 name: aicp-api-env
-            - configMapRef:
-                name: aicp-api-config
           volumeMounts:
             - name: tmp-volume
               mountPath: /tmp
@@ -51,8 +49,6 @@ spec:
           envFrom:
             - secretRef:
                 name: aicp-api-env
-            - configMapRef:
-                name: aicp-api-config
           volumeMounts:
             - name: storage-volume
               mountPath: /app/server/storage
