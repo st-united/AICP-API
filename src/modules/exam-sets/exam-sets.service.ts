@@ -48,7 +48,7 @@ export class ExamSetsService {
     const attempts = allExams.length;
     const latestExam = allExams[attempts - 1];
 
-    if (!latestExam || latestExam.examStatus === 'SUBMITTED') {
+    if (!latestExam || latestExam.examStatus === ExamStatus.SUBMITTED) {
       const response = await this.createNewExam(userId, examSet);
       return new ResponseItem(
         response.data,
@@ -57,7 +57,7 @@ export class ExamSetsService {
       );
     }
 
-    if (latestExam.examStatus === 'IN_PROGRESS') {
+    if (latestExam.examStatus === ExamStatus.IN_PROGRESS) {
       return await this.handleInProgressExam(userId, latestExam, examSet);
     }
 
