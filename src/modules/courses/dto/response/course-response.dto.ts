@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer';
 import { $Enums, Course } from '@prisma/client';
 
-export class CourseResponseDto implements Partial<Course> {
+export class CourseResponseDto {
   @Expose()
   id: string;
 
@@ -31,25 +31,4 @@ export class CourseResponseDto implements Partial<Course> {
 
   @Expose()
   linkImage: string | null;
-
-  @Expose()
-  courseType: string | null;
-
-  @Expose()
-  durationHours: number | null;
-
-  @Expose()
-  difficultyLevel?: $Enums.SFIALevel | null;
-
-  @Expose()
-  aspectId?: string;
-
-  @Expose()
-  domainId?: string | null;
-
-  @Expose()
-  sfiaLevels: $Enums.SFIALevel[];
-
-  @Expose()
-  isActive?: boolean;
 }
