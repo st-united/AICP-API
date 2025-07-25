@@ -6,6 +6,7 @@ import { CourseResponseDto } from './dto/response/course-response.dto';
 import { Prisma } from '@prisma/client';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { UserLearningProgressResponseDto } from './dto/response/user-learning-progress-response.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class CoursesService {
@@ -33,7 +34,11 @@ export class CoursesService {
         },
       });
 
-      return new ResponseItem<UserLearningProgressResponseDto>(progress, 'Đăng ký khóa học thành công');
+      const progressDto = plainToInstance(UserLearningProgressResponseDto, progress, {
+        excludeExtraneousValues: true,
+      });
+
+      return new ResponseItem<UserLearningProgressResponseDto>(progressDto, 'Đăng ký khóa học thành công');
     } catch (error) {
       this.logger.error('Lỗi khi đăng ký khóa học:', error);
 
@@ -53,7 +58,11 @@ export class CoursesService {
         },
       });
 
-      return new ResponseItem<CourseResponseDto[]>(courses, 'Lấy danh sách khóa học thành công');
+      const courseDtos = plainToInstance(CourseResponseDto, courses, {
+        excludeExtraneousValues: true,
+      });
+
+      return new ResponseItem<CourseResponseDto[]>(courseDtos, 'Lấy danh sách khóa học thành công');
     } catch (error) {
       this.logger.error('Error getting all courses:', error);
       throw new BadRequestException('Lỗi khi lấy danh sách khóa học');
@@ -73,7 +82,11 @@ export class CoursesService {
         throw new NotFoundException('Không tìm thấy khóa học');
       }
 
-      return new ResponseItem(course, 'Lấy thông tin khóa học thành công', CourseResponseDto);
+      const courseDto = plainToInstance(CourseResponseDto, course, {
+        excludeExtraneousValues: true,
+      });
+
+      return new ResponseItem<CourseResponseDto>(courseDto, 'Lấy thông tin khóa học thành công');
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
