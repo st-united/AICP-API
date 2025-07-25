@@ -251,6 +251,10 @@ model CompetencyAspect {
 model ExamSet {
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String         @db.VarChar
+  urlImage String? @map("url_image") @db.VarChar(255)
+  startDate        DateTime?        @map("start_date") @db.Timestamptz(6)
+  endDate          DateTime?        @map("end_date") @db.Timestamptz(6)
+  status ExamSetStatus @default(DRAFT)
   description      String?        @db.Text
   frameworkId      String         @map("framework_id") @db.Uuid
   assessmentType   AssessmentType @default(SELF_ASSESSMENT) @map("assessment_type")
@@ -700,4 +704,12 @@ enum TestTrackingStatus {
   INTERVIEW_SCHEDULED
   INTERVIEW_COMPLETED
   RESULT_EVALUATED
+}
+
+enum ExamSetStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  INACTIVE
+  ARCHIVED
 }
