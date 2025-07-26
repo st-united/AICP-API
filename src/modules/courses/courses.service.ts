@@ -50,15 +50,32 @@ export class CoursesService {
     }
   }
 
-  async findAll(): Promise<ResponseItem<CourseResponseDto[]>> {
+  async findAll(userId: string): Promise<ResponseItem<CourseResponseDto[]>> {
     try {
       const courses = await this.prisma.course.findMany({
         where: {
           isActive: true,
         },
+        include: {
+          userProgress: {
+            where: {
+              userId: userId,
+            },
+          },
+        },
       });
 
-      const courseDtos = plainToInstance(CourseResponseDto, courses, {
+      const coursesWithRegistrationStatus = courses.map((course) => {
+        const { userProgress, ...courseData } = course;
+        const isRegistered = userProgress.length > 0;
+
+        return {
+          ...courseData,
+          isRegistered,
+        };
+      });
+
+      const courseDtos = plainToInstance(CourseResponseDto, coursesWithRegistrationStatus, {
         excludeExtraneousValues: true,
       });
 
@@ -69,12 +86,19 @@ export class CoursesService {
     }
   }
 
-  async findOne(id: string): Promise<ResponseItem<CourseResponseDto>> {
+  async findOne(courseId: string, userId: string): Promise<ResponseItem<CourseResponseDto>> {
     try {
       const course = await this.prisma.course.findUnique({
         where: {
-          id,
+          id: courseId,
           isActive: true,
+        },
+        include: {
+          userProgress: {
+            where: {
+              userId: userId,
+            },
+          },
         },
       });
 
@@ -82,7 +106,15 @@ export class CoursesService {
         throw new NotFoundException('Không tìm thấy khóa học');
       }
 
-      const courseDto = plainToInstance(CourseResponseDto, course, {
+      const { userProgress, ...courseData } = course;
+      const isRegistered = userProgress.length > 0;
+
+      const courseWithRegistrationStatus = {
+        ...courseData,
+        isRegistered,
+      };
+
+      const courseDto = plainToInstance(CourseResponseDto, courseWithRegistrationStatus, {
         excludeExtraneousValues: true,
       });
 
