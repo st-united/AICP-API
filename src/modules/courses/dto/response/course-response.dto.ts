@@ -1,5 +1,4 @@
 import { Expose } from 'class-transformer';
-import { $Enums, Course } from '@prisma/client';
 
 export class CourseResponseDto {
   @Expose()
@@ -31,4 +30,7 @@ export class CourseResponseDto {
 
   @Expose()
   linkImage: string | null;
+
+  @Expose()
+  isRegistered: boolean;
 }

@@ -113,8 +113,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       `,
       applicableObjects: 'Học viên làm việc trong lĩnh vực marketing số',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihbOUaF7bd0WWqSdgB7ga4dsiEjsBpvFWvUqtkFYK4RH8lFvCX6OEHrcaiNWF7h40z9ObEAavGmkXIqmxxAomq_9vqnNmMxknWg=w1920-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//maketing.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Marketing',
       sfiaLevels: [
@@ -157,8 +156,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       `,
       applicableObjects: 'Các học viên làm việc trong lĩnh vực thiết kế và sáng tạo',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihYZIlDARdLCDhdSpYhzIMc5lElivWX-w4ODjdGIMBsYP94SsKIN3aUvnVlD_ZK8_-GnsUlDXxkvUJ3zkfs8463fqD3ps_R7xQ=w1375-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//designer.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Thiết kế sáng tạo',
       sfiaLevels: [
@@ -201,8 +199,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       `,
       applicableObjects: 'Các học viên làm việc trong lĩnh vực phân tích kinh doanh và ra quyết định dựa trên dữ liệu',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihYUZ9FZroBTdO8APvlsDew6eUHyHCsDDCtGBi11XpZ0b0invOqGewk9Fvv8H6ncnBklSk35vI1nYiergie2gYd7qEpbkgdIFMU=w1375-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//ai-for-ba.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Phân tích nghiệp vụ (BA)',
       sfiaLevels: [
@@ -245,8 +242,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       `,
       applicableObjects: 'Sinh viên, người đi làm muốn tích lũy kinh nghiệm thực tế đa quốc gia',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihb0SJSFcLtBCLGWg8UzpUSOWWuIECaH2IduwqUJZlFD1oDv7UXUljw10wwyLuvEVa9oZS_Adp7od_MtrYFNP5qUHvFUDX1-f7A=w1375-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//singapore.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       sfiaLevels: [
         SFIALevel.LEVEL_4_INTEGRATION,
@@ -289,8 +285,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       `,
       applicableObjects: 'Sinh viên, người đi làm muốn tích lũy kinh nghiệm thực tế đa quốc gia',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihYHrJG5Jal2Fu_NoP2voM101sYIpbp0fD23KQpFXnD2HRtPVlNF24NWcvRHUXZWGVh5EW9HCwRqGdUHlh0UbbNjD0UHUbEUGw=w1375-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//korea.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       sfiaLevels: [
         SFIALevel.LEVEL_4_INTEGRATION,
@@ -330,8 +325,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       `,
       applicableObjects: 'Sinh viên đại học, cao đẳng muốn tích lũy kinh nghiệm thực tế',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihZ2UOtVfeJckpjknC98EUaEsxKG_5J1plOW0ia1Bpv_m60lJK4vw5h7s_Cwe3T6TuvbMTx1_r1O8YJYV1qzieKVCT8sNWf7kUk=w1375-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//mentor-me.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       sfiaLevels: [
         SFIALevel.LEVEL_4_INTEGRATION,
@@ -371,8 +365,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       `,
       applicableObjects: 'Sinh viên đại học, cao đẳng muốn tích lũy kinh nghiệm thực tế',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihZt4usPR17Oj_H5j757NAx48uC1dxvB8tSQnT2OuZaKatAs-KTusbwjxC73v1QSNWzFX5LnLW77DAAarM-6ElUa5rMP6oc33GI=w1375-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//ojt.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       sfiaLevels: [
         SFIALevel.LEVEL_4_INTEGRATION,
@@ -410,8 +403,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       applicableObjects:
         'Sinh viên đại học đang theo học các chuyên ngành liên quan đến IT, muốn kết hợp học tập lý thuyết với thực hành thực tế tại doanh nghiệp trong thời gian học',
       provider: 'Dev Plus',
-      linkImage:
-        'https://drive.google.com/drive-viewer/AKGpihZNn_mcnmdx76wkdzaxGwMC3ceeGpVBxcCKMkAsdmICvmc58xGJMJWDmxtsXUcuqv-ljYJCpLEYF9MkoyaGVjAKzDR69yTtzw=w1375-h963-rw-v1',
+      linkImage: 'https://lpmlouaaqvqcsadpkgjz.supabase.co/storage/v1/object/public/aicp-courses-2025//hybrid.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
       domain: 'Công nghệ thông tin',
       sfiaLevels: [
