@@ -5,13 +5,12 @@ import { CourseResponseDto } from './dto/response/course-response.dto';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
-
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessTokenGuard)
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAccessTokenGuard)
   @Post(':id/register')
   registerCourse(@Param('id', ParseUUIDPipe) courseId: string, @Req() req: any) {
     const userId = req.user.userId;
@@ -25,12 +24,14 @@ export class CoursesController {
   }
 
   @Get()
-  async findAll(): Promise<ResponseItem<CourseResponseDto[]>> {
-    return this.coursesService.findAll();
+  async findAll(@Req() req: any): Promise<ResponseItem<CourseResponseDto[]>> {
+    const userId = req.user.userId;
+    return this.coursesService.findAll(userId);
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<CourseResponseDto>> {
-    return this.coursesService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any): Promise<ResponseItem<CourseResponseDto>> {
+    const userId = req.user.userId;
+    return this.coursesService.findOne(id, userId);
   }
 }
