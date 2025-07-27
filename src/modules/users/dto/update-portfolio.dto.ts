@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString, IsUrl } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 const transformArray = ({ value }) => {
@@ -14,6 +14,21 @@ const transformArray = ({ value }) => {
 };
 
 export class UpdatePortfolioDto {
+  @ApiProperty({ description: 'is user is student', required: false })
+  @IsOptional()
+  @IsString()
+  isStudent?: string;
+
+  @ApiProperty({ description: 'user university', required: false })
+  @IsOptional()
+  @IsString()
+  university?: string;
+
+  @ApiProperty({ description: 'stundent code', required: false })
+  @IsOptional()
+  @IsString()
+  studentCode?: string;
+
   @ApiProperty({ description: 'LinkedIn profile URL', required: false })
   @IsOptional()
   @IsUrl({ require_protocol: true })

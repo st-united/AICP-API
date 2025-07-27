@@ -134,13 +134,14 @@ export const validatePortfolioRequest = (
   deletedCertifications?: string[],
   deletedExperiences?: string[],
   linkedInUrl?: string,
-  githubUrl?: string
+  githubUrl?: string,
+  isStudent?: string
 ): void => {
   const hasFiles = (certificateFiles?.length || 0) + (experienceFiles?.length || 0) > 0;
   const hasDeletions = (deletedCertifications?.length || 0) + (deletedExperiences?.length || 0) > 0;
   const hasUrlUpdates = linkedInUrl !== undefined || githubUrl !== undefined;
 
-  if (!hasFiles && !hasDeletions && !hasUrlUpdates) {
+  if (!hasFiles && !hasDeletions && !hasUrlUpdates && isStudent === undefined) {
     throw new BadRequestException('Yêu cầu phải chứa ít nhất một thay đổi: file mới, xóa file, hoặc cập nhật URL');
   }
 };
