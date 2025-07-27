@@ -1,5 +1,4 @@
 import { PrismaClient, Question, CompetencyFramework } from '@prisma/client';
-import dayjs from 'dayjs';
 
 export async function seedExamSets(
   prisma: PrismaClient,
