@@ -4,14 +4,14 @@ metadata:
   name: aicp-api-quota
 spec:
   hard:
-    requests.cpu: '6' # tăng từ 4 lên 6
-    requests.memory: 6Gi # tăng từ 4Gi lên 6Gi
-    limits.cpu: '12' # tăng từ 8 lên 12
-    limits.memory: 12Gi # tăng từ 8Gi lên 12Gi
-    persistentvolumeclaims: '5'
+    requests.cpu: '15'
+    requests.memory: 8Gi
+    limits.cpu: '16'
+    limits.memory: 20Gi
+    persistentvolumeclaims: '10'
     pods: '10'
     services: '10'
-    secrets: '10'
+    secrets: '15'
 ---
 apiVersion: v1
 kind: LimitRange
