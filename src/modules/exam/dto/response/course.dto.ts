@@ -46,4 +46,7 @@ export class CourseDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  @ApiProperty()
+  isRegistered: boolean;
 }
