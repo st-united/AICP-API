@@ -18,7 +18,24 @@ export class ExamSetsService {
     return 'This action adds a new examSet';
   }
 
-  findAll() {}
+  async findAll() {
+    return this.prisma.examSet.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        name: true,
+        urlImage: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+  }
 
   findOne(id: string) {
     return `This action returns a #${id} examSet`;
@@ -38,25 +55,30 @@ export class ExamSetsService {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
 
-    const existingExam = await this.findUserExam(userId, examSet.id);
-    if (!existingExam) {
-      return await this.createNewExam(userId, examSet);
+    const allExams = await this.prisma.exam.findMany({
+      where: {
+        userId: userId,
+        examSetId: examSet.id,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const attempts = allExams.length;
+    const latestExam = allExams[attempts - 1];
+
+    if (!latestExam || latestExam.examStatus === ExamStatus.SUBMITTED) {
+      const response = await this.createNewExam(userId, examSet);
+      return new ResponseItem(
+        response.data,
+        `Bài kiểm tra mới đã được tạo. Đây là lần làm thứ ${attempts + 1}`,
+        GetExamSetDto
+      );
     }
 
-    const examStatus = this.determineExamStatus(existingExam);
-
-    switch (examStatus) {
-      case 'IN_PROGRESS':
-        return await this.handleInProgressExam(userId, existingExam, examSet);
-      case 'SUBMITTED':
-        return new ResponseItem(
-          null,
-          `Bạn đã làm bài ${ExamSetsService.EXAM_SET_NAME}, không thể làm lại.`,
-          GetExamSetDto
-        );
-      default:
-        throw new NotFoundException('Trạng thái bài kiểm tra không hợp lệ');
+    if (latestExam.examStatus === ExamStatus.IN_PROGRESS) {
+      return await this.handleInProgressExam(userId, latestExam, examSet);
     }
+
+    throw new NotFoundException('Trạng thái bài kiểm tra không hợp lệ');
   }
 
   private async findExamSetWithQuestions(): Promise<ExamSetWithQuestions | null> {

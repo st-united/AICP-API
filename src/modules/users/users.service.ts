@@ -508,14 +508,14 @@ export class UsersService {
     if (!userId) {
       throw new UnauthorizedException('Không có quyền truy cập');
     }
-
     validatePortfolioRequest(
       portfolioDto.certificateFiles,
       portfolioDto.experienceFiles,
       portfolioDto.deleted_certifications,
       portfolioDto.deleted_experiences,
       portfolioDto.linkedInUrl,
-      portfolioDto.githubUrl
+      portfolioDto.githubUrl,
+      portfolioDto.isStudent
     );
 
     const portfolio = await this.prisma.portfolio.findUnique({
@@ -629,6 +629,26 @@ export class UsersService {
           experienceFiles,
         },
       });
+
+      if (portfolioDto.isStudent === 'true') {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            university: portfolioDto.university,
+            studentCode: portfolioDto.studentCode,
+            isStudent: true,
+          },
+        });
+      } else if (portfolioDto.isStudent === 'false') {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            university: null,
+            studentCode: null,
+            isStudent: false,
+          },
+        });
+      }
 
       const hasAnyField =
         Boolean(portfolioDto.linkedInUrl?.trim()) ||
