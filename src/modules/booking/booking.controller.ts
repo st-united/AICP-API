@@ -6,7 +6,13 @@ import { FilterBookingDto } from './dto/filter-booking.dto';
 @Controller('bookings')
 export class BookingController {
   constructor(
-    private readonly service: BookingService,
+    private readonly bookingService: BookingService,
     private readonly bookingGateway: BookingGateway
   ) {}
+
+  @Get('check-user')
+  async checkUser(@Query('userId') userId: string): Promise<{ available: boolean }> {
+    const available = await this.bookingService.isUserIdAvailable(userId);
+    return { available };
+  }
 }

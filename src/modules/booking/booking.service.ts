@@ -55,4 +55,12 @@ export class BookingService {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  async isUserIdAvailable(userId: string): Promise<boolean> {
+    const existing = await this.prisma.mentorBooking.findFirst({
+      where: { userId },
+    });
+
+    return !existing;
+  }
 }

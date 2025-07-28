@@ -399,11 +399,10 @@ export class MentorsService {
 
   async createScheduler(dto: CreateMentorBookingDto): Promise<SimpleResponse<MentorBookingResponseDto>> {
     try {
-      const { mentorId, scheduledAt, timeSlot } = dto;
+      const { scheduledAt, timeSlot } = dto;
 
       // Get mentor details first
-      const mentor = await this.prisma.mentor.findUnique({
-        where: { id: mentorId },
+      const mentor = await this.prisma.mentor.findFirst({
         include: {
           user: {
             select: {
@@ -423,7 +422,7 @@ export class MentorsService {
       // Check for existing booking conflict
       const existing = await this.prisma.mentorBooking.findFirst({
         where: {
-          mentorId,
+          mentorId: mentor.id,
           scheduledAt: new Date(scheduledAt),
           timeSlot,
           status: { in: ['PENDING', 'ACCEPTED'] },
@@ -437,6 +436,7 @@ export class MentorsService {
       const booking = await this.prisma.mentorBooking.create({
         data: {
           ...dto,
+          mentorId: mentor.id,
           scheduledAt: new Date(dto.scheduledAt),
         },
       });
