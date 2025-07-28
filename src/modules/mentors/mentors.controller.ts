@@ -13,10 +13,14 @@ import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto'
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
+import { BookingGateway } from '../booking/booking.gateway';
 
 @Controller('mentors')
 export class MentorsController {
-  constructor(private readonly mentorsService: MentorsService) {}
+  constructor(
+    private readonly mentorsService: MentorsService,
+    private readonly bookingGateway: BookingGateway
+  ) {}
 
   @Post()
   async create(@Body() createMentorDto: CreateMentorDto, @Req() req): Promise<ResponseItem<MentorResponseDto>> {
@@ -26,7 +30,9 @@ export class MentorsController {
 
   @Post('create-scheduler')
   async createScheduler(@Body() dto: CreateMentorBookingDto): Promise<SimpleResponse<MentorBookingResponseDto>> {
-    return await this.mentorsService.createScheduler(dto);
+    const newBooking = await this.mentorsService.createScheduler(dto);
+    this.bookingGateway.emitUserBookings();
+    return newBooking;
   }
 
   @Get()

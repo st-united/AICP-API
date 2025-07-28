@@ -301,6 +301,7 @@ model Exam {
   examLevel          ExamLevel?           @relation(fields: [examLevelId], references: [id], onDelete: Cascade)
   examAspectSnapshot ExamAspectSnapshot[]
   examPillarSnapshot ExamPillarSnapshot[]
+  mentorBookings MentorBooking[]
 }
 
 model ExamSetQuestion {
@@ -347,6 +348,7 @@ model MentorCompetency {
 model MentorBooking {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String              @map("user_id") @db.Uuid
+  examId      String              @map("exam_id") @db.Uuid
   mentorId    String              @map("mentor_id") @db.Uuid
   scheduledAt DateTime            @map("scheduled_at") @db.Timestamptz(6)
   timeSlot    TimeSlotBooking?    @map("time_slot")
@@ -357,6 +359,7 @@ model MentorBooking {
   updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam             Exam              @relation(fields: [examId], references: [id], onDelete: Cascade)
   mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
   competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
