@@ -279,7 +279,7 @@ export class AnswersService {
   }
 
   private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore <= 1) return null;
+    if (overallScore <= 1) return SFIALevel.LEVEL_1_AWARENESS;
     if (overallScore <= 2) return SFIALevel.LEVEL_1_AWARENESS;
     if (overallScore <= 3) return SFIALevel.LEVEL_2_FOUNDATION;
     if (overallScore <= 4) return SFIALevel.LEVEL_3_APPLICATION;
