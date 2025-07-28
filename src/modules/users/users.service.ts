@@ -42,6 +42,7 @@ import {
 } from '@app/validations/portfolio-validation';
 import { Response } from 'express';
 import * as sharp from 'sharp';
+import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -317,6 +318,9 @@ export class UsersService {
 
         if (user.zaloVerified) {
           updateData['zaloVerified'] = false;
+        } else {
+          const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + user.id + ':' + user.phoneNumber;
+          await this.redisService.deleteValue(otpKey);
         }
       }
     }
@@ -715,5 +719,22 @@ export class UsersService {
       }
       throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
+  }
+
+  async updateStudentInfo(userId: string, updateStudentInfoDto: UpdateStudentInfoDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('Người dùng không tồn tại');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        university: updateStudentInfoDto.university,
+        studentCode: updateStudentInfoDto.studentCode,
+        isStudent: updateStudentInfoDto.isStudent,
+      },
+    });
+    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
   }
 }

@@ -9,8 +9,11 @@ import {
   BadRequestException,
   HttpStatus,
   HttpCode,
+  Param,
+  Res,
+  NotFoundException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { ZaloOtpService } from './zalo-otp.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
@@ -19,6 +22,8 @@ import { OtpStatusDto } from './dto/response/otp-status.dto';
 import { SendOtpResponseDto } from './dto/response/send-otp-response.dto';
 import { VerifyOtpResponseDto } from './dto/response/verify-otp-response.dto';
 import { CanSendOtpResponseDto } from './dto/response/can-send-otp-response.dto';
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 @ApiTags('Zalo OTP')
 @Controller('zalo-otp')
@@ -167,5 +172,16 @@ export class ZaloOtpController {
   @Get('country-codes')
   async getCountryCodes(): Promise<ResponseItem<any>> {
     return await this.otpService.getCountryCodes();
+  }
+
+  @Get(':filename')
+  serveStaticFile(@Param('filename') filename: string, @Res() res) {
+    const filePath = join(process.cwd(), 'public', filename);
+
+    if (!existsSync(filePath)) {
+      throw new NotFoundException(`File ${filename} not found`);
+    }
+
+    res.sendFile(filePath);
   }
 }

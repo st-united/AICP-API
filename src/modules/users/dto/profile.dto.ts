@@ -49,6 +49,15 @@ export class ProfileDto {
 
   @Expose()
   roles?: RoleDto[];
+
+  @Expose()
+  isStudent?: boolean;
+
+  @Expose()
+  university?: string;
+
+  @Expose()
+  studentCode?: string;
 }
 
 class RoleDto {

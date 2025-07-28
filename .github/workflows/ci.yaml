@@ -230,9 +230,15 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
-      - name: Install gke-gcloud-auth-plugin
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: Install kubectl
         run: |
-          gcloud components install gke-gcloud-auth-plugin
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
       - name: Generate version tag
         id: version
@@ -273,6 +279,14 @@ jobs:
 
           # Verify deployment
           kubectl get pods -n ${{ env.UAT_NAMESPACE }} -l app=aicp-api
+
+      - name: Health check
+        run: |
+          # Wait a bit for the service to be ready
+          sleep 30
+
+          # Get the service endpoint and do a health check
+          kubectl get svc -n ${{ env.PROD_NAMESPACE }}
 
       - name: Notify deployment status
         if: always()

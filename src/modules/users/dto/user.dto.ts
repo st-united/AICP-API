@@ -80,4 +80,16 @@ export class UserDto {
   @Expose()
   @ApiProperty()
   languagePreference?: string;
+
+  @Expose()
+  @ApiProperty()
+  isStudent?: boolean;
+
+  @Expose()
+  @ApiProperty()
+  university?: string;
+
+  @Expose()
+  @ApiProperty()
+  studentCode?: string;
 }

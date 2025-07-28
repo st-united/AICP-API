@@ -7,23 +7,25 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
 
   const coursesData = [
     {
-      title: 'AI - READINESS MINDSET',
+      title: 'FT01 - AI - READINESS MINDSET',
       description:
         'Chương trình đào tạo được thiết kế để giúp học viên làm rõ nhận thức về AI, xây dựng tư duy sẵn sàng và định vị bản thân trong thời đại kỷ nguyên số. Tham gia để bắt đầu hành trình chuyển đồi cùng AI đầy cảm hứng!',
       provider: 'Coursera',
-      url: 'https://learn.devplus.edu.vn/',
+      url: 'https://learn.devplus.edu.vn/course/view.php?id=31',
+      linkImage: 'https://learn.devplus.edu.vn/pluginfile.php/2785/block_html/content/FT01.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
-      domain: 'Information Technology',
+      domain: 'Công nghệ thông tin',
       sfiaLevels: [SFIALevel.LEVEL_1_AWARENESS, SFIALevel.LEVEL_2_FOUNDATION, SFIALevel.LEVEL_3_APPLICATION],
     },
     {
-      title: 'APPLY AI FOR DEV',
+      title: 'FT02 - APPLY AI FOR DEV',
       description:
         'Chương trình đào tạo được thiết kế để trang bị cho học viên kỹ năng ứng dụng AI thực tiễn trong phát triển phần mềm, mở ra cơ hội nâng cao hiệu suất và tối ưu hóa công việc. Bạn đã sẵn sàng trở thành một lập trình viên AI - Powered, dẫn đầu trong kỷ nguyên công nghệ mới chưa?',
       provider: 'Coursera',
-      url: 'https://learn.devplus.edu.vn/',
+      url: 'https://learn.devplus.edu.vn/course/view.php?id=32',
+      linkImage: 'https://learn.devplus.edu.vn/pluginfile.php/2789/block_html/content/FT02.png',
       category: 'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
-      domain: 'Information Technology',
+      domain: 'Công nghệ thông tin',
       sfiaLevels: [SFIALevel.LEVEL_4_INTEGRATION, SFIALevel.LEVEL_5_INNOVATION, SFIALevel.LEVEL_6_LEADERSHIP],
     },
     {
@@ -82,6 +84,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       description: courseData.description,
       provider: courseData.provider,
       url: courseData.url,
+      linkImage: courseData.linkImage || null,
       aspectId: categoryMap[courseData.category].id,
       domainId: domainMap[courseData.domain].id,
       sfiaLevels: courseData.sfiaLevels ?? [],

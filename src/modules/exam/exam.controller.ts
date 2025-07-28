@@ -76,6 +76,7 @@ export class ExamController {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="AICompetency_Certificate_${dayjs(date).format(DATE_TIME.DAY_YYYY_MM_DD)}.pdf"`,
       'Content-Length': buffer.length,
+      'Access-Control-Expose-Headers': 'Content-Disposition',
     });
 
     res.end(buffer);
