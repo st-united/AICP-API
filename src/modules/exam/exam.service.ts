@@ -282,27 +282,51 @@ export class ExamService {
       medal: `data:image/png;base64,${medalBase64}`,
     });
 
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const contentHeight = await page.evaluate(() => document.body.scrollHeight);
-    const contentWidth = await page.evaluate(() => document.body.scrollWidth);
-
-    const uint8Array = await page.pdf({
-      width: `${contentWidth}px`,
-      height: `${contentHeight}px`,
-      printBackground: true,
-      margin: { top: 0, bottom: 0, left: 0, right: 0 },
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-crash-reporter',
+        '--disable-extensions',
+        '--disable-default-apps',
+        '--disable-component-extensions-with-background-pages',
+        '--mute-audio',
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     });
-    const buffer = Buffer.from(uint8Array);
 
-    await browser.close();
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    return {
-      buffer: buffer,
-      date: exam.updatedAt,
-    };
+      const contentHeight = await page.evaluate(() => document.body.scrollHeight);
+      const contentWidth = await page.evaluate(() => document.body.scrollWidth);
+
+      const uint8Array = await page.pdf({
+        width: `${contentWidth}px`,
+        height: `${contentHeight}px`,
+        printBackground: true,
+        margin: { top: 0, bottom: 0, left: 0, right: 0 },
+      });
+
+      return {
+        buffer: Buffer.from(uint8Array),
+        date: exam.updatedAt,
+      };
+    } finally {
+      await browser.close();
+    }
   }
 
   async getExamWithResult(examId: string, userId: string): Promise<ResponseItem<ExamWithResultDto>> {
