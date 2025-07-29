@@ -1,3 +1,4 @@
+import { Domain } from '@prisma/client';
 import { Expose } from 'class-transformer';
 
 export class ProfileDto {
@@ -32,7 +33,7 @@ export class ProfileDto {
   province?: string;
 
   @Expose()
-  job?: string;
+  job?: Domain[];
 
   @Expose()
   referralCode?: string;
@@ -45,4 +46,23 @@ export class ProfileDto {
 
   @Expose()
   deletedAt?: Date;
+
+  @Expose()
+  roles?: RoleDto[];
+
+  @Expose()
+  isStudent?: boolean;
+
+  @Expose()
+  university?: string;
+
+  @Expose()
+  studentCode?: string;
+}
+
+class RoleDto {
+  @Expose()
+  id: string;
+  @Expose()
+  name: string;
 }

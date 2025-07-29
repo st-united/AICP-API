@@ -1,0 +1,33 @@
+auth:
+  enablePostgresUser: true
+  postgresPassword: +c2QWpz6KnPOt045zQoDeA==
+  username: postgres
+  password: +c2QWpz6KnPOt045zQoDeA==
+  database: aicp
+
+primary:
+  persistence:
+    enabled: true
+    size: 8Gi
+
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1
+    limits:
+      memory: 4Gi
+      cpu: 2
+
+backup:
+  enabled: true
+  cronjob:
+    schedule: '0 2 * * *'
+    historyLimit: 7
+    restartPolicy: OnFailure
+
+  persistence:
+    enabled: true
+    storageClass: 'standard-rwo'
+    size: 100Gi
+    accessModes:
+      - ReadWriteOnce

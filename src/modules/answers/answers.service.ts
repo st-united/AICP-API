@@ -2,9 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { userAnswerDto } from './dto/request/user-answer.dto';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { UserAnswerStatus } from '@prisma/client';
+import { UserAnswerStatus, ExamStatus, CompetencyDimension, SFIALevel, ExamLevelEnum } from '@prisma/client';
 import { ResponseItem } from '@app/common/dtos';
-
 @Injectable()
 export class AnswersService {
   constructor(
@@ -24,125 +23,230 @@ export class AnswersService {
 
       return new ResponseItem(null, 'Lưu câu trả lời thành công');
     } catch (error) {
-      throw new Error('Không tạo được câu trả lời');
+      throw new Error(error.message || 'Đã xảy ra lỗi khi lưu câu trả lời');
     }
   }
 
-  async update(userId: string, examSetId: string): Promise<ResponseItem<userAnswerDto>> {
+  async update(userId: string, examId: string): Promise<ResponseItem<userAnswerDto>> {
+    const totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>> = {};
+    const scorePerQuestion: Record<string, any> = {};
+    const totalScorePerPillar: Record<
+      string,
+      { id: string; weightedScore: number; rawScore: number; weightWithinDimension: number }
+    > = {};
     const existingExam = await this.prisma.exam.findFirst({
-      where: {
-        userId,
-        examSetId,
-      },
+      where: { id: examId },
     });
 
-    if (existingExam.totalScore != null) {
+    if (existingExam?.examStatus !== ExamStatus.IN_PROGRESS) {
       throw new BadRequestException('Bài kiểm tra này đã được nộp trước đó.');
     }
+
     try {
       await this.prisma.userAnswer.updateMany({
-        where: { userId, examSetId },
+        where: { userId, examId },
         data: { status: UserAnswerStatus.SUBMIT },
       });
 
-      const existingAnswers = await this.prisma.userAnswer.findMany({
-        where: { userId, examSetId, status: UserAnswerStatus.SUBMIT },
-        select: { id: true, questionId: true },
-      });
+      const [existingAnswers, examQuestions, pillars, allPillars] = await Promise.all([
+        this.prisma.userAnswer.findMany({
+          where: { userId, examId, status: UserAnswerStatus.SUBMIT },
+          select: { id: true, questionId: true },
+        }),
+        this.prisma.examSetQuestion.findMany({
+          where: { examSetId: existingExam.examSetId },
+          include: {
+            question: {
+              select: {
+                maxPossibleScore: true,
+                skill: {
+                  select: {
+                    aspect: {
+                      select: {
+                        name: true,
+                        weightWithinDimension: true,
+                        competencyPillar: { select: { name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+        this.prisma.competencyPillar.findMany({
+          where: {
+            name: {
+              in: [CompetencyDimension.MINDSET, CompetencyDimension.SKILLSET, CompetencyDimension.TOOLSET],
+            },
+          },
+        }),
+        this.prisma.competencyPillar.findMany({
+          select: { id: true, name: true, weightWithinDimension: true },
+        }),
+      ]);
 
       const userAnswerIds = existingAnswers.map((a) => a.id);
       const questionIds = existingAnswers.map((a) => a.questionId);
 
-      const matchingSelections = await this.prisma.userAnswerSelection.findMany({
-        where: { userAnswerId: { in: userAnswerIds } },
-        include: { userAnswer: { select: { id: true, questionId: true } } },
-      });
-
-      const answerOptions = await this.prisma.answerOption.findMany({
-        where: { questionId: { in: questionIds }, isCorrect: true },
-        select: { id: true, content: true, isCorrect: true, questionId: true },
-      });
-
-      const groupedSelections = matchingSelections.reduce(
-        (acc, curr) => {
-          const { userAnswerId, answerOptionId, userAnswer } = curr;
-          const questionId = userAnswer?.questionId;
-
-          if (!acc[userAnswerId]) {
-            acc[userAnswerId] = { userAnswerId, questionId, answerOptionIds: [] };
-          }
-          acc[userAnswerId].answerOptionIds.push(answerOptionId);
-          return acc;
-        },
-        {} as Record<string, { userAnswerId: string; questionId: string; answerOptionIds: string[] }>
-      );
-
-      const groupedByQuestion = answerOptions.reduce(
-        (acc, curr) => {
-          const { questionId, id, content, isCorrect } = curr;
-          if (!acc[questionId]) {
-            acc[questionId] = { questionId, options: [] };
-          }
-          acc[questionId].options.push({ id, content, isCorrect });
-          return acc;
-        },
-        {} as Record<string, { questionId: string; options: { id: string; content: string; isCorrect: boolean }[] }>
-      );
-
-      const scores = await Promise.all(
-        Object.entries(groupedSelections).map(async ([userAnswerId, { questionId, answerOptionIds }]) => {
-          const questionData = groupedByQuestion[questionId];
-          if (!questionData) return [userAnswerId, 0];
-
-          const correctOptionIds = questionData.options.filter((opt) => opt.isCorrect).map((opt) => opt.id);
-
-          const totalCorrect = correctOptionIds.length;
-
-          const matchedCorrect = answerOptionIds.filter((id) => correctOptionIds.includes(id)).length;
-
-          const rawScore = matchedCorrect / totalCorrect;
-
-          const score = parseFloat(rawScore.toFixed(2));
-
-          const userAnswer = await this.prisma.userAnswer.findFirst({
-            where: {
-              userId: userAnswerId,
-              examSetId: examSetId,
+      const [matchingSelections, answerOptions] = await Promise.all([
+        this.prisma.userAnswerSelection.findMany({
+          where: { userAnswerId: { in: userAnswerIds } },
+          include: { userAnswer: { select: { id: true, questionId: true } } },
+        }),
+        this.prisma.answerOption.findMany({
+          where: { questionId: { in: questionIds } },
+          select: {
+            id: true,
+            isCorrect: true,
+            questionId: true,
+            question: {
+              select: {
+                maxPossibleScore: true,
+                skill: {
+                  select: {
+                    aspect: {
+                      select: {
+                        name: true,
+                        competencyPillar: { select: { name: true } },
+                      },
+                    },
+                  },
+                },
+              },
             },
-          });
+          },
+        }),
+      ]);
 
-          if (userAnswer) {
-            await this.prisma.userAnswer.update({
-              where: { id: userAnswer.id },
-              data: { autoScore: score },
-            });
+      const scoreMeta = this.mapAspectWeightsPerPillar(examQuestions);
+      const groupedSelections = this.groupSelections(matchingSelections);
+      const groupedByQuestion = this.groupAnswerOptions(answerOptions);
+      const classificationResult = this.classifyAnswers(groupedSelections, groupedByQuestion);
+
+      await Promise.all(
+        Object.entries(classificationResult).map(async ([userAnswerId, result]) => {
+          const { TP, FP, FN, pillarName, aspectName, maxScorePerQuestion } = result;
+
+          const precision = TP.length + FP.length ? TP.length / (TP.length + FP.length) : 0;
+          const recall = TP.length + FN.length ? TP.length / (TP.length + FN.length) : 0;
+          const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+          const finalScore = f1 * maxScorePerQuestion;
+
+          if (pillarName && aspectName) {
+            totalScoresPerAspect[pillarName] ??= {};
+            totalScoresPerAspect[pillarName][aspectName] ??= { score: 0, maxScore: 0 };
+
+            totalScoresPerAspect[pillarName][aspectName].score += finalScore;
+            totalScoresPerAspect[pillarName][aspectName].maxScore += maxScorePerQuestion;
           }
 
-          return [userAnswerId, score];
+          scorePerQuestion[userAnswerId] = {
+            precision: +precision.toFixed(3),
+            recall: +recall.toFixed(3),
+            f1: +f1.toFixed(3),
+            finalScore: +finalScore.toFixed(2),
+          };
+
+          await this.prisma.userAnswer.update({
+            where: { id: userAnswerId },
+            data: { autoScore: finalScore },
+          });
         })
       );
 
-      const totalScore = scores.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : Number(val)), 0);
+      const aspectScoresPerPillar = ['MINDSET', 'SKILLSET', 'TOOLSET'].reduce(
+        (result, aspect) => {
+          result[aspect] = this.isNonEmpty(totalScoresPerAspect[aspect])
+            ? this.calculateAspectScoresPerPillar(totalScoresPerAspect, scoreMeta, aspect)
+            : {};
+          return result;
+        },
+        {} as Record<string, Record<string, { weighted: number; raw: number }>>
+      );
 
-      const exam = await this.prisma.exam.findFirst({
+      const validPillarIds = allPillars.map((p) => p.id);
+      const aspects = await this.prisma.competencyAspect.findMany({
+        where: { pillarId: { in: validPillarIds } },
+        select: {
+          id: true,
+          name: true,
+          competencyPillar: {
+            select: {
+              id: true,
+              name: true,
+              weightWithinDimension: true,
+            },
+          },
+        },
+      });
+
+      const snapshots = aspects.map((aspect) => {
+        const { name: aspectName, id: aspectId, competencyPillar } = aspect;
+        const { name: pillarName, id: pillarId, weightWithinDimension } = competencyPillar;
+
+        const weightedScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.weighted ?? 0;
+        const rawScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.raw ?? 0;
+
+        totalScorePerPillar[pillarName] ??= {
+          id: pillarId,
+          weightedScore: 0,
+          rawScore: 0,
+          weightWithinDimension: weightWithinDimension.toNumber(),
+        };
+        totalScorePerPillar[pillarName].weightedScore += weightedScore;
+        totalScorePerPillar[pillarName].rawScore += rawScore;
+
+        return { aspectId, weightedScore, rawScore };
+      });
+
+      await Promise.all([
+        ...snapshots.map((s) =>
+          this.prisma.examAspectSnapshot.upsert({
+            where: { examId_aspectId: { examId, aspectId: s.aspectId } },
+            create: { examId, aspectId: s.aspectId, score: s.rawScore },
+            update: { score: s.rawScore },
+          })
+        ),
+        ...Object.values(totalScorePerPillar).map((s) =>
+          this.prisma.examPillarSnapshot.upsert({
+            where: { examId_pillarId: { examId, pillarId: s.id } },
+            create: { examId, pillarId: s.id, score: s.weightedScore },
+            update: { score: s.weightedScore },
+          })
+        ),
+      ]);
+
+      const overallScore = +Object.values(totalScorePerPillar)
+        .reduce((acc, s) => acc + s.weightedScore * s.weightWithinDimension, 0)
+        .toFixed(2);
+      const level = this.getSFIALevel(overallScore);
+      const levelNumber = level.split('_')[1];
+      const matchedExamLevels = Object.values(ExamLevelEnum).filter((level) =>
+        level.startsWith(`LEVEL_${levelNumber}_`)
+      );
+
+      const examLevels = await this.prisma.examLevel.findFirst({
         where: {
-          userId,
-          examSetId,
+          examLevel: {
+            in: matchedExamLevels,
+          },
         },
       });
 
       await this.prisma.exam.update({
-        where: { id: exam.id },
+        where: { id: examId },
         data: {
-          userId,
-          examSetId,
-          totalScore,
+          overallScore,
+          examStatus: ExamStatus.SUBMITTED,
+          sfiaLevel: level,
+          examLevelId: examLevels ? examLevels.id : null,
         },
       });
 
       return new ResponseItem(null, 'Đã nộp bài thành công');
     } catch (error) {
-      throw new Error('Không cập nhật được câu trả lời và tính điểm');
+      throw new Error(error);
     }
   }
 
@@ -169,6 +273,16 @@ export class AnswersService {
         userId,
       },
     });
+  }
+
+  private getSFIALevel(overallScore: number): SFIALevel {
+    if (overallScore <= 2) return SFIALevel.LEVEL_1_AWARENESS;
+    if (overallScore <= 3) return SFIALevel.LEVEL_2_FOUNDATION;
+    if (overallScore <= 4) return SFIALevel.LEVEL_3_APPLICATION;
+    if (overallScore <= 5) return SFIALevel.LEVEL_4_INTEGRATION;
+    if (overallScore <= 6) return SFIALevel.LEVEL_5_INNOVATION;
+    if (overallScore <= 7) return SFIALevel.LEVEL_6_LEADERSHIP;
+    return SFIALevel.LEVEL_7_MASTERY;
   }
 
   private async handleSelectionAnswers(userId, params: userAnswerDto) {
@@ -213,5 +327,150 @@ export class AnswersService {
         });
       })
     );
+  }
+
+  private mapAspectWeightsPerPillar(questions: any[]) {
+    const pillarMap: Record<string, Record<string, { weight: number }>> = {
+      MINDSET: {},
+      SKILLSET: {},
+      TOOLSET: {},
+    };
+
+    for (const questionItem of questions) {
+      const aspect = questionItem.question?.skill?.aspect;
+      const pillarName = aspect?.competencyPillar?.name;
+      const aspectName = aspect?.name;
+      const weight = aspect?.weightWithinDimension ?? 0;
+
+      if (!pillarName || !aspectName || !pillarMap[pillarName]) continue;
+
+      if (!pillarMap[pillarName][aspectName]) {
+        pillarMap[pillarName][aspectName] = { weight };
+      }
+    }
+
+    return pillarMap;
+  }
+
+  private groupSelections(selections: any[]) {
+    return selections.reduce(
+      (acc, { userAnswerId, answerOptionId, userAnswer }) => {
+        const questionId = userAnswer?.questionId;
+        if (!acc[userAnswerId]) {
+          acc[userAnswerId] = { userAnswerId, questionId, answerOptionIds: [] };
+        }
+        acc[userAnswerId].answerOptionIds.push(answerOptionId);
+        return acc;
+      },
+      {} as Record<string, { userAnswerId: string; questionId: string; answerOptionIds: string[] }>
+    );
+  }
+
+  private groupAnswerOptions(answerOptions: any[]) {
+    return answerOptions.reduce(
+      (acc, curr) => {
+        const { questionId, id, content, isCorrect, question } = curr;
+        const pillarName = question?.skill?.aspect?.competencyPillar?.name || null;
+        const aspectName = question?.skill?.aspect?.name || null;
+        const maxPossibleScore = question?.maxPossibleScore.toNumber() || 0;
+
+        if (!acc[questionId]) {
+          acc[questionId] = { questionId, pillarName, aspectName, maxPossibleScore, options: [] };
+        }
+
+        acc[questionId].options.push({ id, content, isCorrect });
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+  }
+
+  private classifyAnswers(selections: any, groupedOptions: any) {
+    const result: Record<string, any> = {};
+
+    for (const userAnswerId in selections) {
+      const { questionId, answerOptionIds } = selections[userAnswerId];
+      const options = groupedOptions[questionId]?.options || [];
+      const pillarName = groupedOptions[questionId]?.pillarName || null;
+      const aspectName = groupedOptions[questionId]?.aspectName || null;
+      const maxScorePerQuestion = groupedOptions[questionId]?.maxPossibleScore || 0;
+
+      const TP: string[] = [],
+        FP: string[] = [],
+        FN: string[] = [],
+        TN: string[] = [];
+      const selectedSet = new Set(answerOptionIds);
+
+      for (const option of options) {
+        const isSelected = selectedSet.has(option.id);
+
+        if (option.isCorrect) {
+          isSelected ? TP.push(option.id) : FN.push(option.id);
+        } else {
+          isSelected ? FP.push(option.id) : TN.push(option.id);
+        }
+      }
+
+      result[userAnswerId] = { TP, FP, FN, TN, pillarName, aspectName, maxScorePerQuestion };
+    }
+
+    return result;
+  }
+
+  private calculateAspectScoresPerPillar(
+    totalScoresPerAspect: Record<string, Record<string, { score: number; maxScore: number }>>,
+    scoreMetaPerAspect: Record<string, Record<string, { weight: number }>>,
+    pillarName: string
+  ): Record<string, { weighted: number; raw: number }> {
+    const aspectScores = totalScoresPerAspect[pillarName] || {};
+    const aspectMeta = scoreMetaPerAspect[pillarName] || {};
+
+    const result = Object.fromEntries(
+      Object.entries(aspectMeta).map(([aspectName, meta]) => {
+        const aspect = aspectScores[aspectName] || { score: 0, maxScore: 0 };
+        const actual = aspect.score || 0;
+        const max = aspect.maxScore || 0;
+        const weight = Number(meta.weight) || 0;
+
+        const rawScore = max > 0 ? +((actual / max) * 7).toFixed(2) : 0;
+        const weightedScore = max > 0 ? +((actual / max) * 7 * weight).toFixed(2) : 0;
+
+        return [aspectName, { weighted: weightedScore, raw: rawScore }];
+      })
+    );
+
+    return result;
+  }
+
+  private isNonEmpty(obj: any): boolean {
+    return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+  }
+
+  async autoSubmitExpiredExams(): Promise<void> {
+    const now = new Date();
+    const tenSecondsAgo = new Date(now.getTime() - 10_000);
+
+    const expiredExams = await this.prisma.exam.findMany({
+      where: {
+        examStatus: ExamStatus.IN_PROGRESS,
+        finishedAt: {
+          lte: tenSecondsAgo,
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!expiredExams.length) return;
+
+    const updatePromises = expiredExams.map((exam) =>
+      this.update(exam.userId, exam.id).catch((error) => {
+        console.error(`[AutoSubmit] Failed examId=${exam.id} userId=${exam.userId}`, error.message);
+      })
+    );
+
+    await Promise.all(updatePromises);
   }
 }

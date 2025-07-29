@@ -1,10 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Domain } from '@prisma/client';
 import { Expose } from 'class-transformer';
+import { IsOptional } from 'class-validator';
 
 export class UserDto {
   @Expose()
   @ApiProperty()
-  id: string;
+  id?: string;
 
   @Expose()
   @ApiProperty()
@@ -32,23 +34,24 @@ export class UserDto {
 
   @Expose()
   @ApiProperty()
-  dob: Date;
+  dob?: Date;
 
   @Expose()
   @ApiProperty()
-  country: string;
+  country?: string;
 
   @Expose()
   @ApiProperty()
-  province: string;
+  province?: string;
 
   @Expose()
   @ApiProperty()
-  job: string;
+  @IsOptional()
+  job?: Domain[];
 
   @Expose()
   @ApiProperty()
-  referralCode: string;
+  referralCode?: string;
 
   @Expose()
   @ApiProperty()
@@ -61,4 +64,32 @@ export class UserDto {
   @Expose()
   @ApiProperty()
   deletedAt?: Date;
+
+  @Expose()
+  @ApiProperty()
+  refreshToken?: string;
+
+  @Expose()
+  @ApiProperty()
+  position?: string;
+
+  @Expose()
+  @ApiProperty()
+  timezone?: string;
+
+  @Expose()
+  @ApiProperty()
+  languagePreference?: string;
+
+  @Expose()
+  @ApiProperty()
+  isStudent?: boolean;
+
+  @Expose()
+  @ApiProperty()
+  university?: string;
+
+  @Expose()
+  @ApiProperty()
+  studentCode?: string;
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe, Req } from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
@@ -12,14 +12,16 @@ import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto'
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
+import { ActivateAccountDto } from './dto/request/activate-account.dto';
 
 @Controller('mentors')
 export class MentorsController {
   constructor(private readonly mentorsService: MentorsService) {}
 
   @Post()
-  async create(@Body() createMentorDto: CreateMentorDto): Promise<ResponseItem<MentorResponseDto>> {
-    return await this.mentorsService.create(createMentorDto);
+  async create(@Body() createMentorDto: CreateMentorDto, @Req() req): Promise<ResponseItem<MentorResponseDto>> {
+    const url = req.headers.origin;
+    return await this.mentorsService.create(createMentorDto, url);
   }
 
   @Post('create-scheduler')
@@ -56,19 +58,25 @@ export class MentorsController {
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.mentorsService.getMentor(id);
   }
-
+  @Patch('activate-link-account')
+  async activateAccountByMentor(@Body() activateAccountDto: ActivateAccountDto, @Req() req) {
+    const url = req.headers.origin;
+    return await this.mentorsService.activateAccountByMentor(activateAccountDto.token, url);
+  }
   @Patch(':id')
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() updateMentorDto: UpdateMentorDto) {
     return await this.mentorsService.updateMentor(id, updateMentorDto);
   }
 
   @Patch('/activate/:id')
-  async activateMentorAccount(@Param('id', ParseUUIDPipe) id: string) {
-    return await this.mentorsService.activateMentorAccount(id);
+  async activateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
+    const url = req.headers.origin;
+    return await this.mentorsService.activateMentorAccount(id, url);
   }
 
   @Delete(':id')
-  async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<null>> {
-    return await this.mentorsService.deactivateMentorAccount(id);
+  async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req): Promise<ResponseItem<null>> {
+    const url = req.headers.origin;
+    return await this.mentorsService.deactivateMentorAccount(id, url);
   }
 }

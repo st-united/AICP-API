@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: aicp-api-quota
+spec:
+  hard:
+    requests.cpu: '15'
+    requests.memory: 8Gi
+    limits.cpu: '16'
+    limits.memory: 20Gi
+    persistentvolumeclaims: '10'
+    pods: '10'
+    services: '10'
+    secrets: '15'
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: aicp-api-limits
+spec:
+  limits:
+    - default:
+        cpu: '2'
+        memory: 1Gi
+      defaultRequest:
+        cpu: '100m'
+        memory: 128Mi
+      type: Container
+    - max:
+        storage: 20Gi
+      min:
+        storage: 1Gi
+      type: PersistentVolumeClaim

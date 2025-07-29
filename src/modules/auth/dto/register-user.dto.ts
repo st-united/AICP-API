@@ -11,7 +11,6 @@ export class RegisterUserDto {
 
   @ApiProperty({ description: 'Phone Number', example: '0901234567' })
   @IsString()
-  @IsNotEmpty()
   @Matches(PHONE_REGEX_PATTERN, { message: 'Số điện thoại không hợp lệ' })
   phoneNumber: string;
 

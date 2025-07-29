@@ -1,4 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+  PayloadTooLargeException,
+  UnauthorizedException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
@@ -18,11 +28,21 @@ import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { Prisma } from '@prisma/client';
+import { Prisma, User, UserTrackingStatus } from '@prisma/client';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
 import { RedisService } from '@app/modules/redis/redis.service';
+import { GetPortfolioResponseDto } from './dto/get-portfolio-response.dto';
+import { UpdatePortfolioDto } from './dto/update-portfolio.dto';
+import {
+  validatePortfolioFiles,
+  validatePortfolioRequest,
+  validateDeletedFiles,
+} from '@app/validations/portfolio-validation';
+import { Response } from 'express';
+import * as sharp from 'sharp';
+import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -129,6 +149,8 @@ export class UsersService {
   }
 
   async getUsers(queries: GetUsersByAdminDto): Promise<ResponsePaginate<UserDto>> {
+    const jobFilter = queries['job[]'];
+    const provinceFilter = queries['province[]'];
     const where: Prisma.UserWhereInput = {
       ...(queries.search && {
         fullName: {
@@ -137,12 +159,22 @@ export class UsersService {
         },
       }),
       status: queries.status,
-      ...(queries.job && {
-        job: queries.job,
-      }),
-      ...(queries.province && {
-        province: queries.province,
-      }),
+      ...(jobFilter &&
+        jobFilter.length > 0 && {
+          job: {
+            some: {
+              id: {
+                in: jobFilter,
+              },
+            },
+          },
+        }),
+      ...(provinceFilter &&
+        provinceFilter.length > 0 && {
+          province: {
+            in: provinceFilter,
+          },
+        }),
       createdAt: {
         gte: queries.startDate ? new Date(queries.startDate) : undefined,
         lte: queries.endDate ? new Date(queries.endDate) : undefined,
@@ -201,12 +233,13 @@ export class UsersService {
     };
 
     const [users, statusCounts] = await this.prisma.$transaction([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
       this.prisma.user.groupBy({
         by: ['status'],
         _count: {
           status: true,
         },
+        where,
       }) as any,
     ]);
 
@@ -236,24 +269,80 @@ export class UsersService {
   }
 
   async getProfile(id: string): Promise<ResponseItem<ProfileDto>> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        job: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-    return new ResponseItem(user, 'Thành công', ProfileDto);
+    const mappedUser = {
+      ...user,
+      roles: user.roles.map(({ role }) => ({
+        id: role.id,
+        name: role.name,
+      })),
+    };
+
+    return new ResponseItem(mappedUser, 'Thành công', ProfileDto);
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
-    const { email, referralCode, ...updateData } = updateUserDto;
+    const { email, referralCode, job, ...updateData } = updateUserDto;
+
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+    if (updateData.phoneNumber) {
+      if (user.phoneNumber === updateData.phoneNumber) {
+        delete updateData.phoneNumber;
+      } else {
+        const phoneExisted = await this.prisma.user.findUnique({
+          where: { phoneNumber: updateData.phoneNumber },
+        });
+
+        if (phoneExisted) {
+          throw new BadRequestException('Số điện thoại đã tồn tại');
+        }
+
+        if (user.zaloVerified) {
+          updateData['zaloVerified'] = false;
+        } else {
+          const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + user.id + ':' + user.phoneNumber;
+          await this.redisService.deleteValue(otpKey);
+        }
+      }
+    }
+
+    const updateDataWithJob: any = { ...updateData };
+
+    if (job !== undefined && job !== null) {
+      const domainIds = Array.isArray(job) ? job : typeof job === 'string' ? [job] : [];
+      updateDataWithJob.job = {
+        set: domainIds.map((domainId) => ({ id: domainId })),
+      };
+    }
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateData,
+      data: updateDataWithJob,
+      include: {
+        job: true,
+      },
     });
 
-    return new ResponseItem(updatedUser, 'Cập nhật dữ liệu thành công', UserDto);
+    return new ResponseItem(updatedUser, 'Cập nhật hồ sơ thành công', UserDto);
   }
 
   async uploadAvatar(id: string, file: Express.Multer.File): Promise<ResponseItem<UserDto>> {
@@ -263,21 +352,25 @@ export class UsersService {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
 
+    const resizedBuffer = await sharp(file.buffer).resize(512, 512, { fit: 'cover' }).jpeg({ quality: 80 }).toBuffer();
+
+    if (resizedBuffer.length > 5 * 1024 * 1024) {
+      throw new BadRequestException('Ảnh vượt quá kích thước tối đa 5MB sau khi xử lý');
+    }
+
     if (user.avatarUrl) {
       const oldDest = this.googleCloudStorageService.getFileDestFromPublicUrl(user.avatarUrl);
       await this.googleCloudStorageService.deleteFile(oldDest);
     }
+
     const destPath = avtPathName('avatars', uuidv4());
-    const avatarUrl = await this.googleCloudStorageService.uploadFile(file, destPath);
+    const avatarUrl = await this.googleCloudStorageService.uploadBuffer(resizedBuffer, destPath, 'image/jpeg');
 
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl },
+      include: { job: true },
     });
-
-    if (file.path && fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path);
-    }
 
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công', UserDto);
   }
@@ -292,6 +385,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl: null },
+      include: { job: true },
     });
 
     if (fs.existsSync(user.avatarUrl)) {
@@ -305,10 +399,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async updateUserStatus(id: string, status: boolean): Promise<string> {
+  async updateUserStatus(id: string, status: boolean, statusTracking: UserTrackingStatus): Promise<string> {
     await this.prisma.user.update({
       where: { id },
-      data: { status },
+      data: { status, statusTracking },
     });
 
     return 'Cập nhật trạng thái thành công';
@@ -359,7 +453,6 @@ export class UsersService {
       });
 
       if (!foundUser) throw new BadRequestException('Người dùng không tồn tại');
-
       await this.redisService.deleteValue(`reset_password:${updateForgotPasswordUserDto.token}`);
       const hashedNewPassword = await bcrypt.hash(updateForgotPasswordUserDto.password, 10);
 
@@ -379,5 +472,269 @@ export class UsersService {
       }
       throw new BadRequestException('Token không hợp lệ', { cause: error });
     }
+  }
+
+  private async processFiles(
+    files: Express.Multer.File[],
+    basePath: string,
+    existingFiles: string[] = []
+  ): Promise<string[]> {
+    if (!files?.length) return existingFiles;
+
+    const uploadPromises = files.map(async (file) => {
+      const destPath = avtPathName(`${basePath}/`, `${uuidv4()}+${file.originalname}`);
+      try {
+        const url = await this.googleCloudStorageService.uploadFile(file, destPath);
+        if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        return url;
+      } catch (error) {
+        if (file.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        if (error instanceof HttpException) throw error;
+        throw new BadRequestException(`Lỗi upload file ${file.originalname}: ${error.message}`);
+      }
+    });
+
+    return [...existingFiles, ...(await Promise.all(uploadPromises))];
+  }
+
+  private filterDeletedItems(items: string[] = [], deletedItems?: string[]): string[] {
+    return deletedItems?.length ? items.filter((item) => !deletedItems.includes(item)) : items;
+  }
+
+  async updatePortfolio(
+    userId: string,
+    portfolioDto: UpdatePortfolioDto
+  ): Promise<ResponseItem<GetPortfolioResponseDto>> {
+    if (!userId) {
+      throw new UnauthorizedException('Không có quyền truy cập');
+    }
+
+    validatePortfolioRequest(
+      portfolioDto.certificateFiles,
+      portfolioDto.experienceFiles,
+      portfolioDto.deleted_certifications,
+      portfolioDto.deleted_experiences,
+      portfolioDto.linkedInUrl,
+      portfolioDto.githubUrl
+    );
+
+    const portfolio = await this.prisma.portfolio.findUnique({
+      where: { userId },
+    });
+
+    if (!portfolio) {
+      try {
+        validatePortfolioFiles(portfolioDto.certificateFiles, portfolioDto.experienceFiles);
+
+        const [certificateFiles, experienceFiles] = await Promise.all([
+          this.processFiles(portfolioDto.certificateFiles, 'certifications', []),
+          this.processFiles(portfolioDto.experienceFiles, 'experiences', []),
+        ]);
+
+        const newPortfolio = await this.prisma.portfolio.create({
+          data: {
+            linkedInUrl: portfolioDto.linkedInUrl,
+            githubUrl: portfolioDto.githubUrl,
+            certificateFiles,
+            experienceFiles,
+            userId,
+          },
+        });
+
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            statusTracking: UserTrackingStatus.PROFILE_COMPLETED,
+          },
+        });
+
+        return new ResponseItem(newPortfolio, 'Hồ sơ tạo thành công', GetPortfolioResponseDto);
+      } catch (error) {
+        if (error instanceof HttpException) throw error;
+        throw new HttpException(`Tạo hồ sơ không thành công: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+    }
+
+    const uploadCertifications = portfolioDto.certificateFiles;
+    const uploadExperiences = portfolioDto.experienceFiles;
+
+    try {
+      validatePortfolioFiles(uploadCertifications, uploadExperiences);
+
+      if (portfolioDto.deleted_certifications?.length || portfolioDto.deleted_experiences?.length) {
+        validateDeletedFiles(
+          portfolioDto.deleted_certifications || [],
+          portfolioDto.deleted_experiences || [],
+          portfolio.certificateFiles || [],
+          portfolio.experienceFiles || []
+        );
+      }
+
+      const deletePromises: Promise<void>[] = [];
+
+      if (portfolioDto.deleted_certifications?.length && portfolio.certificateFiles?.length) {
+        const filesToDelete = portfolioDto.deleted_certifications.filter((deletedFile) =>
+          portfolio.certificateFiles.includes(deletedFile)
+        );
+
+        deletePromises.push(
+          ...filesToDelete.map(async (deletedFile) => {
+            try {
+              const destFileName = this.googleCloudStorageService.getFileDestFromPublicUrl(deletedFile);
+              await this.googleCloudStorageService.deleteFile(destFileName);
+            } catch (error) {
+              console.error(`Lỗi khi xóa file certification: ${deletedFile}`, error);
+            }
+          })
+        );
+      }
+
+      if (portfolioDto.deleted_experiences?.length && portfolio.experienceFiles?.length) {
+        const filesToDelete = portfolioDto.deleted_experiences.filter((deletedFile) =>
+          portfolio.experienceFiles.includes(deletedFile)
+        );
+
+        deletePromises.push(
+          ...filesToDelete.map(async (deletedFile) => {
+            try {
+              const destFileName = this.googleCloudStorageService.getFileDestFromPublicUrl(deletedFile);
+              await this.googleCloudStorageService.deleteFile(destFileName);
+            } catch (error) {
+              console.error(`Lỗi khi xóa file experience: ${deletedFile}`, error);
+            }
+          })
+        );
+      }
+
+      const [certificateFiles, experienceFiles] = await Promise.all([
+        this.processFiles(
+          uploadCertifications,
+          'certifications',
+          this.filterDeletedItems(portfolio.certificateFiles, portfolioDto.deleted_certifications)
+        ),
+        this.processFiles(
+          uploadExperiences,
+          'experiences',
+          this.filterDeletedItems(portfolio.experienceFiles, portfolioDto.deleted_experiences)
+        ),
+        Promise.all(deletePromises),
+      ]);
+
+      const updatedPortfolio = await this.prisma.portfolio.update({
+        where: { userId },
+        data: {
+          linkedInUrl: portfolioDto.linkedInUrl,
+          githubUrl: portfolioDto.githubUrl,
+          certificateFiles,
+          experienceFiles,
+        },
+      });
+
+      const hasAnyField =
+        Boolean(portfolioDto.linkedInUrl?.trim()) ||
+        Boolean(portfolioDto.githubUrl?.trim()) ||
+        (Array.isArray(certificateFiles) && certificateFiles.length > 0) ||
+        (Array.isArray(experienceFiles) && experienceFiles.length > 0);
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          statusTracking: hasAnyField ? UserTrackingStatus.PROFILE_COMPLETED : UserTrackingStatus.PROFILE_PENDING,
+        },
+      });
+
+      return new ResponseItem(updatedPortfolio, 'Hồ sơ cập nhật thành công', GetPortfolioResponseDto);
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(`Cập nhật hồ sơ không thành công: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async getPortfolio(userId: string): Promise<ResponseItem<GetPortfolioResponseDto>> {
+    if (!userId) {
+      throw new UnauthorizedException('Không có quyền truy cập');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ForbiddenException('Người dùng không tồn tại');
+    }
+
+    const portfolio = await this.prisma.portfolio.findUnique({ where: { userId } });
+
+    if (!portfolio) {
+      throw new NotFoundException('Hồ sơ không tồn tại');
+    }
+
+    return new ResponseItem(portfolio, 'Lấy hồ sơ thành công', GetPortfolioResponseDto);
+  }
+
+  async downloadFile(url: string, filename: string, res: Response): Promise<void> {
+    if (!url || !filename) {
+      throw new BadRequestException('URL và filename không được để trống');
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new HttpException('Không thể tải file', HttpStatus.BAD_REQUEST);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', response.headers.get('content-type') || 'application/octet-stream');
+      res.send(buffer);
+    } catch (error) {
+      throw new HttpException(`Lỗi tải file: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async checkResetToken(token: string): Promise<ResponseItem<boolean>> {
+    try {
+      const tokenStatus = await this.redisService.getValue(`reset_password:${token}`);
+      if (!tokenStatus) {
+        throw new BadRequestException('Token không hợp lệ hoặc đã hết hạn');
+      }
+
+      const verifiedToken = this.tokenService.verifyAccessToken(token);
+      const userId = verifiedToken.sub;
+
+      const foundUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!foundUser) {
+        throw new BadRequestException('Người dùng không tồn tại');
+      }
+
+      return new ResponseItem(true, 'Link còn hiệu lực');
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new BadRequestException('Token đã hết hạn');
+      }
+      throw new BadRequestException('Token không hợp lệ', { cause: error });
+    }
+  }
+
+  async updateStudentInfo(userId: string, updateStudentInfoDto: UpdateStudentInfoDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('Người dùng không tồn tại');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        university: updateStudentInfoDto.university,
+        studentCode: updateStudentInfoDto.studentCode,
+        isStudent: updateStudentInfoDto.isStudent,
+      },
+    });
+    return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
   }
 }
