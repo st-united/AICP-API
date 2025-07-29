@@ -17,6 +17,7 @@ import { seedMentors } from './mentors';
 import { seedMentorBookings } from './mentorBookings';
 import { seedUserAnswers } from './userAnswers';
 import { seedExamLevels } from './examlevel';
+import { seedInterviewRequest } from './interviewRequest';
 
 const prisma = new PrismaClient();
 

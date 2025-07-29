@@ -29,36 +29,39 @@ export class MentorsController {
   }
 
   @Post('create-scheduler')
-  async createScheduler(@Body() dto: CreateMentorBookingDto): Promise<SimpleResponse<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto);
-    this.bookingGateway.emitUserBookings();
+  async createScheduler(
+    @Req() req,
+    @Body() dto: CreateMentorBookingDto
+  ): Promise<ResponseItem<MentorBookingResponseDto>> {
+    const newBooking = await this.mentorsService.createScheduler(dto, req.user.userId);
+    this.bookingGateway.emitNewBooking();
     return newBooking;
   }
 
-  @Get()
-  async findAll(@Query() getMentors: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
-    return await this.mentorsService.getMentors(getMentors);
-  }
+  // @Get()
+  // async findAll(@Query() getMentors: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
+  //   return await this.mentorsService.getMentors(getMentors);
+  // }
 
-  @Get('available')
-  getAvailableMentors(@Query() query: GetAvailableMentorsDto) {
-    return this.mentorsService.getAvailableMentors(query);
-  }
+  // @Get('available')
+  // getAvailableMentors(@Query() query: GetAvailableMentorsDto) {
+  //   return this.mentorsService.getAvailableMentors(query);
+  // }
 
-  @Get('booked-slots')
-  async getBookedSlotsByMentor(@Query('mentorId') mentorId: string) {
-    return this.mentorsService.getGroupedBookedSlotsByMentor(mentorId);
-  }
+  // @Get('booked-slots')
+  // async getBookedSlotsByMentor(@Query('mentorId') mentorId: string) {
+  //   return this.mentorsService.getGroupedBookedSlotsByMentor(mentorId);
+  // }
 
   @Get('/stats')
   async getMentorStats(): Promise<ResponseItem<MentorStatsDto>> {
     return await this.mentorsService.getMentorStats();
   }
 
-  @Get('/mentees')
-  async getMentees(@Query() getMentees: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
-    return await this.mentorsService.getMenteesByMentorId(getMentees);
-  }
+  // @Get('/mentees')
+  // async getMentees(@Query() getMentees: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
+  //   return await this.mentorsService.getMenteesByMentorId(getMentees);
+  // }
 
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {

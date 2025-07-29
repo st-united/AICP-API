@@ -1,58 +1,93 @@
-// booking/booking.service.ts
 import { Injectable } from '@nestjs/common';
-import { FilterBookingDto } from './dto/filter-booking.dto';
+import { FilterBookingResponseItemDto } from './dto/filter-booking-response-item.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { MentorBookingStatus } from '@prisma/client';
+import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
+import { ResponseItem } from '@app/common/dtos';
+import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
 
 @Injectable()
 export class BookingService {
   constructor(private prisma: PrismaService) {}
 
-  async getAll(filter: FilterBookingDto) {
-    const { keyword, level, date, page = 1, limit = 10 } = filter;
+  async findAllWithFilter(dto: FilterMentorBookingRequestDto): Promise<ResponseItem<PaginatedBookingResponseDto>> {
+    const { name, level, dateStart, dateEnd, page = '1', limit = '10' } = dto;
 
-    const where: any = {
-      user: { deletedAt: null },
-    };
+    const take = Number(limit);
+    const skip = (Number(page) - 1) * take;
 
-    if (keyword) {
-      where.OR = [
-        { user: { fullName: { contains: keyword, mode: 'insensitive' } } },
-        { user: { email: { contains: keyword, mode: 'insensitive' } } },
-        { user: { phoneNumber: { contains: keyword, mode: 'insensitive' } } },
-      ];
+    const filters: any = {};
+
+    if (dateStart && dateEnd) {
+      filters.scheduledAt = {
+        gte: new Date(dateStart),
+        lte: new Date(dateEnd),
+      };
     }
 
     if (level) {
-      where.exam = { sfiaLevel: level };
+      filters.mentor = {
+        sfiaLevel: level,
+      };
     }
 
-    if (date) {
-      const from = new Date(date);
-      const to = new Date(date);
-      to.setHours(23, 59, 59, 999);
-      where.scheduledAt = { gte: from, lte: to };
-    }
+    const keywordFilter = name
+      ? {
+          OR: [
+            { interviewRequest: { user: { name: { contains: name, mode: 'insensitive' } } } },
+            { interviewRequest: { user: { email: { contains: name, mode: 'insensitive' } } } },
+            { interviewRequest: { user: { phone: { contains: name, mode: 'insensitive' } } } },
+          ],
+        }
+      : {};
 
-    const [data, total] = await this.prisma.$transaction([
+    const [records, total] = await this.prisma.$transaction([
       this.prisma.mentorBooking.findMany({
-        where,
-        include: {
-          user: true,
-          exam: true,
+        where: {
+          ...filters,
+          ...keywordFilter,
         },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { scheduledAt: 'asc' },
+        include: {
+          mentor: true,
+          interviewRequest: {
+            include: {
+              user: true,
+              exam: {
+                include: {
+                  examSet: true,
+                },
+              },
+            },
+          },
+        },
+        skip,
+        take,
       }),
-      this.prisma.mentorBooking.count({ where }),
+      this.prisma.mentorBooking.count({
+        where: {
+          ...filters,
+          ...keywordFilter,
+        },
+      }),
     ]);
 
+    const data: FilterBookingResponseItemDto[] = records.map((booking) => ({
+      name: booking.interviewRequest?.user?.fullName || '',
+      email: booking.interviewRequest?.user?.email || '',
+      phone: booking.interviewRequest?.user?.phoneNumber || '',
+      nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
+      level: booking.mentor?.sfiaLevel || '',
+      date: booking.interviewRequest.interviewDate.toISOString() || '',
+    }));
+
     return {
-      data,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
+      data: {
+        data,
+        total,
+        page: Number(page),
+        limit: take,
+        totalPages: Math.ceil(total / take),
+      },
+      message: 'Lấy danh sách thành công',
     };
   }
 }
