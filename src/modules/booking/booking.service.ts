@@ -17,11 +17,11 @@ export class BookingService {
 
     const filters: any = {};
 
-    if (dateStart && dateEnd) {
+    if (dateStart || dateEnd) {
       filters.interviewRequest = {
         interviewDate: {
-          gte: new Date(dateStart),
-          lte: new Date(dateEnd),
+          ...(dateStart && { gte: new Date(dateStart) }),
+          ...(dateEnd && { lte: new Date(dateEnd) }),
         },
       };
     }
