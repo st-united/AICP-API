@@ -276,12 +276,12 @@ export class AnswersService {
   }
 
   private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore <= 2) return SFIALevel.LEVEL_1_AWARENESS;
-    if (overallScore <= 3) return SFIALevel.LEVEL_2_FOUNDATION;
-    if (overallScore <= 4) return SFIALevel.LEVEL_3_APPLICATION;
-    if (overallScore <= 5) return SFIALevel.LEVEL_4_INTEGRATION;
-    if (overallScore <= 6) return SFIALevel.LEVEL_5_INNOVATION;
-    if (overallScore <= 7) return SFIALevel.LEVEL_6_LEADERSHIP;
+    if (overallScore < 2) return SFIALevel.LEVEL_1_AWARENESS;
+    if (overallScore < 3) return SFIALevel.LEVEL_2_FOUNDATION;
+    if (overallScore < 4) return SFIALevel.LEVEL_3_APPLICATION;
+    if (overallScore < 5) return SFIALevel.LEVEL_4_INTEGRATION;
+    if (overallScore < 6) return SFIALevel.LEVEL_5_INNOVATION;
+    if (overallScore < 7) return SFIALevel.LEVEL_6_LEADERSHIP;
     return SFIALevel.LEVEL_7_MASTERY;
   }
 

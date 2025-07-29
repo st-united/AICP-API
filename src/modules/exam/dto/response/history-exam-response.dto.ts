@@ -12,5 +12,11 @@ export class HistoryExamResponseDto {
   sfiaLevel: SFIALevel;
 
   @Expose()
+  attempt?: number;
+
+  @Expose()
+  isLatest?: boolean;
+
+  @Expose()
   createdAt: Date;
 }
