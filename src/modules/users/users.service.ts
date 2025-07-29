@@ -298,12 +298,13 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
-    const { email, referralCode, job, ...updateData } = updateUserDto;
+    const { email, referralCode, job, studentCode, ...updateData } = updateUserDto;
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+
     if (updateData.phoneNumber) {
       if (user.phoneNumber === updateData.phoneNumber) {
         delete updateData.phoneNumber;
@@ -322,6 +323,23 @@ export class UsersService {
           const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + user.id + ':' + user.phoneNumber;
           await this.redisService.deleteValue(otpKey);
         }
+      }
+    }
+
+    if (studentCode) {
+      if (user.studentCode !== studentCode) {
+        const studentCodeExisted = await this.prisma.user.findFirst({
+          where: {
+            studentCode,
+            id: { not: id },
+          },
+        });
+
+        if (studentCodeExisted) {
+          throw new BadRequestException('Mã sinh viên đã tồn tại');
+        }
+
+        updateData['studentCode'] = studentCode;
       }
     }
 
