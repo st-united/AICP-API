@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumberString } from 'class-validator';
+import { IsOptional, IsString, IsNumberString, IsArray } from 'class-validator';
 
 export class FilterMentorBookingRequestDto {
   @IsOptional()
@@ -6,8 +6,9 @@ export class FilterMentorBookingRequestDto {
   name?: string;
 
   @IsOptional()
-  @IsString()
-  level?: string;
+  @IsArray()
+  @IsString({ each: true })
+  level?: string[];
 
   @IsOptional()
   @IsString()

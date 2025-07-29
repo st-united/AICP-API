@@ -18,15 +18,19 @@ export class BookingService {
     const filters: any = {};
 
     if (dateStart && dateEnd) {
-      filters.scheduledAt = {
-        gte: new Date(dateStart),
-        lte: new Date(dateEnd),
+      filters.interviewRequest = {
+        interviewDate: {
+          gte: new Date(dateStart),
+          lte: new Date(dateEnd),
+        },
       };
     }
 
-    if (level) {
+    if (level && level.length > 0) {
       filters.mentor = {
-        sfiaLevel: level,
+        sfiaLevel: {
+          in: level,
+        },
       };
     }
 
