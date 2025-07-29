@@ -92,7 +92,7 @@ async function main() {
   });
 
   // 17. Mentor Bookings
-  await seedMentorBookings(prisma, userMap, mentors);
+  // await seedMentorBookings(prisma, userMap, mentors);
 
   // 18. User Answers
   await seedUserAnswers(prisma, userMap, questions, exams);
