@@ -3,6 +3,10 @@ import { IsOptional, IsString, IsDateString } from 'class-validator';
 export class FilterBookingResponseItemDto {
   @IsOptional()
   @IsString()
+  id?: string;
+
+  @IsOptional()
+  @IsString()
   name?: string;
 
   @IsOptional()
