@@ -13,10 +13,16 @@ import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto'
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
+import { BookingGateway } from '../booking/booking.gateway';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 
 @Controller('mentors')
 export class MentorsController {
-  constructor(private readonly mentorsService: MentorsService) {}
+  constructor(
+    private readonly mentorsService: MentorsService,
+    private readonly bookingGateway: BookingGateway
+  ) {}
 
   @Post()
   async create(@Body() createMentorDto: CreateMentorDto, @Req() req): Promise<ResponseItem<MentorResponseDto>> {
@@ -25,33 +31,18 @@ export class MentorsController {
   }
 
   @Post('create-scheduler')
-  async createScheduler(@Body() dto: CreateMentorBookingDto): Promise<SimpleResponse<MentorBookingResponseDto>> {
-    return await this.mentorsService.createScheduler(dto);
-  }
-
-  @Get()
-  async findAll(@Query() getMentors: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
-    return await this.mentorsService.getMentors(getMentors);
-  }
-
-  @Get('available')
-  getAvailableMentors(@Query() query: GetAvailableMentorsDto) {
-    return this.mentorsService.getAvailableMentors(query);
-  }
-
-  @Get('booked-slots')
-  async getBookedSlotsByMentor(@Query('mentorId') mentorId: string) {
-    return this.mentorsService.getGroupedBookedSlotsByMentor(mentorId);
+  async createScheduler(
+    @Req() req,
+    @Body() dto: CreateMentorBookingDto
+  ): Promise<ResponseItem<MentorBookingResponseDto>> {
+    const newBooking = await this.mentorsService.createScheduler(dto, req.user.userId);
+    this.bookingGateway.emitNewBooking();
+    return newBooking;
   }
 
   @Get('/stats')
   async getMentorStats(): Promise<ResponseItem<MentorStatsDto>> {
     return await this.mentorsService.getMentorStats();
-  }
-
-  @Get('/mentees')
-  async getMentees(@Query() getMentees: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
-    return await this.mentorsService.getMenteesByMentorId(getMentees);
   }
 
   @Get(':id')
@@ -78,5 +69,12 @@ export class MentorsController {
   async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req): Promise<ResponseItem<null>> {
     const url = req.headers.origin;
     return await this.mentorsService.deactivateMentorAccount(id, url);
+  }
+
+  @Get()
+  async getFilteredBookings(
+    @Query() dto: FilterMentorBookingDto
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    return this.mentorsService.getFilteredBookings(dto);
   }
 }

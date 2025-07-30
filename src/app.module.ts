@@ -17,6 +17,7 @@ import { ExamModule } from './modules/exam/exam.module';
 import { ZaloOtpModule } from './modules/zalo-otp/zalo-otp.module';
 import { DomainModule } from './modules/domain/domain.module';
 import { CoursesModule } from './modules/courses/courses.module';
+import { BookingModule } from './modules/booking/booking.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { CoursesModule } from './modules/courses/courses.module';
     ZaloOtpModule,
     DomainModule,
     CoursesModule,
+    BookingModule,
   ],
   providers: [
     {
