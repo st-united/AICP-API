@@ -15,9 +15,13 @@ import { GetMenteesDto } from './dto/request/get-mentees.dto';
 import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { plainToInstance } from 'class-transformer';
+import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
 
 @Injectable()
 export class MentorsService {
@@ -60,72 +64,6 @@ export class MentorsService {
     }
   }
 
-  // async getMentors(params: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
-  //   try {
-  //     const where: Prisma.MentorWhereInput = {
-  //       user: {
-  //         fullName: {
-  //           contains: params.search || '',
-  //           mode: Prisma.QueryMode.insensitive,
-  //         },
-  //       },
-  //     };
-
-  //     if (params.isActive !== undefined) {
-  //       where.isActive = params.isActive;
-  //     }
-
-  //     const [result, total] = await this.prisma.$transaction([
-  //       this.prisma.mentor.findMany({
-  //         where,
-  //         orderBy: { [params.orderBy]: params.order },
-  //         skip: params.skip,
-  //         take: params.take,
-  //         include: {
-  //           user: {
-  //             select: {
-  //               id: true,
-  //               fullName: true,
-  //               phoneNumber: true,
-  //               email: true,
-  //               status: true,
-  //             },
-  //           },
-  //           bookings: {
-  //             where: {
-  //               status: { in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED] },
-  //               scheduledAt: { gt: new Date() },
-  //             },
-  //             select: { id: true },
-  //           },
-  //           _count: {
-  //             select: {
-  //               bookings: {
-  //                 where: {
-  //                   status: MentorBookingStatus.COMPLETED,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       }),
-  //       this.prisma.mentor.count({ where }),
-  //     ]);
-
-  //     const mentorsWithStats = result.map(({ _count, bookings, ...rest }) => ({
-  //       ...rest,
-  //       completedCount: _count.bookings,
-  //       upcomingCount: bookings.length,
-  //     }));
-
-  //     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
-
-  //     return new ResponsePaginate(mentorsWithStats, pageMetaDto, 'Lấy danh sách mentor thành công');
-  //   } catch (error) {
-  //     throw new BadRequestException('Lỗi khi lấy danh sách mentor');
-  //   }
-  // }
-
   async getMentor(id: string): Promise<ResponseItem<MentorResponseDto>> {
     try {
       const mentor = await this.prisma.mentor.findUnique({
@@ -144,53 +82,6 @@ export class MentorsService {
       throw new BadRequestException('Lỗi khi lấy thông tin mentor');
     }
   }
-
-  // async getMenteesByMentorId(params: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
-  //   try {
-  //     const [bookings, total] = await this.prisma.$transaction([
-  //       this.prisma.mentorBooking.findMany({
-  //         where: {
-  //           mentorId: params.mentorId,
-  //           scheduledAt: {
-  //             gt: new Date(),
-  //           },
-  //           status: {
-  //             in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
-  //           },
-  //         },
-  //         select: {
-  //           scheduledAt: true,
-  //           user: {
-  //             select: {
-  //               id: true,
-  //               fullName: true,
-  //               email: true,
-  //             },
-  //           },
-  //         },
-  //       }),
-  //       this.prisma.mentorBooking.count({
-  //         where: {
-  //           mentorId: params.mentorId,
-  //           scheduledAt: {
-  //             gt: new Date(),
-  //           },
-  //         },
-  //       }),
-  //     ]);
-
-  //     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
-
-  //     const mentees = bookings.map((booking) => ({
-  //       ...booking.user,
-  //       scheduledAt: booking.scheduledAt,
-  //     }));
-
-  //     return new ResponsePaginate(mentees, pageMetaDto, 'Lấy danh sách mentee thành công');
-  //   } catch (error) {
-  //     throw new BadRequestException('Lỗi khi lấy danh sách mentee');
-  //   }
-  // }
 
   async getMentorStats(): Promise<ResponseItem<MentorStatsDto>> {
     try {
@@ -321,7 +212,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const interviewDate = new Date(dto.interviewDate);
 
@@ -405,5 +296,94 @@ export class MentorsService {
     } catch (error) {
       throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn', error.message);
     }
+  }
+
+  async getFilteredBookings(dto: FilterMentorBookingDto): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    const { keyword, level, status, dateStart, dateEnd, page = 1, limit = 10 } = dto;
+
+    const filters: any = {};
+
+    if (status) filters.status = status;
+
+    if (level) {
+      filters.interviewRequest = {
+        exam: {
+          level,
+        },
+      };
+    }
+
+    if (dateStart || dateEnd) {
+      filters.interviewRequest = {
+        ...(filters.interviewRequest || {}),
+        interviewDate: {},
+      };
+      if (dateStart) filters.interviewRequest.interviewDate.gte = new Date(dateStart);
+      if (dateEnd) filters.interviewRequest.interviewDate.lte = new Date(dateEnd);
+    }
+
+    const keywordFilter = keyword
+      ? {
+          interviewRequest: {
+            user: {
+              OR: [
+                { fullName: { contains: keyword, mode: 'insensitive' } },
+                { email: { contains: keyword, mode: 'insensitive' } },
+                { phone: { contains: keyword, mode: 'insensitive' } },
+              ],
+            },
+          },
+        }
+      : {};
+
+    const skip = (page - 1) * limit;
+
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.mentorBooking.findMany({
+        where: {
+          ...filters,
+          ...keywordFilter,
+        },
+        include: {
+          interviewRequest: {
+            include: {
+              user: true,
+              exam: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.mentorBooking.count({
+        where: {
+          ...filters,
+          ...keywordFilter,
+        },
+      }),
+    ]);
+
+    const data = records.map((booking) => ({
+      id: booking.id,
+      fullName: booking.interviewRequest.user.fullName,
+      email: booking.interviewRequest.user.email,
+      phone: booking.interviewRequest.user.phoneNumber,
+      interviewDate: booking.interviewRequest.interviewDate,
+      level: booking.interviewRequest.exam?.sfiaLevel,
+      status: booking.status,
+    }));
+
+    return new ResponseItem(
+      {
+        data: plainToInstance(MentorBookingResponseV2, data, {
+          excludeExtraneousValues: true,
+        }),
+        total,
+      },
+      'Lấy danh sách lịch phỏng vấn thành công'
+    );
   }
 }
