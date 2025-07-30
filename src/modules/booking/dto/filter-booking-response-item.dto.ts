@@ -7,6 +7,10 @@ export class FilterBookingResponseItemDto {
 
   @IsOptional()
   @IsString()
+  timeSlost?: string;
+
+  @IsOptional()
+  @IsString()
   name?: string;
 
   @IsOptional()

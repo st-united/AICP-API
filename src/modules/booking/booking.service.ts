@@ -81,6 +81,7 @@ export class BookingService {
 
     const data: FilterBookingResponseItemDto[] = records.map((booking) => ({
       id: booking.interviewRequest?.id || '',
+      timeSlost: booking.interviewRequest?.timeSlot || '',
       name: booking.interviewRequest?.user?.fullName || '',
       email: booking.interviewRequest?.user?.email || '',
       phone: booking.interviewRequest?.user?.phoneNumber || '',
