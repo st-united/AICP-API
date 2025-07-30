@@ -1,4 +1,4 @@
-import { PrismaClient, MentorBookingStatus } from '@prisma/client';
+import { PrismaClient, MentorBookingStatus, TimeSlotBooking } from '@prisma/client';
 
 export async function seedMentorBookings(
   prisma: PrismaClient,
@@ -24,7 +24,17 @@ export async function seedMentorBookings(
     return date;
   }
 
-  const timeSlots = ['AM_08_09', 'AM_09_10', 'AM_10_11', 'AM_11_12', 'PM_02_03', 'PM_03_04', 'PM_04_05', 'PM_05_06'];
+  const timeSlots = [
+    TimeSlotBooking.AM_08_09,
+    TimeSlotBooking.AM_09_10,
+    TimeSlotBooking.AM_10_11,
+    TimeSlotBooking.AM_11_12,
+    TimeSlotBooking.PM_02_03,
+    TimeSlotBooking.PM_03_04,
+    TimeSlotBooking.PM_04_05,
+    TimeSlotBooking.PM_05_06,
+  ];
+
   const statuses = [
     MentorBookingStatus.ACCEPTED,
     MentorBookingStatus.PENDING,
@@ -51,6 +61,7 @@ export async function seedMentorBookings(
           userId,
           examId,
           interviewDate: randomFutureDate(),
+          timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
         },
       });
 

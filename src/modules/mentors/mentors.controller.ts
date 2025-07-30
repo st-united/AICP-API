@@ -38,30 +38,10 @@ export class MentorsController {
     return newBooking;
   }
 
-  // @Get()
-  // async findAll(@Query() getMentors: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
-  //   return await this.mentorsService.getMentors(getMentors);
-  // }
-
-  // @Get('available')
-  // getAvailableMentors(@Query() query: GetAvailableMentorsDto) {
-  //   return this.mentorsService.getAvailableMentors(query);
-  // }
-
-  // @Get('booked-slots')
-  // async getBookedSlotsByMentor(@Query('mentorId') mentorId: string) {
-  //   return this.mentorsService.getGroupedBookedSlotsByMentor(mentorId);
-  // }
-
   @Get('/stats')
   async getMentorStats(): Promise<ResponseItem<MentorStatsDto>> {
     return await this.mentorsService.getMentorStats();
   }
-
-  // @Get('/mentees')
-  // async getMentees(@Query() getMentees: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
-  //   return await this.mentorsService.getMenteesByMentorId(getMentees);
-  // }
 
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {

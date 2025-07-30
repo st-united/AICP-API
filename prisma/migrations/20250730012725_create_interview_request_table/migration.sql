@@ -27,6 +27,7 @@ CREATE TABLE "InterviewRequest" (
     "user_id" UUID NOT NULL,
     "exam_id" UUID NOT NULL,
     "interview_date" TIMESTAMPTZ(6) NOT NULL,
+    "time _slot" "TimeSlotBooking" NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 

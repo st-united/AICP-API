@@ -8,7 +8,7 @@ import { UsersService } from '@UsersModule/users.service';
 import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { MentorBookingStatus, Prisma } from '@prisma/client';
+import { MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
 import { GetMenteesDto } from './dto/request/get-mentees.dto';
@@ -321,89 +321,56 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  // async getAvailableMentors(dto: GetAvailableMentorsDto) {
-  //   try {
-  //     const { search, scheduledDate, timeSlot, take, skip } = dto;
-
-  //     const whereClause: Prisma.MentorWhereInput = {
-  //       isActive: true,
-  //       user: {
-  //         deletedAt: { equals: null },
-  //         ...(search
-  //           ? {
-  //               fullName: {
-  //                 contains: search,
-  //                 mode: Prisma.QueryMode.insensitive,
-  //               },
-  //             }
-  //           : {}),
-  //       },
-  //       ...(scheduledDate && timeSlot
-  //         ? {
-  //             bookings: {
-  //               none: {
-  //                 scheduledAt: new Date(scheduledDate),
-  //                 timeSlot: timeSlot,
-  //               },
-  //             },
-  //           }
-  //         : {}),
-  //     };
-
-  //     const [mentors, total] = await this.prisma.$transaction([
-  //       this.prisma.mentor.findMany({
-  //         where: whereClause,
-  //         include: {
-  //           user: { select: { fullName: true, avatarUrl: true, id: true } },
-  //         },
-  //         take: parseInt(take),
-  //         skip: parseInt(skip),
-  //       }),
-  //       this.prisma.mentor.count({ where: whereClause }),
-  //     ]);
-
-  //     return { data: mentors, total };
-  //   } catch (error) {
-  //     this.logger.error(error);
-  //     throw new BadRequestException(error);
-  //   }
-  // }
-
-  // async getGroupedBookedSlotsByMentor(mentorId: string) {
-  //   try {
-  //     const bookings = await this.prisma.mentorBooking.findMany({
-  //       where: {
-  //         mentorId,
-  //         status: { in: ['PENDING', 'ACCEPTED', 'COMPLETED'] },
-  //       },
-  //       select: {
-  //         scheduledAt: true,
-  //         timeSlot: true,
-  //       },
-  //     });
-
-  //     const grouped = bookings.reduce<Record<string, string[]>>((acc, { scheduledAt, timeSlot }) => {
-  //       if (!timeSlot) return acc;
-  //       const date = scheduledAt.toISOString().split('T')[0];
-  //       acc[date] = acc[date] || [];
-  //       acc[date].push(timeSlot);
-  //       return acc;
-  //     }, {});
-
-  //     return new SimpleResponse(grouped, 'Lấy dữ liệu thành công');
-  //   } catch (error) {
-  //     this.logger.error(error);
-  //     throw new BadRequestException(error);
-  //   }
-  // }
-
   async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseDto>> {
     try {
+      const interviewDate = new Date(dto.interviewDate);
+
+      const mentors = await this.prisma.mentor.findMany({
+        where: { isActive: true },
+      });
+
+      const totalMentors = mentors.length;
+
+      const timeSlots = [
+        TimeSlotBooking.AM_08_09,
+        TimeSlotBooking.AM_09_10,
+        TimeSlotBooking.AM_10_11,
+        TimeSlotBooking.AM_11_12,
+        TimeSlotBooking.PM_02_03,
+        TimeSlotBooking.PM_03_04,
+        TimeSlotBooking.PM_04_05,
+        TimeSlotBooking.PM_05_06,
+      ];
+
+      let selectedSlot: TimeSlotBooking | null = null;
+
+      for (const slot of timeSlots) {
+        const bookingCount = await this.prisma.interviewRequest.count({
+          where: {
+            interviewDate: {
+              gte: new Date(interviewDate.setHours(0, 0, 0, 0)),
+              lt: new Date(interviewDate.setHours(23, 59, 59, 999)),
+            },
+            timeSlot: slot,
+          },
+        });
+
+        if (bookingCount < totalMentors) {
+          selectedSlot = slot;
+          break;
+        }
+      }
+
+      if (!selectedSlot) {
+        throw new BadRequestException('Tất cả khung giờ trong ngày đã đầy.');
+      }
+
       const booking = await this.prisma.interviewRequest.create({
         data: {
           userId,
           examId: dto.examId,
-          interviewDate: dto.interviewDate ? new Date(dto.interviewDate) : undefined,
+          interviewDate,
+          timeSlot: selectedSlot,
         },
       });
 

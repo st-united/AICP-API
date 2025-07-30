@@ -58,6 +58,7 @@ export async function seedInterviewRequest(
         userId: userId,
         examId: examId,
         interviewDate: new Date(),
+        timeSlot: bookingData.timeSlot,
       },
     });
   }
