@@ -382,6 +382,9 @@ export class MentorsService {
           excludeExtraneousValues: true,
         }),
         total,
+        page: Number(page),
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
       'Lấy danh sách lịch phỏng vấn thành công'
     );
