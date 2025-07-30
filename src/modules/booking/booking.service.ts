@@ -63,6 +63,11 @@ export class BookingService {
             },
           },
         },
+        orderBy: {
+          interviewRequest: {
+            interviewDate: 'desc',
+          },
+        },
         skip,
         take,
       }),
