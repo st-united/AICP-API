@@ -60,72 +60,6 @@ export class MentorsService {
     }
   }
 
-  // async getMentors(params: GetMentorsDto): Promise<ResponsePaginate<MentorResponseDto>> {
-  //   try {
-  //     const where: Prisma.MentorWhereInput = {
-  //       user: {
-  //         fullName: {
-  //           contains: params.search || '',
-  //           mode: Prisma.QueryMode.insensitive,
-  //         },
-  //       },
-  //     };
-
-  //     if (params.isActive !== undefined) {
-  //       where.isActive = params.isActive;
-  //     }
-
-  //     const [result, total] = await this.prisma.$transaction([
-  //       this.prisma.mentor.findMany({
-  //         where,
-  //         orderBy: { [params.orderBy]: params.order },
-  //         skip: params.skip,
-  //         take: params.take,
-  //         include: {
-  //           user: {
-  //             select: {
-  //               id: true,
-  //               fullName: true,
-  //               phoneNumber: true,
-  //               email: true,
-  //               status: true,
-  //             },
-  //           },
-  //           bookings: {
-  //             where: {
-  //               status: { in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED] },
-  //               scheduledAt: { gt: new Date() },
-  //             },
-  //             select: { id: true },
-  //           },
-  //           _count: {
-  //             select: {
-  //               bookings: {
-  //                 where: {
-  //                   status: MentorBookingStatus.COMPLETED,
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       }),
-  //       this.prisma.mentor.count({ where }),
-  //     ]);
-
-  //     const mentorsWithStats = result.map(({ _count, bookings, ...rest }) => ({
-  //       ...rest,
-  //       completedCount: _count.bookings,
-  //       upcomingCount: bookings.length,
-  //     }));
-
-  //     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
-
-  //     return new ResponsePaginate(mentorsWithStats, pageMetaDto, 'Lấy danh sách mentor thành công');
-  //   } catch (error) {
-  //     throw new BadRequestException('Lỗi khi lấy danh sách mentor');
-  //   }
-  // }
-
   async getMentor(id: string): Promise<ResponseItem<MentorResponseDto>> {
     try {
       const mentor = await this.prisma.mentor.findUnique({
@@ -144,53 +78,6 @@ export class MentorsService {
       throw new BadRequestException('Lỗi khi lấy thông tin mentor');
     }
   }
-
-  // async getMenteesByMentorId(params: GetMenteesDto): Promise<ResponsePaginate<MenteesByMentorIdDto>> {
-  //   try {
-  //     const [bookings, total] = await this.prisma.$transaction([
-  //       this.prisma.mentorBooking.findMany({
-  //         where: {
-  //           mentorId: params.mentorId,
-  //           scheduledAt: {
-  //             gt: new Date(),
-  //           },
-  //           status: {
-  //             in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
-  //           },
-  //         },
-  //         select: {
-  //           scheduledAt: true,
-  //           user: {
-  //             select: {
-  //               id: true,
-  //               fullName: true,
-  //               email: true,
-  //             },
-  //           },
-  //         },
-  //       }),
-  //       this.prisma.mentorBooking.count({
-  //         where: {
-  //           mentorId: params.mentorId,
-  //           scheduledAt: {
-  //             gt: new Date(),
-  //           },
-  //         },
-  //       }),
-  //     ]);
-
-  //     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: params });
-
-  //     const mentees = bookings.map((booking) => ({
-  //       ...booking.user,
-  //       scheduledAt: booking.scheduledAt,
-  //     }));
-
-  //     return new ResponsePaginate(mentees, pageMetaDto, 'Lấy danh sách mentee thành công');
-  //   } catch (error) {
-  //     throw new BadRequestException('Lỗi khi lấy danh sách mentee');
-  //   }
-  // }
 
   async getMentorStats(): Promise<ResponseItem<MentorStatsDto>> {
     try {
