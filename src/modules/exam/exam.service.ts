@@ -86,13 +86,26 @@ export class ExamService {
       const examSet = await this.prisma.examSet.findFirst({
         where: { name: 'AI INPUT TEST' },
       });
-      if (!examSet) throw new NotFoundException('Không tìm thấy bộ đề input test');
+
+      const where: any = {
+        userId: userId,
+        examSetId: examSet?.id,
+      };
+
+      if (historyExam.startDate || historyExam.endDate) {
+        where.createdAt = {};
+
+        if (historyExam.startDate) {
+          where.createdAt.gte = dayjs(historyExam.startDate).startOf('day').toDate();
+        }
+
+        if (historyExam.endDate) {
+          where.createdAt.lte = dayjs(historyExam.endDate).endOf('day').toDate();
+        }
+      }
 
       const exams = await this.prisma.exam.findMany({
-        where: {
-          userId: userId,
-          examSetId: examSet.id,
-        },
+        where,
         orderBy: {
           createdAt: 'desc',
         },
@@ -112,7 +125,7 @@ export class ExamService {
       const result = exams.map((exam, idx) => ({
         ...exam,
         attempt: idx + 1,
-        isLatest: idx === exams.length - 1,
+        isLatest: idx === 0,
       }));
 
       return new ResponseItem<HistoryExamResponseDto[]>(result, 'Lấy lịch sử thi thành công');
