@@ -4,7 +4,7 @@ metadata:
   name: aicp-api
 spec:
   serviceName: aicp-api
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: aicp-api
@@ -58,11 +58,11 @@ spec:
                 - ALL
           resources:
             requests:
-              memory: '128Mi'
-              cpu: '100m'
+              memory: '512Mi'
+              cpu: '500m'
             limits:
-              memory: '256Mi'
-              cpu: '200m'
+              memory: '1Gi'
+              cpu: '1'
       containers:
         - name: aicp-api
           image: asia-southeast1-docker.pkg.dev/enspara/aicp/aicp-api:0.2.15
@@ -97,11 +97,11 @@ spec:
                 - ALL
           resources:
             requests:
-              memory: 750Mi
-              cpu: '1'
+              memory: 1.5Gi
+              cpu: '1.5'
             limits:
-              memory: 1Gi
-              cpu: '2'
+              memory: 3Gi
+              cpu: '3'
       volumes:
         - name: firebase-service-key
           secret:
@@ -121,4 +121,4 @@ spec:
         storageClassName: standard-rwo
         resources:
           requests:
-            storage: 5Gi
+            storage: 20Gi

@@ -10,10 +10,24 @@ primary:
     enabled: true
     size: 8Gi
 
-resources:
-  requests:
-    memory: 512Mi
-    cpu: 250m
-  limits:
-    memory: 1Gi
-    cpu: 500m
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1
+    limits:
+      memory: 4Gi
+      cpu: 2
+
+backup:
+  enabled: true
+  cronjob:
+    schedule: '0 2 * * *'
+    historyLimit: 7
+    restartPolicy: OnFailure
+
+  persistence:
+    enabled: true
+    storageClass: 'standard-rwo'
+    size: 100Gi
+    accessModes:
+      - ReadWriteOnce
