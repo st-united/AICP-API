@@ -377,7 +377,7 @@ upgrade-postgres-prod:
 	helm upgrade postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
 			--version $(POSTGRES_CHART_VERSION) \
 			--namespace $(PROD_NAMESPACE) \
-			--values ./k8s/postgres/values-prod.yaml
+			--values ./k8s/postgres/values.yaml
 
 upgrade-redis-dev:
 	helm upgrade redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \

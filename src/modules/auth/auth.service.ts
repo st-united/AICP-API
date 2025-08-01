@@ -100,6 +100,13 @@ export class AuthService {
       throw new ForbiddenException('Bạn không có quyền truy cập trang quản trị');
     }
 
+    if (
+      clientType === ClientTypeEnum.WEB_USER &&
+      !userRoles.some((role: UserRoleEnum) => [UserRoleEnum.USER].includes(role))
+    ) {
+      throw new ForbiddenException('Bạn không có quyền truy cập trang người dùng');
+    }
+
     if (!refreshToken) {
       refreshToken = this.tokenService.generateRefreshToken(payload);
 
