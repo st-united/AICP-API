@@ -8,16 +8,21 @@ import { UsersService } from '@UsersModule/users.service';
 import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
+import { MentorBookingStatus, Prisma, SFIALevel, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
 import { GetMenteesDto } from './dto/request/get-mentees.dto';
 import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { plainToInstance } from 'class-transformer';
+import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
+import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @Injectable()
@@ -209,7 +214,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const exam = await this.prisma.exam.findUnique({
         where: { id: dto.examId },
@@ -344,5 +349,121 @@ export class MentorsService {
       this.logger.error('Error checking user interview request:', error);
       throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
     }
+  }
+
+  async getFilteredBookings(
+    dto: FilterMentorBookingDto,
+    mentorId: string
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    const { page = 1, limit = 10 } = dto;
+    const skip = (page - 1) * limit;
+
+    const mentor = await this.prisma.mentor.findUnique({
+      where: { userId: mentorId },
+      select: { id: true },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Mentor not found for this user');
+    }
+    const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
+
+    const [records, total] = await this.prisma.$transaction([
+      this.prisma.mentorBooking.findMany({
+        where,
+        include: {
+          interviewRequest: {
+            include: {
+              user: true,
+              exam: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.mentorBooking.count({
+        where,
+      }),
+    ]);
+
+    const data: MentorBookingResponseV2[] = records.map((booking) => ({
+      id: booking.id,
+      fullName: booking.interviewRequest.user.fullName,
+      email: booking.interviewRequest.user.email,
+      phoneNumber: booking.interviewRequest.user.phoneNumber,
+      interviewDate: booking.interviewRequest.interviewDate,
+      level: booking.interviewRequest.exam?.sfiaLevel,
+      status: booking.status,
+    }));
+    console.log(data);
+
+    return new ResponseItem(
+      {
+        data: plainToInstance(MentorBookingResponseV2, data, {
+          excludeExtraneousValues: true,
+        }),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      'Lấy danh sách lịch phỏng vấn thành công'
+    );
+  }
+
+  private buildWhereClause(filter: {
+    mentorId: string;
+    status?: MentorBookingStatus;
+    level?: string;
+    dateStart?: Date | string;
+    dateEnd?: Date | string;
+    keyword?: string;
+  }): Prisma.MentorBookingWhereInput {
+    const { mentorId, status, level, dateStart, dateEnd, keyword } = filter;
+
+    const where: Prisma.MentorBookingWhereInput = {
+      mentorId,
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (level || dateStart || dateEnd || keyword) {
+      where.interviewRequest = {};
+
+      if (level) {
+        where.interviewRequest.exam = {
+          sfiaLevel: {
+            equals: level as SFIALevel,
+          },
+        };
+      }
+
+      if (dateStart || dateEnd) {
+        where.interviewRequest.interviewDate = {};
+        if (dateStart) {
+          where.interviewRequest.interviewDate.gte = new Date(dateStart);
+        }
+        if (dateEnd) {
+          where.interviewRequest.interviewDate.lte = new Date(dateEnd);
+        }
+      }
+
+      if (keyword) {
+        where.interviewRequest.user = {
+          OR: [
+            { fullName: { contains: keyword, mode: 'insensitive' } },
+            { email: { contains: keyword, mode: 'insensitive' } },
+            { phoneNumber: { contains: keyword, mode: 'insensitive' } },
+          ],
+        };
+      }
+    }
+    return where;
   }
 }
