@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseUUIDPipe,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
@@ -16,6 +28,7 @@ import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 
 @Controller('mentors')
 export class MentorsController {
@@ -31,6 +44,7 @@ export class MentorsController {
   }
 
   @Post('create-scheduler')
+  @UseGuards(JwtAccessTokenGuard)
   async createScheduler(
     @Req() req,
     @Body() dto: CreateMentorBookingDto
@@ -72,9 +86,11 @@ export class MentorsController {
   }
 
   @Get()
+  @UseGuards(JwtAccessTokenGuard)
   async getFilteredBookings(
+    @Req() req: any,
     @Query() dto: FilterMentorBookingDto
   ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
-    return this.mentorsService.getFilteredBookings(dto);
+    return this.mentorsService.getFilteredBookings(dto, req.user.userId);
   }
 }
