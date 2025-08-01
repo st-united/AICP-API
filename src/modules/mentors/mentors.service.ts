@@ -23,6 +23,7 @@ import { plainToInstance } from 'class-transformer';
 import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
 import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @Injectable()
 export class MentorsService {
@@ -215,7 +216,14 @@ export class MentorsService {
 
   async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
-      const interviewDate = new Date(dto.interviewDate);
+      const exam = await this.prisma.exam.findUnique({
+        where: { id: dto.examId },
+      });
+
+      if (!exam) {
+        throw new BadRequestException('Đề thi không tồn tại');
+      }
+      const interviewDate = dto.interviewDate ? new Date(dto.interviewDate) : new Date();
 
       const mentors = await this.prisma.mentor.findMany({
         where: { isActive: true },
@@ -272,6 +280,7 @@ export class MentorsService {
       throw new BadRequestException(error);
     }
   }
+
   async activateAccountByMentor(token: string, url: string): Promise<ResponseItem<null>> {
     try {
       const redisToken = await this.redisService.getValue(`active_mentor:${token}`);
@@ -299,6 +308,49 @@ export class MentorsService {
     }
   }
 
+  async checkUserInterviewRequest(userId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    try {
+      if (!userId) {
+        throw new BadRequestException('User ID is required');
+      }
+      const interviewRequest = await this.prisma.interviewRequest.findFirst({
+        where: {
+          userId: userId,
+        },
+        select: {
+          id: true,
+          interviewDate: true,
+          timeSlot: true,
+          examId: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const response: CheckInterviewRequestResponseDto = {
+        hasInterviewRequest: !!interviewRequest,
+        interviewRequest: interviewRequest
+          ? {
+              id: interviewRequest.id,
+              interviewDate: interviewRequest.interviewDate,
+              timeSlot: interviewRequest.timeSlot,
+              examId: interviewRequest.examId,
+            }
+          : undefined,
+      };
+
+      return new ResponseItem(
+        response,
+        interviewRequest ? 'Người dùng đã có lịch phỏng vấn' : 'Người dùng chưa có lịch phỏng vấn',
+        CheckInterviewRequestResponseDto
+      );
+    } catch (error) {
+      this.logger.error('Error checking user interview request:', error);
+      throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
+    }
+  }
+
   async getFilteredBookings(
     dto: FilterMentorBookingDto,
     mentorId: string
@@ -315,7 +367,6 @@ export class MentorsService {
       throw new NotFoundException('Mentor not found for this user');
     }
     const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
-    console.log('Where:', where);
 
     const [records, total] = await this.prisma.$transaction([
       this.prisma.mentorBooking.findMany({

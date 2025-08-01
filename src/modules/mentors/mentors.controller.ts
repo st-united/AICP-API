@@ -14,20 +14,18 @@ import {
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { GetMentorsDto } from './dto/request/get-mentors.dto';
-import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseItem } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { GetMenteesDto } from './dto/request/get-mentees.dto';
-import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
-import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 
 @Controller('mentors')
@@ -43,6 +41,7 @@ export class MentorsController {
     return await this.mentorsService.create(createMentorDto, url);
   }
 
+  @UseGuards(JwtAccessTokenGuard)
   @Post('create-scheduler')
   @UseGuards(JwtAccessTokenGuard)
   async createScheduler(
@@ -92,5 +91,25 @@ export class MentorsController {
     @Query() dto: FilterMentorBookingDto
   ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
     return this.mentorsService.getFilteredBookings(dto, req.user.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('check-interview-request')
+  @ApiOperation({ summary: 'Check if user has an interview request' })
+  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid user ID or error checking interview request' })
+  async checkUserInterviewRequest(
+    @Body() checkInterviewRequestDto: CheckInterviewRequestDto
+  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(checkInterviewRequestDto.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('check-my-interview-request')
+  @ApiOperation({ summary: 'Check if current user has an interview request' })
+  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
+  @ApiResponse({ status: 400, description: 'Error checking interview request' })
+  async checkMyInterviewRequest(@Req() req): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(req.user.userId);
   }
 }

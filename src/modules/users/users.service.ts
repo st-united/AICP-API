@@ -28,7 +28,7 @@ import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { Prisma, User, UserTrackingStatus } from '@prisma/client';
+import { Prisma, User, UserTrackingStatus, MentorBookingStatus, TimeSlotBooking } from '@prisma/client';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
@@ -43,6 +43,7 @@ import {
 import { Response } from 'express';
 import * as sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
+
 @Injectable()
 export class UsersService {
   constructor(
