@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
+import { InterviewRequestStatus } from '@prisma/client';
 
 @Injectable()
 export class BookingService {
@@ -47,6 +48,7 @@ export class BookingService {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.mentorBooking.findMany({
         where: {
+          status: InterviewRequestStatus.PENDING,
           ...filters,
           ...keywordFilter,
         },
