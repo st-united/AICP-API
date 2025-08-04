@@ -16,6 +16,7 @@ import { ExamSetsModule } from './modules/exam-sets/exam-sets.module';
 import { ExamModule } from './modules/exam/exam.module';
 import { ZaloOtpModule } from './modules/zalo-otp/zalo-otp.module';
 import { DomainModule } from './modules/domain/domain.module';
+import { BookingModule } from './modules/booking/booking.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { DomainModule } from './modules/domain/domain.module';
     ExamModule,
     ZaloOtpModule,
     DomainModule,
+    BookingModule,
   ],
   providers: [
     {
