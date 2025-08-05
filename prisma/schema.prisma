@@ -718,3 +718,9 @@ enum TestTrackingStatus {
   INTERVIEW_COMPLETED
   RESULT_EVALUATED
 }
+
+enum SlotStatus {
+  AVAILABLE
+  ALMOST_FULL
+  FULL 
+}
