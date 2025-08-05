@@ -10,6 +10,7 @@ import { RedisModule } from '../redis/redis.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
+import { BookingModule } from '../booking/booking.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PassportModule } from '@nestjs/passport';
     EmailModule,
     RedisModule,
     ConfigModule,
+    BookingModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

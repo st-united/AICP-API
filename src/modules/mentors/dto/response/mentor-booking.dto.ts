@@ -25,34 +25,14 @@ export class MentorBookingResponseDto {
   id: string;
 
   @Expose()
-  mentorId: string;
+  examId: string;
 
   @Expose()
   userId: string;
-
-  @Expose()
-  timeSlot: string;
-
-  @Expose()
-  scheduledAt: Date;
-
-  @Expose()
-  status: string;
-
-  @Expose()
-  notes: string | null;
 
   @Expose()
   createdAt: Date;
 
   @Expose()
   updatedAt: Date;
-
-  @Expose()
-  @Transform(({ obj }) => `AICP${new Date(obj.scheduledAt).getTime()}`)
-  codeOrder: string;
-
-  @Expose()
-  @Type(() => MentorDto)
-  mentor: MentorDto;
 }
