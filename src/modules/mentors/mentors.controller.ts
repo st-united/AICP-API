@@ -25,6 +25,8 @@ import { CheckInterviewRequestDto } from './dto/request/check-interview-request.
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 
 @Controller('mentors')
 export class MentorsController {
@@ -99,5 +101,12 @@ export class MentorsController {
   @ApiResponse({ status: 400, description: 'Error checking interview request' })
   async checkMyInterviewRequest(@Req() req): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     return await this.mentorsService.checkUserInterviewRequest(req.user.userId);
+  }
+
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    this.bookingGateway.emitNewBooking();
+    return result;
   }
 }
