@@ -368,6 +368,7 @@ model InterviewRequest {
   examId        String     @map("exam_id") @db.Uuid
   interviewDate DateTime    @map("interview_date") @db.Timestamptz(6) 
   timeSlot      TimeSlotBooking  @map("time _slot") 
+  status        InterviewRequestStatus @default(PENDING)
   createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -626,6 +627,11 @@ enum MentorBookingStatus {
   REJECTED
   CANCELLED
   COMPLETED
+}
+
+enum InterviewRequestStatus {
+  PENDING   
+  ASSIGNED  
 }
 
 enum CognitiveLoad {
