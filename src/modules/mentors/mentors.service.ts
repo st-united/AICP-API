@@ -296,8 +296,8 @@ export class MentorsService {
     }
   }
 
-  async assignMentorToRequests(dto: AssignMentorDto): Promise<ResponseItem<AssignMentorResultDto>> {
-    const { mentorId, interviewRequestIds } = dto;
+  async assignMentorToRequests(dto: AssignMentorDto, mentorId: string): Promise<ResponseItem<AssignMentorResultDto>> {
+    const { interviewRequestIds } = dto;
 
     const mentor = await this.prisma.mentor.findUnique({
       where: { id: mentorId },
