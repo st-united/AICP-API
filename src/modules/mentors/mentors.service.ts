@@ -348,12 +348,13 @@ export class MentorsService {
     }
   }
 
-  async assignMentorToRequests(dto: AssignMentorDto, mentorId: string): Promise<ResponseItem<AssignMentorResultDto>> {
+  async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
     const { interviewRequestIds } = dto;
 
     const mentor = await this.prisma.mentor.findUnique({
-      where: { id: mentorId },
+      where: { userId },
     });
+
     if (!mentor) {
       throw new NotFoundException('Không tìm thấy mentor');
     }
@@ -373,7 +374,7 @@ export class MentorsService {
 
     const existingBookings = await this.prisma.mentorBooking.findMany({
       where: {
-        mentorId,
+        mentorId: mentor.id,
         interviewRequestId: { in: validRequestIds },
       },
       select: { interviewRequestId: true },
@@ -387,8 +388,6 @@ export class MentorsService {
       return {
         message: 'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.',
         data: {
-          created: 0,
-          skipped: interviewRequestIds.length,
           bookings: [],
         },
       };
@@ -398,7 +397,7 @@ export class MentorsService {
       ...toCreate.map((requestId) =>
         this.prisma.mentorBooking.create({
           data: {
-            mentorId,
+            mentorId: mentor.id,
             interviewRequestId: requestId,
           },
           select: {
@@ -431,10 +430,8 @@ export class MentorsService {
     }[];
 
     return {
-      message: 'Đã chỉ định cố vấn thành công',
+      message: 'Yêu cầu phỏng vấn đã được nhận',
       data: {
-        created: bookings.length,
-        skipped: interviewRequestIds.length - bookings.length,
         bookings,
       },
     };
