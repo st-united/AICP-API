@@ -24,12 +24,4 @@ export class MentorBookingResponseDto {
 
   @Expose()
   status: string;
-
-  @Expose()
-  stats: {
-    total: number;
-    past: number;
-    upcoming: number;
-    absent: number;
-  };
 }

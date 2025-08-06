@@ -371,8 +371,8 @@ export class MentorsService {
     const stats = {
       total,
       upcoming,
-      past: completed,
-      absent: notJoined,
+      completed,
+      notJoined,
     };
 
     const data: MentorBookingResponseV2[] = records.map((booking) => ({
@@ -384,9 +384,7 @@ export class MentorsService {
       nameExamSet: booking.interviewRequest.exam?.examSet?.name,
       level: booking.interviewRequest.exam?.sfiaLevel,
       status: booking.status,
-      stats,
     }));
-    console.log(data);
 
     return new ResponseItem(
       {
