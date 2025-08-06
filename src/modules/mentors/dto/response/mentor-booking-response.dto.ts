@@ -17,8 +17,19 @@ export class MentorBookingResponseDto {
   interviewDate: Date;
 
   @Expose()
+  nameExamSet: string;
+
+  @Expose()
   level: string;
 
   @Expose()
   status: string;
+
+  @Expose()
+  stats: {
+    total: number;
+    past: number;
+    upcoming: number;
+    absent: number;
+  };
 }

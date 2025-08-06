@@ -344,7 +344,7 @@ model MentorBooking {
   id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   interviewRequestId String       @map("interview_request_id") @db.Uuid
   mentorId    String              @map("mentor_id") @db.Uuid
-  status      MentorBookingStatus @default(PENDING)
+  status      MentorBookingStatus @default(UPCOMING)
   notes       String?             @db.Text
   pillarFocus String?             @map("competency_focus") @db.Uuid
   createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -614,11 +614,9 @@ enum QuestionType {
 }
 
 enum MentorBookingStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  CANCELLED
-  COMPLETED
+  UPCOMING 
+  COMPLETED 
+  NOT_JOINED 
 }
 
 enum CognitiveLoad {
