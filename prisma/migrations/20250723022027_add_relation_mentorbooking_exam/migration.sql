@@ -5,7 +5,7 @@
 
 */
 -- AlterTable
-ALTER TABLE "MentorBooking" ADD COLUMN     "exam_id" UUID NOT NULL;
+ALTER TABLE "MentorBooking" ADD COLUMN     "exam_id" UUID;
 
 -- AddForeignKey
 ALTER TABLE "MentorBooking" ADD CONSTRAINT "MentorBooking_exam_id_fkey" FOREIGN KEY ("exam_id") REFERENCES "Exam"("id") ON DELETE CASCADE ON UPDATE CASCADE;
