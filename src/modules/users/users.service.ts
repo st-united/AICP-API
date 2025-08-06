@@ -299,7 +299,7 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
-    const { email, referralCode, job, studentCode, ...updateData } = updateUserDto;
+    const { email, referralCode, job, isStudent, studentCode, university, ...updateData } = updateUserDto;
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
@@ -327,21 +327,37 @@ export class UsersService {
       }
     }
 
-    if (studentCode) {
-      if (user.studentCode !== studentCode) {
-        const studentCodeExisted = await this.prisma.user.findFirst({
-          where: {
-            studentCode,
-            id: { not: id },
-          },
-        });
+    if (isStudent) {
+      if (studentCode) {
+        if (user.studentCode !== studentCode) {
+          const studentCodeExisted = await this.prisma.user.findFirst({
+            where: {
+              studentCode,
+              id: { not: id }, // loại trừ chính user hiện tại
+            },
+          });
 
-        if (studentCodeExisted) {
-          throw new BadRequestException('Mã sinh viên đã tồn tại');
+          if (studentCodeExisted) {
+            throw new BadRequestException('Mã sinh viên đã tồn tại');
+          }
+
+          updateData['studentCode'] = studentCode;
         }
-
-        updateData['studentCode'] = studentCode;
+      } else {
+        throw new BadRequestException('Mã sinh viên là bắt buộc khi isStudent = true');
       }
+
+      if (university) {
+        updateData['university'] = university;
+      } else {
+        throw new BadRequestException('Tên trường là bắt buộc khi isStudent = true');
+      }
+
+      updateData['isStudent'] = true;
+    } else {
+      updateData['isStudent'] = false;
+      updateData['studentCode'] = null;
+      updateData['university'] = null;
     }
 
     const updateDataWithJob: any = { ...updateData };
