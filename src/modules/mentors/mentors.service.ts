@@ -158,7 +158,7 @@ export class MentorsService {
             bookings: {
               where: {
                 status: {
-                  in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+                  in: [MentorBookingStatus.UPCOMING],
                 },
               },
             },
@@ -368,14 +368,22 @@ export class MentorsService {
     }
     const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
 
-    const [records, total] = await this.prisma.$transaction([
+    const [records, total, upcoming, completed, notJoined] = await this.prisma.$transaction([
       this.prisma.mentorBooking.findMany({
         where,
         include: {
           interviewRequest: {
             include: {
               user: true,
-              exam: true,
+              exam: {
+                include: {
+                  examSet: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -388,7 +396,35 @@ export class MentorsService {
       this.prisma.mentorBooking.count({
         where,
       }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: 'UPCOMING',
+        },
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: 'COMPLETED',
+        },
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: 'NOT_JOINED',
+        },
+      }),
     ]);
+
+    const stats = {
+      total,
+      upcoming,
+      completed,
+      notJoined,
+    };
 
     const data: MentorBookingResponseV2[] = records.map((booking) => ({
       id: booking.id,
@@ -396,10 +432,10 @@ export class MentorsService {
       email: booking.interviewRequest.user.email,
       phoneNumber: booking.interviewRequest.user.phoneNumber,
       interviewDate: booking.interviewRequest.interviewDate,
+      nameExamSet: booking.interviewRequest.exam?.examSet?.name,
       level: booking.interviewRequest.exam?.sfiaLevel,
       status: booking.status,
     }));
-    console.log(data);
 
     return new ResponseItem(
       {
@@ -410,6 +446,7 @@ export class MentorsService {
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+        stats,
       },
       'Lấy danh sách lịch phỏng vấn thành công'
     );
