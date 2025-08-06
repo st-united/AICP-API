@@ -8,8 +8,6 @@
   - Added the required column `interview_request_id` to the `MentorBooking` table without a default value. This is not possible if the table is not empty.
 
 */
--- DropForeignKey
-ALTER TABLE "MentorBooking" DROP CONSTRAINT "MentorBooking_exam_id_fkey";
 
 -- DropForeignKey
 ALTER TABLE "MentorBooking" DROP CONSTRAINT "MentorBooking_user_id_fkey";
