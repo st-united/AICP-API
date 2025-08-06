@@ -269,7 +269,7 @@ export class MentorsService {
         },
       });
 
-      return new ResponseItem(booking, 'Đặt lịch thành công!');
+      return new ResponseItem(null, 'Đặt lịch thành công!');
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException(error);
