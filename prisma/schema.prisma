@@ -335,7 +335,7 @@ model InterviewRequest {
   userId        String          @map("user_id") @db.Uuid
   examId        String          @map("exam_id") @db.Uuid
   interviewDate DateTime        @map("interview_date") @db.Timestamptz(6)
-  timeSlot     TimeSlotBooking @map("time_slot")
+  timeSlot      TimeSlotBooking @map("time_slot")
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
@@ -679,5 +679,5 @@ enum TestTrackingStatus {
 enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
-  FULL 
+  FULL
 }
