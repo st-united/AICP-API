@@ -157,11 +157,11 @@ export class BookingService {
         date: day,
         morning: {
           slot: morningRemaining,
-          status: this.getSlotStatus(morningRemaining, totalMentors * morningSlots.length),
+          status: null,
         },
         afternoon: {
           slot: afternoonRemaining,
-          status: this.getSlotStatus(afternoonRemaining, totalMentors * afternoonSlots.length),
+          status: null,
         },
       });
     }
