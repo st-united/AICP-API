@@ -13,7 +13,7 @@ export class BookingGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly bookingService: BookingService) {}
+  constructor(public readonly bookingService: BookingService) {}
 
   @SubscribeMessage('getUserBookings')
   async handleGetUserBookings(@MessageBody() filter: FilterMentorBookingRequestDto) {

@@ -34,3 +34,8 @@ export enum ClientTypeEnum {
   WEB_ADMIN = 'web-admin',
   WEB_USER = 'web-user',
 }
+
+export enum InterviewShift {
+  MORNING = 'MORNING',
+  AFTERNOON = 'AFTERNOON',
+}

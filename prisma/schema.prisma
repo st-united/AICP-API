@@ -42,7 +42,6 @@ model User {
   userAnswer         UserAnswer[]
   userAssessment     CompetencyAssessment[] @relation("UserAssessment")
   assessorAssessment CompetencyAssessment[] @relation("AssessorAssessment")
-  InterviewRequest   InterviewRequest[]
   learningPath       LearningPath[]
   mentor             Mentor?
   userPortfolio      Portfolio?             @relation("UserPortfolio")
@@ -346,14 +345,12 @@ model MentorBooking {
 
 model InterviewRequest {
   id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String          @map("user_id") @db.Uuid
   examId        String          @map("exam_id") @db.Uuid
   interviewDate DateTime        @map("interview_date") @db.Timestamptz(6)
-  timeSlot     TimeSlotBooking @map("time_slot")
+  timeSlot      TimeSlotBooking @map("time_slot")
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   MentorBooking MentorBooking[]
 }
 
@@ -702,5 +699,5 @@ enum ExamSetStatus {
 enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
-  FULL 
+  FULL
 }
