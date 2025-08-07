@@ -142,28 +142,24 @@ export class BookingService {
       const startOfDay = new Date(`${day}T00:00:00.000Z`);
       const endOfDay = new Date(startOfDay);
       endOfDay.setDate(endOfDay.getDate() + 1);
-      const requests = await this.prisma.mentorBooking.findMany({
+      const requests = await this.prisma.interviewRequest.findMany({
         where: {
-          interviewRequest: {
-            interviewDate: {
-              gte: startOfDay,
-              lt: endOfDay,
-            },
+          interviewDate: {
+            gte: startOfDay,
+            lt: endOfDay,
           },
         },
         select: {
-          interviewRequest: {
-            select: { timeSlot: true, interviewDate: true },
-          },
+          timeSlot: true,
+          interviewDate: true,
         },
       });
-
       let usedMorning = 0;
       let usedAfternoon = 0;
 
       for (const req of requests) {
-        if (morningSlots.includes(req.interviewRequest.timeSlot)) usedMorning++;
-        else if (afternoonSlots.includes(req.interviewRequest.timeSlot)) usedAfternoon++;
+        if (morningSlots.includes(req.timeSlot)) usedMorning++;
+        else if (afternoonSlots.includes(req.timeSlot)) usedAfternoon++;
       }
 
       const morningRemaining = Math.max(0, morningTotal - usedMorning);
