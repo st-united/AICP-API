@@ -1946,6 +1946,300 @@ export async function seedQuestions(prisma: PrismaClient, levels: Level[], compe
     },
   ];
 
+  const AI = [
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Khi AI bắt đầu được sử dụng rộng rãi trong ngành nghề của bạn, đâu sẽ là cách phát triển sự nghiệp hiệu quả nhất?',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        {
+          content: 'Chuyển sang ngành khác để tránh cạnh tranh với AI',
+          isCorrect: false,
+        },
+        {
+          content: 'Chuyên sâu vào các kỹ năng mà AI khó thay thế như tư duy sáng tạo hoặc liên quan đến cảm xúc',
+          isCorrect: false,
+        },
+        {
+          content: 'Phát triển kỹ năng kết hợp: chuyên môn cốt lõi + khả năng cộng tác với AI',
+          isCorrect: true,
+        },
+        {
+          content: 'Tập trung hoàn toàn vào việc trở thành chuyên gia về AI',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.MULTIPLE_CHOICE,
+      content:
+        'Khi công ty bạn triển khai công cụ AI mới cho nhóm phát triển, hành động nào sau đây thể hiện bạn có tư duy học hỏi và sẵn sàng thích nghi?',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Tự thử nghiệm với công cụ trong dự án cá nhân trước khi áp dụng chính thức',
+          isCorrect: true,
+        },
+        {
+          content: 'Đợi khóa đào tạo chính thức từ nhân sự để đảm bảo không mắc lỗi',
+          isCorrect: false,
+        },
+        {
+          content: 'Tạo nhóm thảo luận với đồng nghiệp để chia sẻ phương pháp hiệu quả',
+          isCorrect: true,
+        },
+        {
+          content: 'Ghi chú lại những điều đã học được và rút kinh nghiệm từ những lần sai sót',
+          isCorrect: true,
+        },
+        {
+          content: 'Chỉ sử dụng những tính năng được khuyến nghị trong hướng dẫn',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Sau một năm học cách dùng AI để hỗ trợ công việc, bạn thấy rằng kỹ năng viết prompt (câu lệnh) của mình không còn hiệu quả với phiên bản AI mới. Phản ứng này cho thấy điều gì?',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Khả Năng Thích Ứng & Tư Duy Phát Triển',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Bạn đã học sai phương pháp từ đầu và cần học lại hoàn toàn',
+          isCorrect: false,
+        },
+        {
+          content: 'AI phát triển nhanh đòi hỏi việc học tập và thích ứng liên tục',
+          isCorrect: true,
+        },
+        {
+          content: 'Nên gắn bó với công cụ cũ vì đã quen thuộc, thay đổi nhiều sẽ phản tác dụng',
+          isCorrect: false,
+        },
+        {
+          content: 'Đã đến lúc chuyển trọng tâm sang các kỹ năng không dùng AI để tránh phụ thuộc',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.MULTIPLE_CHOICE,
+      content: 'Để phát triển hiểu biết về AI hiệu quả cho sự nghiệp dài hạn, bạn nên ưu tiên những gì?',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Tự Học & Cải Tiến Liên Tục',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Hiểu các khái niệm cơ bản thay vì chỉ học kỹ năng sử dụng công cụ cụ thể',
+          isCorrect: true,
+        },
+        {
+          content: 'Tập trung vào các công cụ thịnh hành được nhắc đến nhiều trên mạng xã hội',
+          isCorrect: false,
+        },
+        {
+          content: 'Thực hành trực tiếp với các dự án thực tế thay vì chỉ học lý thuyết',
+          isCorrect: true,
+        },
+        {
+          content: 'Xây dựng mạng lưới với những người thực hành AI để trao đổi hiểu biết',
+          isCorrect: true,
+        },
+        {
+          content: 'Đợi các tiêu chuẩn ngành ổn định rồi mới bắt đầu học nghiêm túc',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Khi công cụ AI bạn đang sử dụng bất ngờ ngừng hoạt động, phản ứng nào cho thấy tư duy cải tiến liên tục tốt nhất?',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Tự Học & Cải Tiến Liên Tục (Level 2)',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        {
+          content: 'Gắn bó với quy trình cũ và chờ công cụ phục hồi để duy trì tính nhất quán',
+          isCorrect: false,
+        },
+        {
+          content: 'Nhanh chóng tìm hiểu các lựa chọn thay thế và điều chỉnh quy trình để giảm thiểu gián đoạn',
+          isCorrect: true,
+        },
+        {
+          content: 'Báo cáo lên quản lý để công ty xử lý việc chuyển đổi công cụ cho toàn nhóm',
+          isCorrect: false,
+        },
+        {
+          content: 'Coi đây là cơ hội để loại bỏ hoàn toàn sự phụ thuộc vào AI',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Trợ lý nghiên cứu AI cung cấp cho bạn dữ liệu thống kê với độ tin cậy 95%. Cách diễn giải chính xác nhất là:',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Tư Duy Phản Biện & Đạo Đức (Level 3)',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Dữ liệu này đáng tin cậy cho mọi bối cảnh vì có độ tin cậy cao',
+          isCorrect: false,
+        },
+        {
+          content: 'Dữ liệu có tính hợp lệ thống kê nhưng cần xác minh khả năng áp dụng cho trường hợp cụ thể',
+          isCorrect: true,
+        },
+        {
+          content: 'Chỉ sử dụng dữ liệu này như bằng chứng hỗ trợ, không làm luận điểm chính',
+          isCorrect: false,
+        },
+        {
+          content: 'Độ tin cậy 95% có nghĩa là có 5% khả năng dữ liệu này hoàn toàn sai',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.MULTIPLE_CHOICE,
+      content:
+        'Trong một dự án nhóm, bạn phát hiện nội dung do AI tạo ra có những sai sót tinh vi về mặt sự thật. Những phản ứng nào sau đây được xem là phù hợp về mặt đạo đức?',
+      level: SFIALevel.LEVEL_4_INTEGRATION,
+      competentcySkillName: 'Tư Duy Phản Biện & Đạo Đức (Level 4)',
+      estimatedTimeMinutes: 4,
+      difficultyWeight: 4,
+      answerOptions: [
+        {
+          content: 'Kiểm tra sự thật và sửa chữa các sai sót trước khi nộp bài',
+          isCorrect: true,
+        },
+        {
+          content: 'Thông báo với các thành viên nhóm về hạn chế của nội dung do AI tạo ra',
+          isCorrect: true,
+        },
+        {
+          content: 'Giữ im lặng để tránh làm chậm tiến độ dự án',
+          isCorrect: false,
+        },
+        {
+          content: 'Ghi chép việc sử dụng AI và quy trình xác minh trong báo cáo dự án',
+          isCorrect: true,
+        },
+        {
+          content: 'Thay thế hoàn toàn bằng nội dung do con người tạo ra để đảm bảo độ chính xác',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.SINGLE_CHOICE,
+      content:
+        'Khi chatbot AI đưa ra lời khuyên về tài chính cá nhân cho sinh viên, vấn đề nào đòi hỏi phải xác minh với con người ngay lập tức?',
+      level: SFIALevel.LEVEL_2_FOUNDATION,
+      competentcySkillName: 'Tư Duy Phản Biện & Đạo Đức (Level 2)',
+      estimatedTimeMinutes: 2,
+      difficultyWeight: 2,
+      answerOptions: [
+        {
+          content: 'Lời khuyên mang tính chung chung và không cụ thể cho tình huống của bạn',
+          isCorrect: false,
+        },
+        {
+          content: 'Khuyến nghị liên quan đến đầu tư rủi ro cao hoặc có ý nghĩa pháp lý',
+          isCorrect: true,
+        },
+        {
+          content: 'Thông tin không được cập nhật với điều kiện thị trường hiện tại',
+          isCorrect: false,
+        },
+        {
+          content: 'Phản hồi quá dài và phức tạp để hiểu nhanh',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.MULTIPLE_CHOICE,
+      content: 'Trong những tình huống nào AI nên được con người giám sát thay vì hoạt động tự động?',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Hiểu Ranh Giới Con Người - AI (Level 3)',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Đưa ra quyết định ảnh hưởng đến triển vọng nghề nghiệp của mọi người (tuyển dụng, đánh giá)',
+          isCorrect: true,
+        },
+        {
+          content: 'Kiểm duyệt nội dung cho các chủ đề nhạy cảm (chính trị, sức khỏe)',
+          isCorrect: true,
+        },
+        {
+          content: 'Nhập dữ liệu cơ bản và định dạng tài liệu',
+          isCorrect: false,
+        },
+        {
+          content: 'Tư vấn tài chính cho các quyết định quan trọng trong cuộc sống',
+          isCorrect: true,
+        },
+        {
+          content: 'Dịch ngôn ngữ cho các cuộc trò chuyện thường ngày',
+          isCorrect: false,
+        },
+      ],
+    },
+    {
+      type: QuestionType.MULTIPLE_CHOICE,
+      content: 'Khi sử dụng công cụ AI cho công việc học tập hoặc nghề nghiệp, những thực hành nào giảm thiểu rủi ro?',
+      level: SFIALevel.LEVEL_3_APPLICATION,
+      competentcySkillName: 'Nhận Thức Rủi Ro & Bảo Mật (Level 3)',
+      estimatedTimeMinutes: 3,
+      difficultyWeight: 3,
+      answerOptions: [
+        {
+          content: 'Tránh nhập dữ liệu độc quyền hoặc thông tin nhận dạng cá nhân',
+          isCorrect: true,
+        },
+        {
+          content: 'Thường xuyên xác minh kết quả AI với các nguồn có thẩm quyền',
+          isCorrect: true,
+        },
+        {
+          content: 'Chỉ sử dụng công cụ AI được trường học hoặc công ty chính thức phê duyệt',
+          isCorrect: false,
+        },
+        {
+          content: 'Duy trì kế hoạch dự phòng cho trường hợp công cụ AI không khả dụng',
+          isCorrect: true,
+        },
+        {
+          content: 'Ghi chép việc sử dụng AI để đảm bảo tính có thể tái tạo và trách nhiệm',
+          isCorrect: true,
+        },
+        {
+          content: 'Hạn chế sử dụng AI cho các nhiệm vụ không quan trọng để giảm thiểu thiệt hại tiềm ẩn',
+          isCorrect: false,
+        },
+      ],
+    },
+  ];
+
   await prisma.question.createMany({
     data: questionsData.map((qData, index) => ({
       type: qData.type,
