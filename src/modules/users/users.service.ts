@@ -301,12 +301,13 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
-    const { email, referralCode, job, ...updateData } = updateUserDto;
+    const { email, referralCode, job, isStudent, studentCode, university, ...updateData } = updateUserDto;
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+
     if (updateData.phoneNumber) {
       if (user.phoneNumber === updateData.phoneNumber) {
         delete updateData.phoneNumber;
@@ -326,6 +327,39 @@ export class UsersService {
           await this.redisService.deleteValue(otpKey);
         }
       }
+    }
+
+    if (isStudent) {
+      if (studentCode) {
+        if (user.studentCode !== studentCode) {
+          const studentCodeExisted = await this.prisma.user.findFirst({
+            where: {
+              studentCode,
+              id: { not: id }, // loại trừ chính user hiện tại
+            },
+          });
+
+          if (studentCodeExisted) {
+            throw new BadRequestException('Mã sinh viên đã tồn tại');
+          }
+
+          updateData['studentCode'] = studentCode;
+        }
+      } else {
+        throw new BadRequestException('Mã sinh viên là bắt buộc');
+      }
+
+      if (university) {
+        updateData['university'] = university;
+      } else {
+        throw new BadRequestException('Tên trường là bắt buộc');
+      }
+
+      updateData['isStudent'] = true;
+    } else {
+      updateData['isStudent'] = false;
+      updateData['studentCode'] = null;
+      updateData['university'] = null;
     }
 
     const updateDataWithJob: any = { ...updateData };
