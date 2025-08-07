@@ -8,26 +8,24 @@
   - Added the required column `interview_request_id` to the `MentorBooking` table without a default value. This is not possible if the table is not empty.
 
 */
--- DropForeignKey
-ALTER TABLE "MentorBooking" DROP CONSTRAINT "MentorBooking_exam_id_fkey";
 
 -- DropForeignKey
 ALTER TABLE "MentorBooking" DROP CONSTRAINT "MentorBooking_user_id_fkey";
 
 -- AlterTable
-ALTER TABLE "MentorBooking" DROP COLUMN "exam_id",
+ALTER TABLE "MentorBooking"
 DROP COLUMN "scheduled_at",
 DROP COLUMN "time_slot",
 DROP COLUMN "user_id",
-ADD COLUMN     "interview_request_id" UUID NOT NULL;
+ADD COLUMN     "interview_request_id" UUID;
 
 -- CreateTable
 CREATE TABLE "InterviewRequest" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "user_id" UUID NOT NULL,
     "exam_id" UUID NOT NULL,
-    "interview_date" TIMESTAMPTZ(6) NOT NULL,
-    "time _slot" "TimeSlotBooking" NOT NULL,
+    "interview_date" TIMESTAMPTZ(6) ,
+    "time_slot" "TimeSlotBooking" NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 

@@ -43,35 +43,31 @@ model User {
   userAssessment     CompetencyAssessment[] @relation("UserAssessment")
   assessorAssessment CompetencyAssessment[] @relation("AssessorAssessment")
   learningPath       LearningPath[]
-  userProgress       UserLearningProgress[]
+  mentor             Mentor?
   userPortfolio      Portfolio?             @relation("UserPortfolio")
   verifierPortfolio  Portfolio[]            @relation("VerifierPortfolio")
-  mentor             Mentor?
-
-  InterviewRequest InterviewRequest[]
+  userProgress       UserLearningProgress[]
 }
 
 model Role {
-  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name               String   @unique @db.Text
-  description        String?  @db.Text
-  isOrganizationRole Boolean  @default(false) @map("is_organization_role") @db.Boolean
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  users       UserRole[]
-  permissions RolePermission[]
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String           @unique
+  description        String?
+  isOrganizationRole Boolean          @default(false) @map("is_organization_role")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  permissions        RolePermission[]
+  users              UserRole[]
 }
 
 model Permission {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @unique @db.VarChar
-  description String?  @db.Text
-  slug        String?  @db.VarChar
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  roles RolePermission[]
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String           @unique @db.VarChar
+  description String?
+  slug        String?          @db.VarChar
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  roles       RolePermission[]
 }
 
 model UserRole {
@@ -79,68 +75,64 @@ model UserRole {
   roleId    String   @map("role_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
 }
 
 model RolePermission {
-  roleId       String   @map("role_id") @db.Uuid
-  permissionId String   @map("permission_id") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
 }
 
 model Question {
-  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type                 QuestionType   @default(SINGLE_CHOICE)
-  content              String         @db.Text
-  subcontent           String?        @db.Text
-  image                String?        @db.Text
-  sequence             Int?           @db.SmallInt
-  parentId             String?        @map("parent_id") @db.Uuid
-  competencySkillId    String         @map("competency_skill_id") @db.Uuid
-  levelId              String         @map("level_id") @db.Uuid
-  difficultyWeight     Int            @default(1) @map("difficulty_weight") @db.SmallInt
-  cognitiveLoad        CognitiveLoad? @default(MEDIUM) @map("cognitive_load")
-  scenarioBased        Boolean        @default(false) @map("scenario_based") @db.Boolean
-  industryContext      String?        @default("GENERAL") @map("industry_context") @db.VarChar
-  estimatedTimeMinutes Int?           @default(2) @map("estimated_time_minutes") @db.SmallInt
-  avgScore             Decimal?       @default(0) @map("avg_score") @db.Decimal(3, 2)
-  completionRate       Decimal?       @default(0) @map("completion_rate") @db.Decimal(3, 2)
-  discriminationIndex  Decimal?       @default(0) @map("discrimination_index") @db.Decimal(3, 2)
-  maxPossibleScore     Decimal        @map("max_possible_score") @db.Decimal(5, 2)
-  lastAnalyzed         DateTime?      @map("last_analyzed") @db.Timestamptz(6)
-  isActive             Boolean        @default(true) @map("is_active") @db.Boolean
-  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  parent          Question?         @relation("QuestionToSub", fields: [parentId], references: [id])
-  subQuestions    Question[]        @relation("QuestionToSub")
-  answerOptions   AnswerOption[]
-  examSetQuestion ExamSetQuestion[]
-  userAnswers     UserAnswer[]
-  skill           CompetencySkill   @relation(fields: [competencySkillId], references: [id], onDelete: Cascade)
-  level           Level             @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type                 QuestionType      @default(SINGLE_CHOICE)
+  content              String
+  subcontent           String?
+  image                String?
+  sequence             Int?              @db.SmallInt
+  parentId             String?           @map("parent_id") @db.Uuid
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  levelId              String            @map("level_id") @db.Uuid
+  avgScore             Decimal?          @default(0) @map("avg_score") @db.Decimal(3, 2)
+  cognitiveLoad        CognitiveLoad?    @default(MEDIUM) @map("cognitive_load")
+  competencySkillId    String            @map("competency_skill_id") @db.Uuid
+  completionRate       Decimal?          @default(0) @map("completion_rate") @db.Decimal(3, 2)
+  difficultyWeight     Int               @default(1) @map("difficulty_weight") @db.SmallInt
+  discriminationIndex  Decimal?          @default(0) @map("discrimination_index") @db.Decimal(3, 2)
+  estimatedTimeMinutes Int?              @default(2) @map("estimated_time_minutes") @db.SmallInt
+  industryContext      String?           @default("GENERAL") @map("industry_context") @db.VarChar
+  isActive             Boolean           @default(true) @map("is_active")
+  lastAnalyzed         DateTime?         @map("last_analyzed") @db.Timestamptz(6)
+  scenarioBased        Boolean           @default(false) @map("scenario_based")
+  maxPossibleScore     Decimal           @map("max_possible_score") @db.Decimal(5, 2)
+  answerOptions        AnswerOption[]
+  examSetQuestion      ExamSetQuestion[]
+  skill                CompetencySkill   @relation(fields: [competencySkillId], references: [id], onDelete: Cascade)
+  level                Level             @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  parent               Question?         @relation("QuestionToSub", fields: [parentId], references: [id])
+  subQuestions         Question[]        @relation("QuestionToSub")
+  userAnswers          UserAnswer[]
 }
 
 model Level {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sfiaLevel    SFIALevel @map("sfia_level")
-  name         String    @unique @db.VarChar
-  description  String    @db.Text
-  numericValue Int       @map("numeric_value") @db.SmallInt
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  question Question[]
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String     @unique @db.VarChar
+  description  String
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  numericValue Int        @map("numeric_value") @db.SmallInt
+  sfiaLevel    SFIALevel  @map("sfia_level")
+  question     Question[]
 }
 
 model Course {
@@ -171,51 +163,48 @@ model Course {
 }
 
 model AnswerOption {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  content     String   @db.Text
-  isCorrect   Boolean  @map("is_correct") @db.Boolean
-  explanation String?  @db.Text
-  questionId  String   @map("question_id") @db.Uuid
-  orderIndex  Int      @default(0) @map("order_index") @db.SmallInt
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  selections UserAnswerSelection[]
-  question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content     String
+  isCorrect   Boolean               @map("is_correct")
+  questionId  String                @map("question_id") @db.Uuid
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  explanation String?
+  orderIndex  Int                   @default(0) @map("order_index") @db.SmallInt
+  question    Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selections  UserAnswerSelection[]
 }
 
 model UserAnswer {
-  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId           String           @map("exam_id") @db.Uuid
-  questionId       String           @map("question_id") @db.Uuid
-  userId           String           @map("user_id") @db.Uuid
-  answerText       String?          @map("answer_text") @db.Text
-  rawScore         Decimal?         @default(0) @map("raw_score") @db.Decimal(5, 2)
-  scorePercentage  Decimal?         @default(0) @map("score_percentage") @db.Decimal(3, 2)
-  autoScore        Decimal?         @map("auto_score") @db.Decimal(5, 2)
-  manualScore      Decimal?         @map("manual_score") @db.Decimal(5, 2)
-  finalScore       Decimal?         @map("final_score") @db.Decimal(5, 2)
-  timeSpentSeconds Int?             @map("time_spent_seconds") @db.SmallInt
-  attemptCount     Int?             @default(1) @map("attempt_count") @db.SmallInt
-  confidenceLevel  Int?             @map("confidence_level") @db.SmallInt
-  status           UserAnswerStatus @default(DRAFT)
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  selections UserAnswerSelection[]
-  question   Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  exam       Exam                  @relation(fields: [examId], references: [id], onDelete: Cascade)
-  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  answerText       String?               @map("answer_text")
+  manualScore      Decimal?              @map("manual_score") @db.Decimal(5, 2)
+  autoScore        Decimal?              @map("auto_score") @db.Decimal(5, 2)
+  questionId       String                @map("question_id") @db.Uuid
+  userId           String                @map("user_id") @db.Uuid
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status           UserAnswerStatus      @default(DRAFT)
+  attemptCount     Int?                  @default(1) @map("attempt_count") @db.SmallInt
+  confidenceLevel  Int?                  @map("confidence_level") @db.SmallInt
+  examId           String                @map("exam_id") @db.Uuid
+  finalScore       Decimal?              @map("final_score") @db.Decimal(5, 2)
+  rawScore         Decimal?              @default(0) @map("raw_score") @db.Decimal(5, 2)
+  scorePercentage  Decimal?              @default(0) @map("score_percentage") @db.Decimal(3, 2)
+  timeSpentSeconds Int?                  @map("time_spent_seconds") @db.SmallInt
+  exam             Exam                  @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question         Question              @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  selections       UserAnswerSelection[]
 }
 
 model UserAnswerSelection {
-  answerOptionId String   @map("answer_option_id") @db.Uuid
-  userAnswerId   String   @map("user_answer_id") @db.Uuid
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  answers    AnswerOption @relation(fields: [answerOptionId], references: [id], onDelete: Cascade)
-  userAnswer UserAnswer   @relation(fields: [userAnswerId], references: [id], onDelete: Cascade)
+  answerOptionId String       @map("answer_option_id") @db.Uuid
+  userAnswerId   String       @map("user_answer_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  answers        AnswerOption @relation(fields: [answerOptionId], references: [id], onDelete: Cascade)
+  userAnswer     UserAnswer   @relation(fields: [userAnswerId], references: [id], onDelete: Cascade)
 
   @@id([userAnswerId, answerOptionId])
 }
@@ -243,13 +232,12 @@ model CompetencyAspect {
   description           String              @db.Text
   weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
-  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  courses            Course[]
-  competencySkill    CompetencySkill[]
-  examAspectSnapshot ExamAspectSnapshot[]
-  competencyPillar   CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  competencyPillar      CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+  competencySkill       CompetencySkill[]
+  courses               Course[]
+  examAspectSnapshot    ExamAspectSnapshot[]
 }
 
 model ExamSet {
@@ -275,72 +263,66 @@ model ExamSet {
 }
 
 model Exam {
-  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String           @map("user_id") @db.Uuid
-  examSetId         String?          @map("exam_set_id") @db.Uuid
-  assessmentType    AssessmentType   @default(SELF_ASSESSMENT) @map("assessment_type")
-  reviewerId        String?          @map("reviewer_id") @db.Uuid
-  overallScore      Decimal?         @map("overall_score") @db.Decimal(3, 2)
-  sfiaLevel         SFIALevel?       @map("sfia_level")
-  readyToWorkTier   ReadyToWorkTier? @map("ready_to_work_tier")
-  startedAt         DateTime?        @map("started_at") @db.Timestamptz(6)
-  finishedAt        DateTime?        @map("finished_at") @db.Timestamptz(6)
-  timeSpentMinutes  Int?             @map("time_spent_minutes") @db.SmallInt
-  examStatus        ExamStatus       @default(IN_PROGRESS) @map("exam_status")
-  completionPercent Decimal?         @default(0) @map("completion_percent") @db.Decimal(3, 2)
-  examLevelId       String?          @map("exam_level_id") @db.Uuid
-  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  userAnswer           UserAnswer[]
-  competencyAssessment CompetencyAssessment[]
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String                 @map("user_id") @db.Uuid
+  examSetId            String?                @map("exam_set_id") @db.Uuid
+  startedAt            DateTime?              @map("started_at") @db.Timestamptz(6)
+  finishedAt           DateTime?              @map("finished_at") @db.Timestamptz(6)
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  assessmentType       AssessmentType         @default(SELF_ASSESSMENT) @map("assessment_type")
+  completionPercent    Decimal?               @default(0) @map("completion_percent") @db.Decimal(3, 2)
+  overallScore         Decimal?               @map("overall_score") @db.Decimal(3, 2)
+  readyToWorkTier      ReadyToWorkTier?       @map("ready_to_work_tier")
+  reviewerId           String?                @map("reviewer_id") @db.Uuid
+  sfiaLevel            SFIALevel?             @map("sfia_level")
+  timeSpentMinutes     Int?                   @map("time_spent_minutes") @db.SmallInt
+  examStatus           ExamStatus             @default(IN_PROGRESS) @map("exam_status")
+  examLevelId          String?                @map("exam_level_id") @db.Uuid
   assessmentSession    AssessmentSession[]
-
-  user               User                 @relation("UserExam", fields: [userId], references: [id], onDelete: Cascade)
-  reviewer           User?                @relation("ReviewerExam", fields: [reviewerId], references: [id], onDelete: Cascade)
-  examSet            ExamSet?             @relation(fields: [examSetId], references: [id], onDelete: Cascade)
-  examLevel          ExamLevel?           @relation(fields: [examLevelId], references: [id], onDelete: Cascade)
-  examAspectSnapshot ExamAspectSnapshot[]
-  examPillarSnapshot ExamPillarSnapshot[]
-
-  InterviewRequest InterviewRequest[]
+  competencyAssessment CompetencyAssessment[]
+  examLevel            ExamLevel?             @relation(fields: [examLevelId], references: [id], onDelete: Cascade)
+  examSet              ExamSet?               @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  reviewer             User?                  @relation("ReviewerExam", fields: [reviewerId], references: [id], onDelete: Cascade)
+  user                 User                   @relation("UserExam", fields: [userId], references: [id], onDelete: Cascade)
+  examAspectSnapshot   ExamAspectSnapshot[]
+  examPillarSnapshot   ExamPillarSnapshot[]
+  InterviewRequest     InterviewRequest[]
+  userAnswer           UserAnswer[]
 }
 
 model ExamSetQuestion {
   questionId String   @map("question_id") @db.Uuid
   examSetId  String   @map("exam_set_id") @db.Uuid
   orderIndex Int      @map("order_index") @db.SmallInt
-  isRequired Boolean  @default(true) @map("is_required") @db.Boolean
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  examSet  ExamSet  @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  isRequired Boolean  @default(true) @map("is_required")
+  examSet    ExamSet  @relation(fields: [examSetId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@id([examSetId, questionId])
 }
 
 model Mentor {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String     @unique @map("user_id") @db.Uuid
-  expertise  String?    @db.VarChar
-  sfiaLevel  SFIALevel? @map("sfia_level")
-  maxMentees Int?       @default(5) @map("max_mentees") @db.SmallInt
-  isActive   Boolean    @default(true) @map("is_active") @db.Boolean
-  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
-
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String             @unique @map("user_id") @db.Uuid
+  expertise        String?            @db.VarChar
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  isActive         Boolean            @default(true) @map("is_active")
+  maxMentees       Int?               @default(5) @map("max_mentees") @db.SmallInt
+  sfiaLevel        SFIALevel?         @map("sfia_level")
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings         MentorBooking[]
   mentorCompetency MentorCompetency[]
-  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model MentorCompetency {
-  mentorId  String    @map("mentor_id") @db.Uuid
-  pillarId  String    @map("pillar_id") @db.Uuid
-  sfiaLevel SFIALevel @map("sfia_level")
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-
+  mentorId         String           @map("mentor_id") @db.Uuid
+  sfiaLevel        SFIALevel        @map("sfia_level")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  pillarId         String           @map("pillar_id") @db.Uuid
   mentor           Mentor           @relation(fields: [mentorId], references: [id], onDelete: Cascade)
   competencyPillar CompetencyPillar @relation(fields: [pillarId], references: [id], onDelete: Cascade)
 
@@ -348,180 +330,165 @@ model MentorCompetency {
 }
 
 model MentorBooking {
-  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  interviewRequestId String       @map("interview_request_id") @db.Uuid
-  mentorId    String              @map("mentor_id") @db.Uuid
-  status      MentorBookingStatus @default(PENDING)
-  notes       String?             @db.Text
-  pillarFocus String?             @map("competency_focus") @db.Uuid
-  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  interviewRequest           InterviewRequest            @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
-  competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mentorId           String              @map("mentor_id") @db.Uuid
+  status             MentorBookingStatus @default(PENDING)
+  notes              String?
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  pillarFocus        String?             @map("competency_focus") @db.Uuid
+  interviewRequestId String?             @map("interview_request_id") @db.Uuid
+  competencyPillar   CompetencyPillar?   @relation(fields: [pillarFocus], references: [id])
+  interviewRequest   InterviewRequest?   @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
+  mentor             Mentor              @relation(fields: [mentorId], references: [id], onDelete: Cascade)
 }
 
 model InterviewRequest {
-  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String     @map("user_id") @db.Uuid
-  examId        String     @map("exam_id") @db.Uuid
-  interviewDate DateTime    @map("interview_date") @db.Timestamptz(6) 
-  timeSlot      TimeSlotBooking  @map("time _slot") 
-  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exam             Exam              @relation(fields: [examId], references: [id], onDelete: Cascade)
-
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examId        String          @map("exam_id") @db.Uuid
+  interviewDate DateTime        @map("interview_date") @db.Timestamptz(6)
+  timeSlot      TimeSlotBooking @map("time_slot")
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
   MentorBooking MentorBooking[]
 }
 
-
 model CompetencyFramework {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  domainId    String   @map("domain_id") @db.Uuid
-  name        String   @db.VarChar
-  description String?  @db.Text
-  version     String   @default("1.0") @db.VarChar
-  isActive    Boolean  @default(true) @map("is_active") @db.Boolean
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
+  id           String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domainId     String                 @map("domain_id") @db.Uuid
+  version      String                 @default("1.0") @db.VarChar
+  isActive     Boolean                @default(true) @map("is_active")
+  createdAt    DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  description  String?
+  name         String                 @db.VarChar
+  assessment   CompetencyAssessment[]
+  domain       Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
   pillars      CompetencyPillar[]
   examSet      ExamSet[]
-  assessment   CompetencyAssessment[]
   learningPath LearningPath[]
-  domain       Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model CompetencyPillar {
-  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  frameworkId           String              @map("framework_id") @db.Uuid
-  name                  String              @db.VarChar
-  description           String?             @db.Text
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  frameworkId           String               @map("framework_id") @db.Uuid
+  name                  String               @db.VarChar
+  description           String?
   dimension             CompetencyDimension
-  weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
-  createdAt             DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  score               CompetencyScore[]
-  pathCourse          LearningPathCourse[]
-  portfolio           Portfolio[]
-  mentorCompetency    MentorCompetency[]
-  mentorBooking       MentorBooking[]
-  aspects             CompetencyAspect[]
-  competencyFramework CompetencyFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  examPillarSnapshot  ExamPillarSnapshot[]
+  weightWithinDimension Decimal              @map("weight_within_dimension") @db.Decimal(3, 2)
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  aspects               CompetencyAspect[]
+  competencyFramework   CompetencyFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  score                 CompetencyScore[]
+  examPillarSnapshot    ExamPillarSnapshot[]
+  pathCourse            LearningPathCourse[]
+  mentorBooking         MentorBooking[]
+  mentorCompetency      MentorCompetency[]
+  portfolio             Portfolio[]
 }
 
 model CompetencySkill {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  aspectId    String    @map("aspect_id") @db.Uuid
-  name        String    @db.VarChar
-  description String?   @db.Text
-  sfiaLevel   SFIALevel @map("sfia_level")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  question Question[]
-  aspect   CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String           @db.VarChar
+  description String?
+  sfiaLevel   SFIALevel        @map("sfia_level")
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  aspectId    String           @map("aspect_id") @db.Uuid
+  aspect      CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+  question    Question[]
 }
 
 model CompetencyAssessment {
-  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId            String           @map("user_id") @db.Uuid
-  frameworkId       String           @map("framework_id") @db.Uuid
-  examId            String?          @map("exam_id") @db.Uuid
-  assessorId        String?          @map("assessor_id") @db.Uuid
-  mindsetScore      Decimal          @map("mindset_score") @db.Decimal(3, 2)
-  skillsetScore     Decimal          @map("skillset_score") @db.Decimal(3, 2)
-  toolsetScore      Decimal          @map("toolset_score") @db.Decimal(3, 2)
-  overallScore      Decimal          @map("overall_score") @db.Decimal(3, 2)
-  sfiaLevel         SFIALevel        @map("sfia_level")
-  readyToWorkTier   ReadyToWorkTier? @map("ready_to_work_tier")
-  certificationDate DateTime?        @map("certification_date")
-  expiryDate        DateTime?        @map("expiry_date")
-  assessmentType    AssessmentType   @map("assessment_type")
-  isCurrent         Boolean          @default(true) @map("is_current") @db.Boolean
-  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  score     CompetencyScore[]
-  user      User                @relation("UserAssessment", fields: [userId], references: [id], onDelete: Cascade)
-  assessor  User?               @relation("AssessorAssessment", fields: [assessorId], references: [id], onDelete: Cascade)
-  exam      Exam?               @relation(fields: [examId], references: [id])
-  framework CompetencyFramework @relation(fields: [frameworkId], references: [id])
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String              @map("user_id") @db.Uuid
+  frameworkId       String              @map("framework_id") @db.Uuid
+  examId            String?             @map("exam_id") @db.Uuid
+  assessorId        String?             @map("assessor_id") @db.Uuid
+  mindsetScore      Decimal             @map("mindset_score") @db.Decimal(3, 2)
+  skillsetScore     Decimal             @map("skillset_score") @db.Decimal(3, 2)
+  toolsetScore      Decimal             @map("toolset_score") @db.Decimal(3, 2)
+  overallScore      Decimal             @map("overall_score") @db.Decimal(3, 2)
+  sfiaLevel         SFIALevel           @map("sfia_level")
+  readyToWorkTier   ReadyToWorkTier?    @map("ready_to_work_tier")
+  certificationDate DateTime?           @map("certification_date")
+  expiryDate        DateTime?           @map("expiry_date")
+  assessmentType    AssessmentType      @map("assessment_type")
+  isCurrent         Boolean             @default(true) @map("is_current")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  assessor          User?               @relation("AssessorAssessment", fields: [assessorId], references: [id], onDelete: Cascade)
+  exam              Exam?               @relation(fields: [examId], references: [id])
+  framework         CompetencyFramework @relation(fields: [frameworkId], references: [id])
+  user              User                @relation("UserAssessment", fields: [userId], references: [id], onDelete: Cascade)
+  score             CompetencyScore[]
 }
 
 model CompetencyScore {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  assessmentId  String    @map("assessment_id") @db.Uuid
-  pillarId      String    @map("pillar_id") @db.Uuid
-  sfiaLevel     SFIALevel @map("sfia_level")
-  evidenceCount Int?      @default(0) @map("evidence_count") @db.SmallInt
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  pillar     CompetencyPillar     @relation(fields: [pillarId], references: [id])
-  assessment CompetencyAssessment @relation(fields: [assessmentId], references: [id])
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  assessmentId  String               @map("assessment_id") @db.Uuid
+  sfiaLevel     SFIALevel            @map("sfia_level")
+  evidenceCount Int?                 @default(0) @map("evidence_count") @db.SmallInt
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  pillarId      String               @map("pillar_id") @db.Uuid
+  assessment    CompetencyAssessment @relation(fields: [assessmentId], references: [id])
+  pillar        CompetencyPillar     @relation(fields: [pillarId], references: [id])
 }
 
 model ExamPillarSnapshot {
-  examId    String   @map("exam_id") @db.Uuid
-  pillarId  String   @map("pillar_id") @db.Uuid
-  score     Decimal  @map("mindset_score") @db.Decimal(3, 2)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  exam   Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
-  pillar CompetencyPillar @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+  examId    String           @map("exam_id") @db.Uuid
+  pillarId  String           @map("pillar_id") @db.Uuid
+  score     Decimal          @map("mindset_score") @db.Decimal(3, 2)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exam      Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  pillar    CompetencyPillar @relation(fields: [pillarId], references: [id], onDelete: Cascade)
 
   @@id([examId, pillarId])
 }
 
 model ExamAspectSnapshot {
-  examId    String   @map("exam_id") @db.Uuid
-  aspectId  String   @map("aspect_id") @db.Uuid
-  score     Decimal  @map("mindset_score") @db.Decimal(3, 2)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  exam   Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
-  aspect CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+  examId    String           @map("exam_id") @db.Uuid
+  aspectId  String           @map("aspect_id") @db.Uuid
+  score     Decimal          @map("mindset_score") @db.Decimal(3, 2)
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  aspect    CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+  exam      Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
 
   @@id([examId, aspectId])
 }
 
 model LearningPath {
-  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId                 String    @map("user_id") @db.Uuid
-  frameworkId            String    @map("framework_id") @db.Uuid
-  name                   String    @db.VarChar
-  description            String?   @db.Text
-  targetSfiaLevel        SFIALevel @map("target_sfia_level")
-  estimatedDurationWeeks Int?      @map("estimated_duration_weeks") @db.SmallInt
-  isActive               Boolean   @default(true) @map("is_active") @db.Boolean
-  generatedAt            DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
-  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  learningPathCourse LearningPathCourse[]
-  userProgress       UserLearningProgress[]
-  user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  framework          CompetencyFramework    @relation(fields: [frameworkId], references: [id])
+  id                     String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String                 @map("user_id") @db.Uuid
+  frameworkId            String                 @map("framework_id") @db.Uuid
+  name                   String                 @db.VarChar
+  description            String?
+  targetSfiaLevel        SFIALevel              @map("target_sfia_level")
+  estimatedDurationWeeks Int?                   @map("estimated_duration_weeks") @db.SmallInt
+  isActive               Boolean                @default(true) @map("is_active")
+  generatedAt            DateTime               @default(now()) @map("generated_at") @db.Timestamptz(6)
+  createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  framework              CompetencyFramework    @relation(fields: [frameworkId], references: [id])
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  learningPathCourse     LearningPathCourse[]
+  userProgress           UserLearningProgress[]
 }
 
 model LearningPathCourse {
-  learningPathId String   @map("learning_path_id") @db.Uuid
-  courseId       String   @map("course_id") @db.Uuid
-  orderIndex     Int      @map("order_index") @db.SmallInt
-  isRequired     Boolean  @default(true) @map("is_required") @db.Boolean
-  pillarId       String?  @map("pillar_id") @db.Uuid
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  learningPath LearningPath      @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
-  course       Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  pillar       CompetencyPillar? @relation(fields: [pillarId], references: [id])
+  learningPathId String            @map("learning_path_id") @db.Uuid
+  courseId       String            @map("course_id") @db.Uuid
+  orderIndex     Int               @map("order_index") @db.SmallInt
+  isRequired     Boolean           @default(true) @map("is_required")
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  pillarId       String?           @map("pillar_id") @db.Uuid
+  course         Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  learningPath   LearningPath      @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  pillar         CompetencyPillar? @relation(fields: [pillarId], references: [id])
 
   @@id([learningPathId, courseId])
 }
@@ -537,33 +504,31 @@ model UserLearningProgress {
   completedAt        DateTime?      @map("completed_at") @db.Timestamptz(6)
   timeSpentHours     Decimal?       @default(0) @map("time_spent_hours") @db.Decimal(5, 2)
   rating             Int?           @db.SmallInt
-  feedback           String?        @db.Text
+  feedback           String?
   createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  learningPath LearningPath? @relation(fields: [learningPathId], references: [id], onDelete: SetNull)
+  course             Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  learningPath       LearningPath?  @relation(fields: [learningPathId], references: [id])
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Portfolio {
-  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String     @unique @map("user_id") @db.Uuid
-  linkedInUrl      String?    @map("linked_in_url") @db.Text
-  githubUrl        String?    @map("github_url") @db.Text
-  certificateFiles String[]   @default([])
-  experienceFiles  String[]   @default([])
-  pillarId         String?    @map("pillar_id") @db.Uuid
-  sfiaLevelClaimed SFIALevel? @map("sfia_level_claimed")
-  isVerified       Boolean    @default(false) @map("is_verified")
-  verifiedBy       String?    @map("verified_by") @db.Uuid
-  verifiedAt       DateTime?  @map("verified_at")
-  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  user     User              @relation("UserPortfolio", fields: [userId], references: [id])
-  verifier User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
-  pillar   CompetencyPillar? @relation(fields: [pillarId], references: [id])
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String            @unique @map("user_id") @db.Uuid
+  linkedInUrl      String?           @map("linked_in_url")
+  githubUrl        String?           @map("github_url")
+  sfiaLevelClaimed SFIALevel?        @map("sfia_level_claimed")
+  isVerified       Boolean           @default(false) @map("is_verified")
+  verifiedBy       String?           @map("verified_by") @db.Uuid
+  verifiedAt       DateTime?         @map("verified_at")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  certificateFiles String[]          @default([])
+  experienceFiles  String[]          @default([])
+  pillarId         String?           @map("pillar_id") @db.Uuid
+  pillar           CompetencyPillar? @relation(fields: [pillarId], references: [id])
+  user             User              @relation("UserPortfolio", fields: [userId], references: [id])
+  verifier         User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
 }
 
 model OrganizationalMetrics {
@@ -582,23 +547,21 @@ model OrganizationalMetrics {
   tier3Count       Int?     @default(0) @map("tier_3_count") @db.SmallInt
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  domain           Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
 }
 
 model AssessmentSession {
   id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   examId               String   @map("exam_id") @db.Uuid
-  sessionData          Json?    @map("session_data") @db.JsonB
+  sessionData          Json?    @map("session_data")
   lastQuestionIndex    Int?     @default(0) @map("last_question_index") @db.SmallInt
   timeRemainingSeconds Int?     @map("time_remaining_seconds") @db.SmallInt
-  isPaused             Boolean  @default(false) @map("is_paused") @db.Boolean
-  browserInfo          String?  @map("browser_info") @db.Text
+  isPaused             Boolean  @default(false) @map("is_paused")
+  browserInfo          String?  @map("browser_info")
   ip_address           String?  @map("ip_address") @db.Inet
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  exam Exam @relation(fields: [examId], references: [id])
+  exam                 Exam     @relation(fields: [examId], references: [id])
 }
 
 model ExamLevel {
@@ -731,4 +694,10 @@ enum ExamSetStatus {
   ACTIVE
   INACTIVE
   ARCHIVED
+}
+
+enum SlotStatus {
+  AVAILABLE
+  ALMOST_FULL
+  FULL
 }
