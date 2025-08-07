@@ -52,7 +52,7 @@ export class MentorsController {
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
     const newBooking = await this.mentorsService.createScheduler(dto, req.user.userId);
-    this.bookingGateway.emitNewBooking();
+    await this.bookingGateway.emitNewBooking();
     return newBooking;
   }
 
@@ -90,7 +90,7 @@ export class MentorsController {
   @Post('assign')
   async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
     const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
-    this.bookingGateway.emitNewBooking();
+    await this.bookingGateway.emitNewBooking();
     return result;
   }
 }
