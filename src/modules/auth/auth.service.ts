@@ -17,7 +17,7 @@ import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
 import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
-import { ClientTypeEnum, UserRoleEnum } from '@Constant/enums';
+import { ClientTypeEnum, UserProviderEnum, UserRoleEnum } from '@Constant/enums';
 import { UserTrackingStatus } from '@prisma/client';
 
 @Injectable()
@@ -143,6 +143,40 @@ export class AuthService {
 
       const hashedPassword = await bcrypt.hash('loginWithGooogle', 10);
 
+      const emailExisted = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (emailExisted && !emailExisted.status) {
+        const user = await this.prisma.user.update({
+          where: { email },
+          data: {
+            fullName: name,
+            avatarUrl: picture,
+            status: true,
+            provider: UserProviderEnum.GOOGLE,
+          },
+        });
+        const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+        return new ResponseItem(tokenData, 'Đăng nhập thành công');
+      } else if (emailExisted) {
+        const tokenData = await this.generateTokensAndSession(
+          emailExisted,
+          name,
+          userAgent,
+          ip,
+          !emailExisted.refreshToken
+        );
+        return new ResponseItem(tokenData, 'Đăng nhập thành công');
+      }
+
+      const defaultRole = await this.prisma.role.findUnique({
+        where: { name: UserRoleEnum.USER },
+      });
+
+      if (!defaultRole)
+        throw new BadRequestException(`Role mặc định ${UserRoleEnum.USER} chưa được tạo trong bảng Role`);
+
       const user = await this.prisma.user.upsert({
         where: { email },
         update: {
@@ -157,6 +191,16 @@ export class AuthService {
           phoneNumber: null,
           status: true,
           statusTracking: UserTrackingStatus.ACTIVATED,
+          provider: UserProviderEnum.GOOGLE,
+          roles: {
+            create: [
+              {
+                role: {
+                  connect: { id: defaultRole.id },
+                },
+              },
+            ],
+          },
         },
       });
 
