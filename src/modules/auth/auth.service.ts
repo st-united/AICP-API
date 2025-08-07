@@ -145,9 +145,42 @@ export class AuthService {
 
       const emailExisted = await this.prisma.user.findUnique({
         where: { email },
+        include: {
+          roles: true,
+        },
       });
 
+      const defaultRole = await this.prisma.role.findUnique({
+        where: { name: UserRoleEnum.USER },
+      });
+
+      if (!defaultRole)
+        throw new BadRequestException(`Role mặc định ${UserRoleEnum.USER} chưa được tạo trong bảng Role`);
+
       if (emailExisted && !emailExisted.status) {
+        if (emailExisted.roles.length === 0) {
+          const user = await this.prisma.user.update({
+            where: { email },
+            data: {
+              fullName: name,
+              avatarUrl: picture,
+              status: true,
+              provider: UserProviderEnum.GOOGLE,
+              roles: {
+                create: [
+                  {
+                    role: {
+                      connect: { id: defaultRole.id },
+                    },
+                  },
+                ],
+              },
+            },
+          });
+          const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+          return new ResponseItem(tokenData, 'Đăng nhập thành công');
+        }
+
         const user = await this.prisma.user.update({
           where: { email },
           data: {
@@ -155,6 +188,28 @@ export class AuthService {
             avatarUrl: picture,
             status: true,
             provider: UserProviderEnum.GOOGLE,
+          },
+        });
+
+        const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+        return new ResponseItem(tokenData, 'Đăng nhập thành công');
+      } else if (emailExisted && emailExisted.roles.length === 0) {
+        const user = await this.prisma.user.update({
+          where: { email },
+          data: {
+            fullName: name,
+            avatarUrl: picture,
+            status: true,
+            provider: UserProviderEnum.GOOGLE,
+            roles: {
+              create: [
+                {
+                  role: {
+                    connect: { id: defaultRole.id },
+                  },
+                },
+              ],
+            },
           },
         });
         const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
@@ -169,13 +224,6 @@ export class AuthService {
         );
         return new ResponseItem(tokenData, 'Đăng nhập thành công');
       }
-
-      const defaultRole = await this.prisma.role.findUnique({
-        where: { name: UserRoleEnum.USER },
-      });
-
-      if (!defaultRole)
-        throw new BadRequestException(`Role mặc định ${UserRoleEnum.USER} chưa được tạo trong bảng Role`);
 
       const user = await this.prisma.user.upsert({
         where: { email },
