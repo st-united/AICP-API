@@ -137,6 +137,7 @@ export class BookingService {
     for (const day of days) {
       const morningTotal = totalMentors * morningSlots.length;
       const afternoonTotal = totalMentors * afternoonSlots.length;
+
       const startOfDay = new Date(`${day}T00:00:00.000Z`);
       const endOfDay = new Date(startOfDay);
       endOfDay.setDate(endOfDay.getDate() + 1);
