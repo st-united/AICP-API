@@ -48,7 +48,9 @@ export class BookingService {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.mentorBooking.findMany({
         where: {
-          status: InterviewRequestStatus.PENDING,
+          interviewRequest: {
+            status: InterviewRequestStatus.PENDING,
+          },
           ...filters,
           ...keywordFilter,
         },
@@ -75,6 +77,9 @@ export class BookingService {
       }),
       this.prisma.mentorBooking.count({
         where: {
+          interviewRequest: {
+            status: InterviewRequestStatus.PENDING,
+          },
           ...filters,
           ...keywordFilter,
         },
