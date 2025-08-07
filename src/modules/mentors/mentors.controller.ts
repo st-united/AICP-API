@@ -33,9 +33,9 @@ export class MentorsController {
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto, req.user.userId);
-    this.bookingGateway.emitNewBooking();
+    const newBooking = await this.mentorsService.createScheduler(dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
+    this.bookingGateway.emitNewBooking();
     return newBooking;
   }
 

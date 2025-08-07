@@ -56,10 +56,10 @@ export class BookingService {
           mentor: true,
           interviewRequest: {
             include: {
-              user: true,
               exam: {
                 include: {
                   examSet: true,
+                  user: true,
                 },
               },
             },
@@ -73,6 +73,7 @@ export class BookingService {
         skip,
         take,
       }),
+
       this.prisma.mentorBooking.count({
         where: {
           ...filters,
@@ -84,9 +85,9 @@ export class BookingService {
     const data: FilterBookingResponseItemDto[] = records.map((booking) => ({
       id: booking.interviewRequest?.id || '',
       timeSlost: booking.interviewRequest?.timeSlot || '',
-      name: booking.interviewRequest?.user?.fullName || '',
-      email: booking.interviewRequest?.user?.email || '',
-      phone: booking.interviewRequest?.user?.phoneNumber || '',
+      name: booking.interviewRequest?.exam.user?.fullName || '',
+      email: booking.interviewRequest?.exam.user?.email || '',
+      phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
       nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
       level: booking.mentor?.sfiaLevel || '',
       date: booking.interviewRequest.interviewDate.toISOString() || '',

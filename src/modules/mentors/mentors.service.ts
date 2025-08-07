@@ -209,8 +209,16 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseDto>> {
     try {
+      const existingBooking = await this.prisma.interviewRequest.findFirst({
+        where: { examId: dto.examId },
+      });
+
+      if (existingBooking) {
+        throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
+      }
+
       const interviewDate = new Date(dto.interviewDate);
       const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
       const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
@@ -259,7 +267,6 @@ export class MentorsService {
 
       const booking = await this.prisma.interviewRequest.create({
         data: {
-          userId,
           examId: dto.examId,
           interviewDate: startOfDay,
           timeSlot: selectedSlot,
