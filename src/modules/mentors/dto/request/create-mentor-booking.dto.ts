@@ -1,6 +1,5 @@
-// src/mentor-booking/dto/create-mentor-booking.dto.ts
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
-import { TimeSlotBooking } from '@prisma/client';
+import { InterviewShift } from '@Constant/enums';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class CreateMentorBookingDto {
   @IsString()
@@ -9,4 +8,7 @@ export class CreateMentorBookingDto {
   @IsOptional()
   @IsString()
   interviewDate?: string;
+
+  @IsEnum(InterviewShift)
+  interviewShift: InterviewShift;
 }

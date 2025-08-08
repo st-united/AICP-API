@@ -14,6 +14,9 @@ export class MentorBookingResponseDto {
   phoneNumber: string;
 
   @Expose()
+  timeSlot: string;
+
+  @Expose()
   interviewDate: Date;
 
   @Expose()
