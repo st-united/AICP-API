@@ -8,45 +8,42 @@ datasource db {
 }
 
 model User {
-  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  phoneNumber        String?            @unique @map("phone_number") @db.VarChar
-  zaloVerified       Boolean            @default(false) @map("zalo_verified")
-  email              String             @unique @db.VarChar
-  password           String             @db.VarChar
-  fullName           String             @map("full_name") @db.VarChar
-  avatarUrl          String?            @map("avatar_url") @db.Text
-  provider           String?            @db.VarChar
-  status             Boolean            @default(false) @db.Boolean
-  statusTracking     UserTrackingStatus @default(REGISTERED)
-  position           String?            @db.VarChar
-  timezone           String?            @default("UTC") @db.VarChar
-  languagePreference String?            @default("en") @map("language_preference") @db.VarChar
-  dob                DateTime?          @map("dob") @db.Timestamptz(6)
-  country            String?            @db.VarChar
-  province           String?            @db.VarChar
-
-  referralCode String?   @unique @map("referral_code") @db.VarChar
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
-  refreshToken String?   @unique @map("refresh_token") @db.VarChar
-
-  isStudent   Boolean? @map("is_student") @db.Boolean
-  university  String?  @db.VarChar
-  studentCode String?  @map("student_code") @db.VarChar
-
-  job                Domain[]               @relation("UserDomain")
-  roles              UserRole[]
-  userExam           Exam[]                 @relation("UserExam")
-  reviewerExam       Exam[]                 @relation("ReviewerExam")
-  userAnswer         UserAnswer[]
-  userAssessment     CompetencyAssessment[] @relation("UserAssessment")
+  id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phoneNumber        String?                @unique @map("phone_number") @db.VarChar
+  email              String                 @unique @db.VarChar
+  password           String                 @db.VarChar
+  fullName           String                 @map("full_name") @db.VarChar
+  avatarUrl          String?                @map("avatar_url")
+  provider           String?                @db.VarChar
+  status             Boolean                @default(false)
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt          DateTime?              @map("deleted_at") @db.Timestamptz(6)
+  refreshToken       String?                @unique @map("refresh_token") @db.VarChar
+  country            String?                @db.VarChar
+  dob                DateTime?              @map("dob") @db.Timestamptz(6)
+  province           String?                @db.VarChar
+  referralCode       String?                @unique @map("referral_code") @db.VarChar
+  languagePreference String?                @default("en") @map("language_preference") @db.VarChar
+  position           String?                @db.VarChar
+  timezone           String?                @default("UTC") @db.VarChar
+  zaloVerified       Boolean                @default(false) @map("zalo_verified")
+  statusTracking     UserTrackingStatus     @default(REGISTERED)
+  isStudent          Boolean?               @map("is_student")
+  studentCode        String?                @map("student_code") @db.VarChar
+  university         String?                @db.VarChar
   assessorAssessment CompetencyAssessment[] @relation("AssessorAssessment")
+  userAssessment     CompetencyAssessment[] @relation("UserAssessment")
+  reviewerExam       Exam[]                 @relation("ReviewerExam")
+  userExam           Exam[]                 @relation("UserExam")
   learningPath       LearningPath[]
   mentor             Mentor?
   userPortfolio      Portfolio?             @relation("UserPortfolio")
   verifierPortfolio  Portfolio[]            @relation("VerifierPortfolio")
+  userAnswer         UserAnswer[]
   userProgress       UserLearningProgress[]
+  roles              UserRole[]
+  job                Domain[]               @relation("UserDomain")
 }
 
 model Role {
@@ -136,30 +133,25 @@ model Level {
 }
 
 model Course {
-  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title              String      @db.VarChar
-  overview           String      @db.Text
-  description        String      @db.Text
-  courseInformation  String      @map("course_information") @db.Text
-  contactInformation String      @map("contact_information") @db.Text
-  applicableObjects  String      @map("applicable_objects") @db.Text
-  provider           String      @db.VarChar
-  url                String?     @db.Text
-  linkImage          String?     @map("link_image") @db.Text
-  courseType         String?     @default("ONLINE") @map("course_type") @db.VarChar
-  durationHours      Int?        @map("duration_hours") @db.SmallInt
-  difficultyLevel    SFIALevel?  @map("difficulty_level")
-  aspectId           String      @map("aspect_id") @db.Uuid
-  domainId           String?     @db.Uuid
-  sfiaLevels         SFIALevel[] @map("sfia_level")
-  isActive           Boolean     @default(true) @map("is_active") @db.Boolean
-  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  learningPathCourse LearningPathCourse[]
-  userProgress       UserLearningProgress[]
+  id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title              String                 @db.VarChar
+  description        String
+  provider           String                 @db.VarChar
+  url                String
+  domainId           String?                @db.Uuid
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  courseType         String?                @default("ONLINE") @map("course_type") @db.VarChar
+  difficultyLevel    SFIALevel?             @map("difficulty_level")
+  durationHours      Int?                   @map("duration_hours") @db.SmallInt
+  isActive           Boolean                @default(true) @map("is_active")
+  aspectId           String                 @map("aspect_id") @db.Uuid
+  linkImage          String?
+  sfiaLevels         SFIALevel[]            @map("sfia_level")
   competencyAspect   CompetencyAspect       @relation(fields: [aspectId], references: [id], onDelete: Cascade)
   domain             Domain?                @relation(fields: [domainId], references: [id])
+  learningPathCourse LearningPathCourse[]
+  userProgress       UserLearningProgress[]
 }
 
 model AnswerOption {
@@ -210,30 +202,29 @@ model UserAnswerSelection {
 }
 
 model Domain {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String   @unique @db.VarChar
-  description String?  @db.Text
-  version     String   @default("1.0") @db.VarChar
-  isActice    Boolean  @default(true) @map("is_active") @db.Boolean
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  courses   Course[]
-  framework CompetencyFramework[]
-  metrics   OrganizationalMetrics[]
-  users     User[]                  @relation("UserDomain")
+  id          String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String                  @unique @db.VarChar
+  description String?
+  createdAt   DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
+  isActice    Boolean                 @default(true) @map("is_active")
+  version     String                  @default("1.0") @db.VarChar
+  framework   CompetencyFramework[]
+  courses     Course[]
+  metrics     OrganizationalMetrics[]
+  users       User[]                  @relation("UserDomain")
 }
 
 model CompetencyAspect {
-  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String              @map("pillar_id") @db.Uuid
-  name                  String              @unique @db.VarChar
-  represent             String              @default("") @db.VarChar
-  description           String              @db.Text
-  weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String               @unique @db.VarChar
+  description           String
+  weightWithinDimension Decimal              @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
   createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  pillarId              String               @map("pillar_id") @db.Uuid
+  represent             String               @default("") @db.VarChar
   competencyPillar      CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
   competencySkill       CompetencySkill[]
   courses               Course[]
@@ -568,12 +559,11 @@ model ExamLevel {
   id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   examLevel    ExamLevelEnum @map("exam_level")
   name         String        @unique @db.VarChar
-  description  String        @db.Text
-  learningPath String?       @map("learning_path") @db.Text
+  description  String
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  exams Exam[]
+  learningPath String?       @map("learning_path")
+  exams        Exam[]
 }
 
 enum QuestionType {
