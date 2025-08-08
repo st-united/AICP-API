@@ -83,7 +83,14 @@ export class ExamService {
     historyExam: GetHistoryExamDto
   ): Promise<ResponseItem<HistoryExamResponseDto[]>> {
     try {
-      const where: any = { userId: userId };
+      const examSet = await this.prisma.examSet.findFirst({
+        where: { name: 'AI INPUT TEST' },
+      });
+
+      const where: any = {
+        userId: userId,
+        examSetId: examSet?.id,
+      };
 
       if (historyExam.startDate || historyExam.endDate) {
         where.createdAt = {};
@@ -96,10 +103,11 @@ export class ExamService {
           where.createdAt.lte = dayjs(historyExam.endDate).endOf('day').toDate();
         }
       }
+
       const exams = await this.prisma.exam.findMany({
         where,
         orderBy: {
-          finishedAt: 'desc',
+          createdAt: 'desc',
         },
         select: {
           id: true,
@@ -114,7 +122,13 @@ export class ExamService {
         },
       });
 
-      return new ResponseItem<HistoryExamResponseDto[]>(exams, 'Lấy lịch sử thi thành công');
+      const result = exams.map((exam, idx) => ({
+        ...exam,
+        attempt: idx + 1,
+        isLatest: idx === 0,
+      }));
+
+      return new ResponseItem<HistoryExamResponseDto[]>(result, 'Lấy lịch sử thi thành công');
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi lấy lịch sử thi');
