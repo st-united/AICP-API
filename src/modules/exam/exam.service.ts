@@ -84,7 +84,7 @@ export class ExamService {
   ): Promise<ResponseItem<HistoryExamResponseDto[]>> {
     try {
       const examSet = await this.prisma.examSet.findFirst({
-        where: { name: 'AI INPUT TEST' },
+        where: { name: historyExam.examSetName || examSetDefaultName.DEFAULT },
       });
 
       const where: any = {
