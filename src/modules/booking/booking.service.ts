@@ -114,7 +114,7 @@ export class BookingService {
     }
 
     const days = [2, 3, 4].map((offset) => {
-      const date = new Date(exam.finishedAt);
+      const date = new Date();
       date.setDate(date.getDate() + offset);
       return date.toISOString().split('T')[0];
     });
