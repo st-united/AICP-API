@@ -17,8 +17,9 @@ import { TokenService } from './services/token.service';
 import { SessionDto } from '../redis/dto/session.dto';
 import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
-import { ClientTypeEnum, UserRoleEnum } from '@Constant/enums';
+import { ClientTypeEnum, UserProviderEnum, UserRoleEnum } from '@Constant/enums';
 import { UserTrackingStatus } from '@prisma/client';
+import { generateSecurePassword } from '@app/helpers/randomPassword';
 
 @Injectable()
 export class AuthService {
@@ -148,7 +149,89 @@ export class AuthService {
       const decodedToken = await this.firebaseService.verifyIdToken(idToken);
       const { email, name, picture } = decodedToken;
 
-      const hashedPassword = await bcrypt.hash('loginWithGooogle', 10);
+      const hashedPassword = await bcrypt.hash(generateSecurePassword(8), 10);
+
+      const emailExisted = await this.prisma.user.findUnique({
+        where: { email },
+        include: {
+          roles: true,
+        },
+      });
+
+      const defaultRole = await this.prisma.role.findUnique({
+        where: { name: UserRoleEnum.USER },
+      });
+
+      if (!defaultRole)
+        throw new BadRequestException(`Role mặc định ${UserRoleEnum.USER} chưa được tạo trong bảng Role`);
+
+      if (emailExisted && !emailExisted.status) {
+        if (emailExisted.roles.length === 0) {
+          const user = await this.prisma.user.update({
+            where: { email },
+            data: {
+              fullName: name,
+              avatarUrl: picture,
+              status: true,
+              provider: UserProviderEnum.GOOGLE,
+              roles: {
+                create: [
+                  {
+                    role: {
+                      connect: { id: defaultRole.id },
+                    },
+                  },
+                ],
+              },
+            },
+          });
+          const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+          return new ResponseItem(tokenData, 'Đăng nhập thành công');
+        }
+
+        const user = await this.prisma.user.update({
+          where: { email },
+          data: {
+            fullName: name,
+            avatarUrl: picture,
+            status: true,
+            provider: UserProviderEnum.GOOGLE,
+          },
+        });
+
+        const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+        return new ResponseItem(tokenData, 'Đăng nhập thành công');
+      } else if (emailExisted && emailExisted.roles.length === 0) {
+        const user = await this.prisma.user.update({
+          where: { email },
+          data: {
+            fullName: name,
+            avatarUrl: picture,
+            status: true,
+            provider: UserProviderEnum.GOOGLE,
+            roles: {
+              create: [
+                {
+                  role: {
+                    connect: { id: defaultRole.id },
+                  },
+                },
+              ],
+            },
+          },
+        });
+        const tokenData = await this.generateTokensAndSession(user, name, userAgent, ip, !user.refreshToken);
+        return new ResponseItem(tokenData, 'Đăng nhập thành công');
+      } else if (emailExisted) {
+        const tokenData = await this.generateTokensAndSession(
+          emailExisted,
+          name,
+          userAgent,
+          ip,
+          !emailExisted.refreshToken
+        );
+        return new ResponseItem(tokenData, 'Đăng nhập thành công');
+      }
 
       const user = await this.prisma.user.upsert({
         where: { email },
@@ -164,6 +247,16 @@ export class AuthService {
           phoneNumber: null,
           status: true,
           statusTracking: UserTrackingStatus.ACTIVATED,
+          provider: UserProviderEnum.GOOGLE,
+          roles: {
+            create: [
+              {
+                role: {
+                  connect: { id: defaultRole.id },
+                },
+              },
+            ],
+          },
         },
       });
 
