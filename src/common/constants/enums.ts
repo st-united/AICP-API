@@ -27,10 +27,15 @@ export enum UserRoleEnum {
 }
 
 export enum examSetDefaultName {
-  DEFAULT = 'AI INPUT TEST',
+  DEFAULT = 'AI For Fresher',
 }
 
 export enum ClientTypeEnum {
   WEB_ADMIN = 'web-admin',
   WEB_USER = 'web-user',
+}
+
+export enum InterviewShift {
+  MORNING = 'MORNING',
+  AFTERNOON = 'AFTERNOON',
 }
