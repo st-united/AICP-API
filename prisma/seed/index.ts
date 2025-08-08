@@ -17,6 +17,7 @@ import { seedMentors } from './mentors';
 import { seedMentorBookings } from './mentorBookings';
 import { seedUserAnswers } from './userAnswers';
 import { seedExamLevels } from './examlevel';
+import { seedInterviewRequest } from './interviewRequest';
 
 const prisma = new PrismaClient();
 
@@ -82,6 +83,8 @@ async function main() {
 
   // 15. Exams
   const exams = await seedExams(prisma, userMap, examSets, examLevels, pillars, aspects);
+  const allExams = await prisma.exam.findMany();
+  const examMap = Object.fromEntries(allExams.map((exam) => [exam.userId, { id: exam.id }]));
 
   // 16. Mentors
   await seedMentors(prisma, userMap);
@@ -92,7 +95,7 @@ async function main() {
   });
 
   // 17. Mentor Bookings
-  // await seedMentorBookings(prisma, userMap, mentors);
+  await seedMentorBookings(prisma, userMap, examMap, mentors);
 
   // 18. User Answers
   await seedUserAnswers(prisma, userMap, questions, exams);
