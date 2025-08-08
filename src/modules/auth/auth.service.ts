@@ -19,6 +19,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
 import { ClientTypeEnum, UserProviderEnum, UserRoleEnum } from '@Constant/enums';
 import { UserTrackingStatus } from '@prisma/client';
+import { generateSecurePassword } from '@app/helpers/randomPassword';
 
 @Injectable()
 export class AuthService {
@@ -141,7 +142,7 @@ export class AuthService {
       const decodedToken = await this.firebaseService.verifyIdToken(idToken);
       const { email, name, picture } = decodedToken;
 
-      const hashedPassword = await bcrypt.hash('loginWithGooogle', 10);
+      const hashedPassword = await bcrypt.hash(generateSecurePassword(8), 10);
 
       const emailExisted = await this.prisma.user.findUnique({
         where: { email },
