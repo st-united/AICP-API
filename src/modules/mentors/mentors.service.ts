@@ -313,14 +313,14 @@ export class MentorsService {
     }
   }
 
-  async checkUserInterviewRequest(userId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     try {
-      if (!userId) {
-        throw new BadRequestException('User ID is required');
+      if (!examId) {
+        throw new BadRequestException('id bộ đề là bắt buộc');
       }
       const interviewRequest = await this.prisma.interviewRequest.findFirst({
         where: {
-          userId: userId,
+          examId,
         },
         select: {
           id: true,
