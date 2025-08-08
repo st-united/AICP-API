@@ -40,6 +40,9 @@ import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio-validatio
 import { DownloadPortfolioFileDto } from './dto/download-portfolio-file.dto';
 import { Response } from 'express';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
+import { UserBookingDto } from './dto/request/user-booking.dto';
+import { UserBookingResponseDto } from './dto/response/user-booking-response.dto';
+import { CheckUserBookingResponseDto } from './dto/response/check-user-booking-response.dto';
 @ApiTags('users')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -189,5 +192,24 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid student info' })
   async updateStudentInfo(@Body() updateStudentInfoDto: UpdateStudentInfoDto, @Req() req) {
     return await this.usersService.updateStudentInfo(req.user.userId, updateStudentInfoDto);
+  }
+
+  @ApiTags('users')
+  @Post('/booking')
+  @ApiOperation({ summary: 'Create user booking with mentor' })
+  @ApiResponse({ status: 201, description: 'Booking created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid booking data or user already has booking' })
+  @ApiResponse({ status: 404, description: 'User or mentor not found' })
+  async createUserBooking(@Body() userBookingDto: UserBookingDto, @Req() req) {
+    return await this.usersService.createUserBooking(req.user.userId, userBookingDto);
+  }
+
+  @ApiTags('users')
+  @Get('/booking/check')
+  @ApiOperation({ summary: 'Check if user has booking' })
+  @ApiResponse({ status: 200, description: 'Booking status checked successfully' })
+  @ApiResponse({ status: 400, description: 'User not found' })
+  async checkUserBooking(@Req() req) {
+    return await this.usersService.checkUserBooking(req.user.userId);
   }
 }

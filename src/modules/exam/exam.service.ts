@@ -430,7 +430,7 @@ export class ExamService {
       where: { id: existingExam.examLevelId },
     });
 
-    const result = await this.getCoursesByExamLevel(examLevel.examLevel);
+    const result = await this.getCoursesByExamLevel(examLevel.examLevel, userId);
 
     return new ResponseItem<ExamWithResultDto>(
       {
@@ -461,12 +461,19 @@ export class ExamService {
     return mapping[level];
   }
 
-  async getCoursesByExamLevel(examLevel: ExamLevelEnum) {
+  async getCoursesByExamLevel(examLevel: ExamLevelEnum, userId: string) {
     const mappedLevel = this.mapExamLevelToSFIALevel(examLevel);
 
     const allCourses = await this.prisma.course.findMany({
       where: {
         isActive: true,
+      },
+      include: {
+        userProgress: {
+          where: {
+            userId: userId,
+          },
+        },
       },
     });
 
@@ -475,7 +482,15 @@ export class ExamService {
 
       return course.sfiaLevels.some((sfia) => SFIALevel[sfia] >= SFIALevel[mappedLevel]);
     });
+    const coursesWithRegistrationStatus = filteredCourses.map((course) => {
+      const { userProgress, ...courseData } = course;
+      const isRegistered = userProgress.length > 0;
 
-    return filteredCourses;
+      return {
+        ...courseData,
+        isRegistered,
+      };
+    });
+    return coursesWithRegistrationStatus;
   }
 }
