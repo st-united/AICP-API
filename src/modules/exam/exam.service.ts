@@ -443,7 +443,7 @@ export class ExamService {
       where: { id: existingExam.examLevelId },
     });
 
-    const result = await this.getCoursesByExamLevel(examLevel.examLevel, userId);
+    // const result = await this.getCoursesByExamLevel(examLevel.examLevel, userId);
 
     return new ResponseItem<ExamWithResultDto>(
       {
@@ -455,7 +455,7 @@ export class ExamService {
         level: examLevel?.name,
         description: examLevel?.description,
         learningPath: examLevel?.learningPath,
-        recommendedCourses: result,
+        recommendedCourses: [],
       },
       'Lấy kết quả bài thi thành công'
     );
