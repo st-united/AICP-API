@@ -24,6 +24,7 @@ import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/respo
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
 import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { InterviewShift } from '@Constant/enums';
 
 @Injectable()
 export class MentorsService {
@@ -214,62 +215,66 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseV1>> {
+  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
-      const exam = await this.prisma.exam.findUnique({
-        where: { id: dto.examId },
+      const existingBooking = await this.prisma.interviewRequest.findFirst({
+        where: { examId: dto.examId },
       });
 
-      if (!exam) {
-        throw new BadRequestException('Đề thi không tồn tại');
+      if (existingBooking) {
+        throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
       }
-      const interviewDate = dto.interviewDate ? new Date(dto.interviewDate) : new Date();
 
-      const mentors = await this.prisma.mentor.findMany({
-        where: { isActive: true },
-      });
+      const interviewDate = new Date(dto.interviewDate);
+      const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
 
+      const mentors = await this.prisma.mentor.findMany({ where: { isActive: true } });
       const totalMentors = mentors.length;
 
-      const timeSlots = [
+      const morningSlots = [
         TimeSlotBooking.AM_08_09,
         TimeSlotBooking.AM_09_10,
         TimeSlotBooking.AM_10_11,
         TimeSlotBooking.AM_11_12,
+      ];
+
+      const afternoonSlots = [
         TimeSlotBooking.PM_02_03,
         TimeSlotBooking.PM_03_04,
         TimeSlotBooking.PM_04_05,
         TimeSlotBooking.PM_05_06,
       ];
 
+      const selectedShiftSlots = dto.interviewShift === InterviewShift.MORNING ? morningSlots : afternoonSlots;
+
       let selectedSlot: TimeSlotBooking | null = null;
 
-      for (const slot of timeSlots) {
-        const bookingCount = await this.prisma.interviewRequest.count({
+      for (const slot of selectedShiftSlots) {
+        const count = await this.prisma.interviewRequest.count({
           where: {
             interviewDate: {
-              gte: new Date(interviewDate.setHours(0, 0, 0, 0)),
-              lt: new Date(interviewDate.setHours(23, 59, 59, 999)),
+              gte: startOfDay,
+              lt: endOfDay,
             },
             timeSlot: slot,
           },
         });
 
-        if (bookingCount < totalMentors) {
+        if (count < totalMentors) {
           selectedSlot = slot;
           break;
         }
       }
 
       if (!selectedSlot) {
-        throw new BadRequestException('Tất cả khung giờ trong ngày đã đầy.');
+        throw new BadRequestException(`Tất cả khung giờ của buổi ${dto.interviewShift.toLowerCase()} đã đầy.`);
       }
 
       const booking = await this.prisma.interviewRequest.create({
         data: {
-          userId,
           examId: dto.examId,
-          interviewDate,
+          interviewDate: startOfDay,
           timeSlot: selectedSlot,
         },
       });
@@ -277,7 +282,7 @@ export class MentorsService {
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
       this.logger.error(error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
     }
   }
 
@@ -374,9 +379,9 @@ export class MentorsService {
         include: {
           interviewRequest: {
             include: {
-              user: true,
               exam: {
                 include: {
+                  user: true,
                   examSet: {
                     select: {
                       name: true,
@@ -428,9 +433,10 @@ export class MentorsService {
 
     const data: MentorBookingResponseV2[] = records.map((booking) => ({
       id: booking.id,
-      fullName: booking.interviewRequest.user.fullName,
-      email: booking.interviewRequest.user.email,
-      phoneNumber: booking.interviewRequest.user.phoneNumber,
+      fullName: booking.interviewRequest.exam.user.fullName,
+      email: booking.interviewRequest.exam.user.email,
+      phoneNumber: booking.interviewRequest.exam.user.phoneNumber,
+      timeSlot: booking.interviewRequest.timeSlot,
       interviewDate: booking.interviewRequest.interviewDate,
       nameExamSet: booking.interviewRequest.exam?.examSet?.name,
       level: booking.interviewRequest.exam?.sfiaLevel,
@@ -492,7 +498,7 @@ export class MentorsService {
       }
 
       if (keyword) {
-        where.interviewRequest.user = {
+        where.interviewRequest.exam.user = {
           OR: [
             { fullName: { contains: keyword, mode: 'insensitive' } },
             { email: { contains: keyword, mode: 'insensitive' } },

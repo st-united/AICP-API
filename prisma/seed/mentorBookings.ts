@@ -52,7 +52,6 @@ export async function seedMentorBookings(
       // 1. Tạo InterviewRequest
       const interviewRequest = await prisma.interviewRequest.create({
         data: {
-          userId,
           examId,
           interviewDate: randomFutureDate(),
           timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],

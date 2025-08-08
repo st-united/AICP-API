@@ -51,7 +51,6 @@ export async function seedInterviewRequest(
     }
     await prisma.interviewRequest.create({
       data: {
-        userId: userId,
         examId: examId,
         interviewDate: new Date(),
         timeSlot: bookingData.timeSlot,
