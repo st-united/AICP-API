@@ -89,7 +89,7 @@ export class MentorsController {
 
   @Post('assign')
   async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
-    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId, req.user.email);
     this.bookingGateway.emitNewBooking();
     return result;
   }

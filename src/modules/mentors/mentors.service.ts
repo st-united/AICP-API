@@ -20,6 +20,10 @@ import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { timeSlotEnum } from '@Constant/enums';
+
+import { google, Auth } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
 export class MentorsService {
@@ -296,7 +300,74 @@ export class MentorsService {
     }
   }
 
-  async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
+  async createGoogleCalendarEvent(
+    userEmail: string,
+    mentorEmail: string,
+    interviewDate: Date,
+    timeSlot: keyof typeof timeSlotEnum
+  ): Promise<string> {
+    const oauth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
+
+    oauth2Client.setCredentials({
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    });
+
+    const { token } = await oauth2Client.getAccessToken();
+    if (!token) {
+      throw new Error('Failed to obtain access token');
+    }
+
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: oauth2Client as Auth.OAuth2Client,
+    });
+
+    const formattedTimeSlot = timeSlotEnum[timeSlot];
+    const [startHour, endHour] = formattedTimeSlot.split('-').map((h) => h.trim());
+    const startDateTime = new Date(interviewDate);
+    startDateTime.setHours(parseInt(startHour.split(':')[0]), 0, 0, 0);
+    const endDateTime = new Date(startDateTime);
+    endDateTime.setHours(parseInt(endHour.split(':')[0]), 0, 0, 0);
+
+    const event = {
+      summary: 'Phỏng vấn chính thức',
+      start: {
+        dateTime: startDateTime.toISOString(),
+        timeZone: 'Asia/Ho_Chi_Minh',
+      },
+      end: {
+        dateTime: endDateTime.toISOString(),
+        timeZone: 'Asia/Ho_Chi_Minh',
+      },
+      attendees: [{ email: userEmail }, { email: mentorEmail }],
+      conferenceData: {
+        createRequest: {
+          requestId: `req-${Date.now()}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' },
+        },
+      },
+    };
+
+    try {
+      const response = await calendar.events.insert({
+        calendarId: 'primary',
+        conferenceDataVersion: 1,
+        sendUpdates: 'none',
+        requestBody: event,
+      });
+
+      return response.data.hangoutLink || 'Link không khả dụng';
+    } catch (error) {
+      console.error('Error creating Google Calendar event:', error);
+      throw new Error('Failed to create Google Calendar event');
+    }
+  }
+
+  async assignMentorToRequests(
+    dto: AssignMentorDto,
+    userId: string,
+    email: string
+  ): Promise<ResponseItem<AssignMentorResultDto>> {
     const { interviewRequestIds } = dto;
 
     const mentor = await this.prisma.mentor.findUnique({
@@ -376,6 +447,39 @@ export class MentorsService {
       status: string;
       createdAt: Date;
     }[];
+
+    const assignedInterviews = await this.prisma.interviewRequest.findMany({
+      where: {
+        id: { in: toCreate },
+        status: InterviewRequestStatus.ASSIGNED,
+      },
+      select: {
+        interviewDate: true,
+        timeSlot: true,
+        user: {
+          select: {
+            email: true,
+            fullName: true,
+          },
+        },
+      },
+    });
+
+    await Promise.all(
+      assignedInterviews.map(async (interview) => {
+        const { user, interviewDate, timeSlot } = interview;
+        if (user?.email && user?.fullName && interviewDate && timeSlot) {
+          const meetLink = await this.createGoogleCalendarEvent(user.email, email, interviewDate, timeSlot);
+          await this.emailService.sendEmailInterviewScheduleToUser(
+            user.email,
+            user.fullName,
+            interviewDate,
+            timeSlot,
+            meetLink
+          );
+        }
+      })
+    );
 
     return {
       message: 'Yêu cầu phỏng vấn đã được nhận',
