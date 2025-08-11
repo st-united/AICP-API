@@ -7,7 +7,7 @@ export async function seedUserAnswers(
   examMap: { [key: string]: { id: string } }
 ) {
   const userEmail = 'user@example.com';
-  const examSetName = 'AI INPUT TEST';
+  const examSetName = 'AI For Fresher';
 
   const answerOptions = await prisma.answerOption.findMany({
     where: {

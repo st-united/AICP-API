@@ -18,10 +18,7 @@ import {
 } from '@nestjs/common';
 
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
-import { fileOption } from '@app/config/image-multer-config';
-import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { GetUsersDto } from '@UsersModule/dto/get-users.dto';
-import { UpdateUserDto } from '@UsersModule/dto/update-user.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UpdateForgotPasswordUserDto } from '@UsersModule/dto/update-forgot-password';
 import { UsersService } from '@UsersModule/users.service';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
