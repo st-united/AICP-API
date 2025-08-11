@@ -27,7 +27,7 @@ export async function seedExamSets(
       frameworkVersion: '5.0',
     },
     {
-      name: 'AI INPUT TEST',
+      name: 'AI For Fresher',
       description:
         'Bài kiểm tra đánh giá đầu vào cho các bạn đã có kiến thức về AI, là developer và muốn nâng cao kiến thức về AI',
       questions: [

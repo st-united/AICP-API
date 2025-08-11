@@ -28,7 +28,7 @@ import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
 import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 import { v4 as uuidv4 } from 'uuid';
-import { Prisma, User, UserTrackingStatus } from '@prisma/client';
+import { Prisma, User, UserTrackingStatus, MentorBookingStatus, TimeSlotBooking } from '@prisma/client';
 import { GetUsersByAdminDto } from './dto/get-users-by-admin.dto';
 import { GetStatusSummaryDto } from './dto/get-status-summary.dto';
 import { convertPath } from '@app/common/utils';
@@ -43,6 +43,9 @@ import {
 import { Response } from 'express';
 import * as sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
+import { UserBookingDto } from './dto/request/user-booking.dto';
+import { UserBookingResponseDto } from './dto/response/user-booking-response.dto';
+import { CheckUserBookingResponseDto } from './dto/response/check-user-booking-response.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -298,12 +301,13 @@ export class UsersService {
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
-    const { email, referralCode, job, ...updateData } = updateUserDto;
+    const { email, referralCode, job, isStudent, studentCode, university, ...updateData } = updateUserDto;
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('Thông tin cá nhân không tồn tại');
     }
+
     if (updateData.phoneNumber) {
       if (user.phoneNumber === updateData.phoneNumber) {
         delete updateData.phoneNumber;
@@ -323,6 +327,39 @@ export class UsersService {
           await this.redisService.deleteValue(otpKey);
         }
       }
+    }
+
+    if (isStudent) {
+      if (studentCode) {
+        if (user.studentCode !== studentCode) {
+          const studentCodeExisted = await this.prisma.user.findFirst({
+            where: {
+              studentCode,
+              id: { not: id }, // loại trừ chính user hiện tại
+            },
+          });
+
+          if (studentCodeExisted) {
+            throw new BadRequestException('Mã sinh viên đã tồn tại');
+          }
+
+          updateData['studentCode'] = studentCode;
+        }
+      } else {
+        throw new BadRequestException('Mã sinh viên là bắt buộc');
+      }
+
+      if (university) {
+        updateData['university'] = university;
+      } else {
+        throw new BadRequestException('Tên trường là bắt buộc');
+      }
+
+      updateData['isStudent'] = true;
+    } else {
+      updateData['isStudent'] = false;
+      updateData['studentCode'] = null;
+      updateData['university'] = null;
     }
 
     const updateDataWithJob: any = { ...updateData };
@@ -508,14 +545,14 @@ export class UsersService {
     if (!userId) {
       throw new UnauthorizedException('Không có quyền truy cập');
     }
-
     validatePortfolioRequest(
       portfolioDto.certificateFiles,
       portfolioDto.experienceFiles,
       portfolioDto.deleted_certifications,
       portfolioDto.deleted_experiences,
       portfolioDto.linkedInUrl,
-      portfolioDto.githubUrl
+      portfolioDto.githubUrl,
+      portfolioDto.isStudent
     );
 
     const portfolio = await this.prisma.portfolio.findUnique({
@@ -629,6 +666,26 @@ export class UsersService {
           experienceFiles,
         },
       });
+
+      if (portfolioDto.isStudent === 'true') {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            university: portfolioDto.university,
+            studentCode: portfolioDto.studentCode,
+            isStudent: true,
+          },
+        });
+      } else if (portfolioDto.isStudent === 'false') {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            university: null,
+            studentCode: null,
+            isStudent: false,
+          },
+        });
+      }
 
       const hasAnyField =
         Boolean(portfolioDto.linkedInUrl?.trim()) ||

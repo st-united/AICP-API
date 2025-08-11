@@ -27,7 +27,7 @@ export enum UserRoleEnum {
 }
 
 export enum examSetDefaultName {
-  DEFAULT = 'AI INPUT TEST',
+  DEFAULT = 'AI For Fresher',
 }
 
 export enum ClientTypeEnum {
@@ -44,4 +44,9 @@ export enum timeSlotEnum {
   PM_03_04 = '15:00-16:00',
   PM_04_05 = '16:00-17:00',
   PM_05_06 = '17:00-18:00',
+}
+
+export enum InterviewShift {
+  MORNING = 'MORNING',
+  AFTERNOON = 'AFTERNOON',
 }
