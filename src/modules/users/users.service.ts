@@ -350,7 +350,7 @@ export class UsersService {
       if (university) {
         updateData['university'] = university;
       } else {
-        throw new BadRequestException('Mã sinh viên là bắt buộc khi isStudent = true');
+        throw new BadRequestException('Tên trường là bắt buộc khi isStudent = true');
       }
 
       updateData['isStudent'] = true;
