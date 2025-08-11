@@ -13,6 +13,13 @@ RUN yarn cache clean && \
 # Copy source code
 COPY . .
 
+# Fix permissions before generating Prisma client
+RUN chown -R node:node /app && \
+    chmod -R 755 /app
+
+# Switch to node user
+USER node
+
 # Generate Prisma client and build
 RUN yarn generateType && yarn build && npx tsc prisma/seed/index.ts --outDir dist/prisma/seed --target es2020 --module commonjs
 

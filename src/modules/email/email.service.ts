@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { SendEmailNewMentorDto } from './dto/sent-email-mentor.dto';
+import { timeSlotEnum } from '@Constant/enums';
+import { google } from 'googleapis';
+import * as dotenv from 'dotenv';
 
 @Injectable()
 export class EmailService {
@@ -17,6 +20,17 @@ export class EmailService {
         pass: this.configService.get<string>('MAIL_PASS'),
       },
     });
+  }
+
+  async sendEmailInterviewScheduleToUser(
+    email: string,
+    fullName: string,
+    interviewDate: Date,
+    timeSlot: keyof typeof timeSlotEnum,
+    meetLink: string
+  ): Promise<void> {
+    const template = this.generateEmailInterviewScheduleToUserTemplate(fullName, interviewDate, timeSlot, meetLink);
+    await this.sendEmail(email, 'Xác nhận phỏng vấn chính thức', template);
   }
 
   async sendActivationEmail(fullName: string, email: string, token: string): Promise<void> {
@@ -568,5 +582,64 @@ export class EmailService {
         </body>
       </html>
     `;
+  }
+
+  private generateEmailInterviewScheduleToUserTemplate(
+    fullName: string,
+    interviewDate: Date,
+    timeSlot: keyof typeof timeSlotEnum,
+    meetLink: string
+  ): string {
+    const formattedDate = interviewDate.toLocaleDateString('vi-VN', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    });
+    const formattedTimeSlot = timeSlotEnum[timeSlot];
+
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Xác nhận lịch phỏng vấn chính thức</title>
+      <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { width: 100%; max-width: 660px; margin: 20px auto; background-color: #ffffff; border: 1px solid #d1d1d1; border-radius: 12px; }
+        .header { background-color: rgb(0, 48, 109); color: #ffffff; text-align: center; padding: 15px; border-radius: 8px 8px 0 0; font-size: 20px; font-weight: bold; }
+        .content { text-align: center; margin: 20px 0; }
+        .footer { margin-top: 20px; text-align: center; font-size: 14px; color: #555555; border-top: 1px solid rgb(199, 198, 198); padding: 20px 10px; margin-left: 20px; margin-right: 20px; }
+        p, li { color: #000000 !important; font-size: 18px !important; margin: 10px 0 !important; }
+        li { margin: 0 !important; }
+        ul { padding-left: 75px; text-align: left }
+        .hello { font-size: 18px; font-weight: bold; color: rgb(0, 0, 0); margin-top: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">Xác nhận lịch phỏng vấn chính thức</div>
+        <div class="content">
+          <div class="hello">Xin chào ${fullName}</div>
+          <p>Cảm ơn bạn đã đăng ký tham gia phỏng vấn!</p>
+          <p>Chúng tôi xin thông báo lịch phỏng vấn của bạn đã được cố vấn phê duyệt,<br>
+          với các thông tin cụ thể như sau:</p>
+          <ul>
+            <li>Ngày phỏng vấn: ${formattedDate}</li>
+            <li>Thời gian: <b>${formattedTimeSlot}</b></li>
+            <li>Hình thức: Phỏng vấn trực tuyến</li>
+            <li>Link tham gia: <a href="${meetLink}">${meetLink}</a></li>
+          </ul>
+          <p>Nếu bạn cần thay đổi lịch phỏng vấn, xin vui lòng thông báo cho chúng tôi<br>
+          trước ít nhất 24 giờ để được hỗ trợ sắp xếp lịch phù hợp.</p>
+          <p>Chúng tôi rất mong chờ được đồng hành cùng bạn!<br>
+          Nếu cần hỗ trợ, đừng ngần ngại liên hệ với chúng tôi.</p>
+          <p>Thân ái,<br>Đội ngũ DevPlus</p>
+        </div>
+        <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+      </div>
+    </body>
+    </html>
+  `;
   }
 }
