@@ -9,7 +9,7 @@ import { ExamStatus } from '@prisma/client';
 
 @Injectable()
 export class ExamSetsService {
-  private static readonly EXAM_SET_NAME = 'AI INPUT TEST';
+  private static readonly EXAM_SET_NAME = 'AI For Fresher';
   private static readonly DEFAULT_EXAM_DURATION_MINUTES = 40;
 
   constructor(private readonly prisma: PrismaService) {}
@@ -49,8 +49,8 @@ export class ExamSetsService {
     return `This action removes a #${id} examSet`;
   }
 
-  async getExamSetWithQuestions(userId: string): Promise<ResponseItem<GetExamSetDto>> {
-    const examSet = await this.findExamSetWithQuestions();
+  async getExamSetWithQuestions(userId: string, examSetName?: string): Promise<ResponseItem<GetExamSetDto>> {
+    const examSet = await this.findExamSetWithQuestions(examSetName);
     if (!examSet) {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
@@ -81,9 +81,9 @@ export class ExamSetsService {
     throw new NotFoundException('Trạng thái bài kiểm tra không hợp lệ');
   }
 
-  private async findExamSetWithQuestions(): Promise<ExamSetWithQuestions | null> {
+  private async findExamSetWithQuestions(examSetName?: string): Promise<ExamSetWithQuestions | null> {
     return this.prisma.examSet.findFirst({
-      where: { name: ExamSetsService.EXAM_SET_NAME },
+      where: { name: examSetName ?? ExamSetsService.EXAM_SET_NAME },
       include: {
         exam: true,
         setQuestion: {

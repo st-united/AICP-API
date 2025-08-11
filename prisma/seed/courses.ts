@@ -425,7 +425,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       contactInformation: courseData.contactInformation,
       applicableObjects: courseData.applicableObjects,
       provider: courseData.provider,
-      url: courseData.url && null,
+      url: courseData.url || null,
       linkImage: courseData.linkImage || null,
       aspectId: categoryMap[courseData.category].id,
       domainId: courseData.domain ? domainMap[courseData.domain].id : null,
