@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { QuestionWithUserAnswerDto } from './question-with-user-answer.dto';
 import { CourseDto } from './course.dto';
+import { DetailExamResponseDto } from './detail-exam-response.dto';
 
 export class ExamWithResultDto {
   @ApiProperty()
@@ -29,4 +30,17 @@ export class ExamWithResultDto {
 
   @ApiProperty({ type: [CourseDto] })
   recommendedCourses: CourseDto[];
+}
+
+export class UserWithExamsResponseDto {
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string | null;
+    position: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  exams: DetailExamResponseDto[];
 }

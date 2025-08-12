@@ -123,7 +123,7 @@ export async function seedExams(
       email: 'user@example.com',
       emailMentor: 'mentor3@example.com',
       examLevelName: 'LEVEL_6_LEADER',
-      examSetName: 'AI INPUT TEST',
+      examSetName: 'AI For Fresher',
       startedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       finishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000),
       overallScore: 6.5,
