@@ -50,7 +50,8 @@ export class MentorsController {
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto, req.user.userId);
+    const newBooking = await this.mentorsService.createScheduler(dto);
+    await this.bookingGateway.notifySlotUpdate(dto.examId);
     await this.bookingGateway.emitNewBooking();
     return newBooking;
   }
@@ -98,12 +99,14 @@ export class MentorsController {
   }
 
   @UseGuards(JwtAccessTokenGuard)
-  @Post('check-my-interview-request')
+  @Get('check-my-interview-request/:examId')
   @ApiOperation({ summary: 'Check if current user has an interview request' })
   @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
   @ApiResponse({ status: 400, description: 'Error checking interview request' })
-  async checkMyInterviewRequest(@Req() req): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
-    return await this.mentorsService.checkUserInterviewRequest(req.user.userId);
+  async checkMyInterviewRequest(
+    @Param('examId', ParseUUIDPipe) examId: string
+  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(examId);
   }
 
   @Post('assign')

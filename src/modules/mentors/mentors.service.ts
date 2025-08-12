@@ -18,6 +18,7 @@ import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto'
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
+import { InterviewShift } from '@Constant/enums';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
@@ -211,62 +212,66 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto, userId: string): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseDto>> {
     try {
-      const exam = await this.prisma.exam.findUnique({
-        where: { id: dto.examId },
+      const existingBooking = await this.prisma.interviewRequest.findFirst({
+        where: { examId: dto.examId },
       });
 
-      if (!exam) {
-        throw new BadRequestException('Đề thi không tồn tại');
+      if (existingBooking) {
+        throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
       }
-      const interviewDate = dto.interviewDate ? new Date(dto.interviewDate) : new Date();
 
-      const mentors = await this.prisma.mentor.findMany({
-        where: { isActive: true },
-      });
+      const interviewDate = new Date(dto.interviewDate);
+      const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
 
+      const mentors = await this.prisma.mentor.findMany({ where: { isActive: true } });
       const totalMentors = mentors.length;
 
-      const timeSlots = [
+      const morningSlots = [
         TimeSlotBooking.AM_08_09,
         TimeSlotBooking.AM_09_10,
         TimeSlotBooking.AM_10_11,
         TimeSlotBooking.AM_11_12,
+      ];
+
+      const afternoonSlots = [
         TimeSlotBooking.PM_02_03,
         TimeSlotBooking.PM_03_04,
         TimeSlotBooking.PM_04_05,
         TimeSlotBooking.PM_05_06,
       ];
 
+      const selectedShiftSlots = dto.interviewShift === InterviewShift.MORNING ? morningSlots : afternoonSlots;
+
       let selectedSlot: TimeSlotBooking | null = null;
 
-      for (const slot of timeSlots) {
-        const bookingCount = await this.prisma.interviewRequest.count({
+      for (const slot of selectedShiftSlots) {
+        const count = await this.prisma.interviewRequest.count({
           where: {
             interviewDate: {
-              gte: new Date(interviewDate.setHours(0, 0, 0, 0)),
-              lt: new Date(interviewDate.setHours(23, 59, 59, 999)),
+              gte: startOfDay,
+              lt: endOfDay,
             },
             timeSlot: slot,
           },
         });
 
-        if (bookingCount < totalMentors) {
+        if (count < totalMentors) {
           selectedSlot = slot;
           break;
         }
       }
 
       if (!selectedSlot) {
-        throw new BadRequestException('Tất cả khung giờ trong ngày đã đầy.');
+        throw new BadRequestException(`Tất cả khung giờ của buổi ${dto.interviewShift.toLowerCase()} đã đầy.`);
       }
 
       const booking = await this.prisma.interviewRequest.create({
         data: {
-          userId,
           examId: dto.examId,
-          interviewDate,
+          interviewDate: startOfDay,
           timeSlot: selectedSlot,
         },
       });
@@ -274,7 +279,7 @@ export class MentorsService {
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
       this.logger.error(error);
-      throw new BadRequestException(error);
+      throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
     }
   }
 
@@ -305,14 +310,14 @@ export class MentorsService {
     }
   }
 
-  async checkUserInterviewRequest(userId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     try {
-      if (!userId) {
-        throw new BadRequestException('User ID is required');
+      if (!examId) {
+        throw new BadRequestException('id bộ đề là bắt buộc');
       }
       const interviewRequest = await this.prisma.interviewRequest.findFirst({
         where: {
-          userId: userId,
+          examId,
         },
         select: {
           id: true,

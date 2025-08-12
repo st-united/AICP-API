@@ -28,9 +28,6 @@ export class MentorBookingResponseDto {
   examId: string;
 
   @Expose()
-  userId: string;
-
-  @Expose()
   createdAt: Date;
 
   @Expose()
