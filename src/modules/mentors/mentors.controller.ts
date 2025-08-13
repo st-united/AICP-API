@@ -1,20 +1,3 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  ParseUUIDPipe,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
-import { MentorsService } from './mentors.service';
-import { CreateMentorDto } from './dto/request/create-mentor.dto';
-import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { ResponseItem } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
@@ -23,10 +6,27 @@ import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { MentorsService } from './mentors.service';
+import { CreateMentorDto } from './dto/request/create-mentor.dto';
+import { ResponseItem } from '@app/common/dtos';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { UpdateMentorDto } from './dto/request/update-mentor.dto';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 
 @Controller('mentors')
 export class MentorsController {

@@ -138,11 +138,11 @@ model Level {
 model Course {
   id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title              String      @db.VarChar
-  overview           String?      @db.Text
+  overview           String?     @db.Text
   description        String      @db.Text
-  courseInformation  String?      @map("course_information") @db.Text
-  contactInformation String?      @map("contact_information") @db.Text
-  applicableObjects  String?      @map("applicable_objects") @db.Text
+  courseInformation  String?     @map("course_information") @db.Text
+  contactInformation String?     @map("contact_information") @db.Text
+  applicableObjects  String?     @map("applicable_objects") @db.Text
   provider           String      @db.VarChar
   url                String?     @db.Text
   linkImage          String?     @map("link_image") @db.Text
@@ -225,12 +225,12 @@ model Domain {
 }
 
 model CompetencyAspect {
-  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String              @map("pillar_id") @db.Uuid
-  name                  String              @unique @db.VarChar
-  represent             String              @default("") @db.VarChar
-  description           String              @db.Text
-  weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pillarId              String               @map("pillar_id") @db.Uuid
+  name                  String               @unique @db.VarChar
+  represent             String               @default("") @db.VarChar
+  description           String               @db.Text
+  weightWithinDimension Decimal              @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
   createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -243,10 +243,10 @@ model CompetencyAspect {
 model ExamSet {
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String         @db.VarChar
-  urlImage String? @map("url_image") @db.VarChar(255)
-  startDate        DateTime?        @map("start_date") @db.Timestamptz(6)
-  endDate          DateTime?        @map("end_date") @db.Timestamptz(6)
-  status ExamSetStatus @default(DRAFT)
+  urlImage         String?        @map("url_image") @db.VarChar(255)
+  startDate        DateTime?      @map("start_date") @db.Timestamptz(6)
+  endDate          DateTime?      @map("end_date") @db.Timestamptz(6)
+  status           ExamSetStatus  @default(DRAFT)
   description      String?        @db.Text
   frameworkId      String         @map("framework_id") @db.Uuid
   assessmentType   AssessmentType @default(SELF_ASSESSMENT) @map("assessment_type")
@@ -330,17 +330,17 @@ model MentorCompetency {
 }
 
 model MentorBooking {
-  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  interviewRequestId String       @map("interview_request_id") @db.Uuid
-  mentorId    String              @map("mentor_id") @db.Uuid
-  status      MentorBookingStatus @default(UPCOMING)
-  notes       String?             @db.Text
-  pillarFocus String?             @map("competency_focus") @db.Uuid
-  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interviewRequestId String              @map("interview_request_id") @db.Uuid
+  mentorId           String              @map("mentor_id") @db.Uuid
+  status             MentorBookingStatus @default(UPCOMING)
+  notes              String?             @db.Text
+  pillarFocus        String?             @map("competency_focus") @db.Uuid
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  interviewRequest           InterviewRequest            @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
+  interviewRequest InterviewRequest  @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
   competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
 
@@ -584,9 +584,9 @@ enum QuestionType {
 }
 
 enum MentorBookingStatus {
-  UPCOMING 
-  COMPLETED 
-  NOT_JOINED 
+  UPCOMING
+  COMPLETED
+  NOT_JOINED
 }
 
 enum CognitiveLoad {
