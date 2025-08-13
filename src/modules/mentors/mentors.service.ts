@@ -15,13 +15,18 @@ import { GetMenteesDto } from './dto/request/get-mentees.dto';
 import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
-import { InterviewShift } from '@Constant/enums';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { plainToInstance } from 'class-transformer';
+import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
+import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { InterviewShift } from '@Constant/enums';
 
 @Injectable()
 export class MentorsService {
@@ -156,7 +161,7 @@ export class MentorsService {
             bookings: {
               where: {
                 status: {
-                  in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+                  in: [MentorBookingStatus.UPCOMING],
                 },
               },
             },
@@ -212,7 +217,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const existingBooking = await this.prisma.interviewRequest.findFirst({
         where: { examId: dto.examId },
@@ -440,5 +445,159 @@ export class MentorsService {
         bookings,
       },
     };
+  }
+
+  async getFilteredBookings(
+    dto: FilterMentorBookingDto,
+    mentorId: string
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    const { page = 1, limit = 10 } = dto;
+    const skip = (page - 1) * limit;
+
+    const mentor = await this.prisma.mentor.findUnique({
+      where: { userId: mentorId },
+      select: { id: true },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Mentor not found for this user');
+    }
+    const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
+
+    const [records, total, upcoming, completed, notJoined] = await this.prisma.$transaction([
+      this.prisma.mentorBooking.findMany({
+        where,
+        include: {
+          interviewRequest: {
+            include: {
+              exam: {
+                include: {
+                  user: true,
+                  examSet: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.mentorBooking.count({
+        where,
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: 'UPCOMING',
+        },
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: 'COMPLETED',
+        },
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: 'NOT_JOINED',
+        },
+      }),
+    ]);
+
+    const stats = {
+      total,
+      upcoming,
+      completed,
+      notJoined,
+    };
+
+    const data: MentorBookingResponseV2[] = records.map((booking) => ({
+      id: booking.id,
+      fullName: booking.interviewRequest.exam.user.fullName,
+      email: booking.interviewRequest.exam.user.email,
+      phoneNumber: booking.interviewRequest.exam.user.phoneNumber,
+      timeSlot: booking.interviewRequest.timeSlot,
+      interviewDate: booking.interviewRequest.interviewDate,
+      nameExamSet: booking.interviewRequest.exam?.examSet?.name,
+      level: booking.interviewRequest.exam?.sfiaLevel,
+      status: booking.status,
+    }));
+
+    return new ResponseItem(
+      {
+        data: plainToInstance(MentorBookingResponseV2, data, {
+          excludeExtraneousValues: true,
+        }),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        stats,
+      },
+      'Lấy danh sách lịch phỏng vấn thành công'
+    );
+  }
+
+  private buildWhereClause(filter: {
+    mentorId: string;
+    status?: MentorBookingStatus;
+    level?: string;
+    dateStart?: Date | string;
+    dateEnd?: Date | string;
+    keyword?: string;
+  }): Prisma.MentorBookingWhereInput {
+    const { mentorId, status, level, dateStart, dateEnd, keyword } = filter;
+
+    const where: Prisma.MentorBookingWhereInput = {
+      mentorId,
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (level || dateStart || dateEnd || keyword) {
+      where.interviewRequest = {};
+
+      if (level) {
+        where.interviewRequest.exam = {
+          sfiaLevel: {
+            equals: level as SFIALevel,
+          },
+        };
+      }
+
+      if (dateStart || dateEnd) {
+        where.interviewRequest.interviewDate = {};
+        if (dateStart) {
+          where.interviewRequest.interviewDate.gte = new Date(dateStart);
+        }
+        if (dateEnd) {
+          where.interviewRequest.interviewDate.lte = new Date(dateEnd);
+        }
+      }
+
+      if (keyword) {
+        where.interviewRequest.exam.user = {
+          OR: [
+            { fullName: { contains: keyword, mode: 'insensitive' } },
+            { email: { contains: keyword, mode: 'insensitive' } },
+            { phoneNumber: { contains: keyword, mode: 'insensitive' } },
+          ],
+        };
+      }
+    }
+    return where;
   }
 }

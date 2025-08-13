@@ -138,11 +138,11 @@ model Level {
 model Course {
   id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title              String      @db.VarChar
-  overview           String      @db.Text
+  overview           String?      @db.Text
   description        String      @db.Text
-  courseInformation  String      @map("course_information") @db.Text
-  contactInformation String      @map("contact_information") @db.Text
-  applicableObjects  String      @map("applicable_objects") @db.Text
+  courseInformation  String?      @map("course_information") @db.Text
+  contactInformation String?      @map("contact_information") @db.Text
+  applicableObjects  String?      @map("applicable_objects") @db.Text
   provider           String      @db.VarChar
   url                String?     @db.Text
   linkImage          String?     @map("link_image") @db.Text
@@ -330,17 +330,18 @@ model MentorCompetency {
 }
 
 model MentorBooking {
-  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mentorId           String              @map("mentor_id") @db.Uuid
-  status             MentorBookingStatus @default(PENDING)
-  notes              String?
-  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-  pillarFocus        String?             @map("competency_focus") @db.Uuid
-  interviewRequestId String?             @map("interview_request_id") @db.Uuid
-  competencyPillar   CompetencyPillar?   @relation(fields: [pillarFocus], references: [id])
-  interviewRequest   InterviewRequest?   @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
-  mentor             Mentor              @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interviewRequestId String       @map("interview_request_id") @db.Uuid
+  mentorId    String              @map("mentor_id") @db.Uuid
+  status      MentorBookingStatus @default(UPCOMING)
+  notes       String?             @db.Text
+  pillarFocus String?             @map("competency_focus") @db.Uuid
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  interviewRequest           InterviewRequest            @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
+  competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
 
 model InterviewRequest {
@@ -569,12 +570,11 @@ model ExamLevel {
   id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   examLevel    ExamLevelEnum @map("exam_level")
   name         String        @unique @db.VarChar
-  description  String        @db.Text
-  learningPath String?       @map("learning_path") @db.Text
+  description  String
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  exams Exam[]
+  learningPath String?       @map("learning_path")
+  exams        Exam[]
 }
 
 enum QuestionType {
@@ -585,11 +585,9 @@ enum QuestionType {
 }
 
 enum MentorBookingStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  CANCELLED
-  COMPLETED
+  UPCOMING 
+  COMPLETED 
+  NOT_JOINED 
 }
 
 enum CognitiveLoad {
