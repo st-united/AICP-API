@@ -331,7 +331,7 @@ model MentorCompetency {
 
 model MentorBooking {
   id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  interviewRequestId String              @map("interview_request_id") @db.Uuid
+  interviewRequestId String?             @map("interview_request_id") @db.Uuid
   mentorId           String              @map("mentor_id") @db.Uuid
   status             MentorBookingStatus @default(UPCOMING)
   notes              String?             @db.Text
@@ -340,7 +340,7 @@ model MentorBooking {
   updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  interviewRequest InterviewRequest  @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
+  interviewRequest InterviewRequest? @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
   competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
 
