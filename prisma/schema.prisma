@@ -569,11 +569,12 @@ model ExamLevel {
   id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   examLevel    ExamLevelEnum @map("exam_level")
   name         String        @unique @db.VarChar
-  description  String
+  description  String        @db.Text
+  learningPath String?       @map("learning_path") @db.Text
   createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  learningPath String?       @map("learning_path")
-  exams        Exam[]
+
+  exams Exam[]
 }
 
 enum QuestionType {
