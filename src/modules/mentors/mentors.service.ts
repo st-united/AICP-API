@@ -500,7 +500,7 @@ export class MentorsService {
 
           await this.prisma.mentorBooking.update({
             where: { id: booking.id },
-            data: { meetingLink: meetLink },
+            data: { meetingUrl: meetLink },
           });
 
           await this.emailService.sendEmailInterviewScheduleToUser(
@@ -689,7 +689,7 @@ export class MentorsService {
       },
       select: {
         id: true,
-        meetingLink: true,
+        meetingUrl: true,
         mentor: {
           select: {
             user: {
@@ -732,7 +732,7 @@ export class MentorsService {
           booking.interviewRequest.exam.user.fullName,
           booking.interviewRequest.interviewDate,
           booking.interviewRequest.timeSlot,
-          booking.meetingLink
+          booking.meetingUrl
         );
       } catch (error) {
         this.logger.error(`Failed to send reminder to ${booking.mentor.user.email}`, error.stack);
