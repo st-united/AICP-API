@@ -4,7 +4,7 @@ import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, SFIALevel } from '@prisma/client';
-import { examSetDefaultName } from '@Constant/enums';
+import { examSetDefaultName, UserRoleEnum } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
@@ -15,7 +15,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { formatLevel } from '@Constant/format';
 import { DATE_TIME } from '@Constant/datetime';
-import { ExamWithResultDto } from './dto/response/exam-with-result.dto';
+import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
+import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
 
 @Injectable()
 export class ExamService {
@@ -84,7 +85,7 @@ export class ExamService {
   ): Promise<ResponseItem<HistoryExamResponseDto[]>> {
     try {
       const examSet = await this.prisma.examSet.findFirst({
-        where: { name: 'AI INPUT TEST' },
+        where: { name: historyExam.examSetName || examSetDefaultName.DEFAULT },
       });
 
       const where: any = {
@@ -505,5 +506,170 @@ export class ExamService {
       };
     });
     return coursesWithRegistrationStatus;
+  }
+
+  async getUsersWithExams(filters: UsersWithExamsFilters = {}): Promise<ResponseItem<UserWithExamsResponseDto[]>> {
+    try {
+      const { fromDate, toDate, university } = filters;
+
+      const whereClause: any = {
+        roles: {
+          some: {
+            role: {
+              name: UserRoleEnum.USER,
+            },
+          },
+        },
+      };
+
+      if (fromDate || toDate) {
+        whereClause.createdAt = {};
+        if (fromDate) whereClause.createdAt.gte = fromDate;
+        if (toDate) whereClause.createdAt.lte = toDate;
+      }
+
+      if (university) {
+        whereClause.university = {
+          equals: university,
+        };
+      }
+
+      const users = await this.prisma.user.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phoneNumber: true,
+          position: true,
+          createdAt: true,
+          updatedAt: true,
+          university: true,
+          userExam: {
+            select: {
+              id: true,
+              startedAt: true,
+              sfiaLevel: true,
+              examLevel: {
+                select: {
+                  examLevel: true,
+                },
+              },
+              overallScore: true,
+              examStatus: true,
+              createdAt: true,
+              examSet: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              examPillarSnapshot: {
+                select: {
+                  pillar: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                  score: true,
+                },
+              },
+              examAspectSnapshot: {
+                select: {
+                  aspect: {
+                    select: {
+                      id: true,
+                      name: true,
+                      represent: true,
+                      pillarId: true,
+                    },
+                  },
+                  score: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const processedUsers: UserWithExamsResponseDto[] = users.map((user) => {
+        const processedExams: DetailExamResponseDto[] = user.userExam.map((exam) => {
+          const { examPillarSnapshot, examAspectSnapshot, overallScore, ...rest } = exam;
+
+          const pillarsWithAspects = examPillarSnapshot.map((pillarSnapshot) => {
+            const pillar = pillarSnapshot.pillar;
+
+            const aspects = examAspectSnapshot
+              .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+              .map((aspectSnapshot) => ({
+                id: aspectSnapshot.aspect.id,
+                name: aspectSnapshot.aspect.name,
+                represent: aspectSnapshot.aspect.represent,
+                score: Number(aspectSnapshot.score),
+              }));
+
+            return {
+              id: pillar.id,
+              name: pillar.name,
+              score: Number(pillarSnapshot.score),
+              aspects: aspects,
+            };
+          });
+
+          const pillarScores = pillarsWithAspects.reduce(
+            (acc, snapshot) => {
+              const name = snapshot.name.toUpperCase();
+
+              switch (name) {
+                case CompetencyDimension.MINDSET:
+                  acc.mindsetScore = snapshot;
+                  break;
+                case CompetencyDimension.SKILLSET:
+                  acc.skillsetScore = snapshot;
+                  break;
+                case CompetencyDimension.TOOLSET:
+                  acc.toolsetScore = snapshot;
+                  break;
+              }
+              return acc;
+            },
+            {
+              mindsetScore: null,
+              skillsetScore: null,
+              toolsetScore: null,
+            }
+          );
+
+          return {
+            ...rest,
+            overallScore: Number(overallScore),
+            ...pillarScores,
+          };
+        });
+
+        return {
+          user: {
+            id: user.id,
+            fullName: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            position: user.position,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            university: user.university,
+          },
+          exams: processedExams,
+        };
+      });
+
+      return new ResponseItem<UserWithExamsResponseDto[]>(
+        processedUsers,
+        'Lấy danh sách người dùng và các bài thi thành công'
+      );
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi lấy danh sách người dùng và các bài thi');
+    }
   }
 }

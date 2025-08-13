@@ -592,11 +592,6 @@ enum MentorBookingStatus {
   COMPLETED
 }
 
-enum InterviewRequestStatus {
-  PENDING   
-  ASSIGNED  
-}
-
 enum CognitiveLoad {
   LOW
   MEDIUM
@@ -702,8 +697,14 @@ enum ExamSetStatus {
   ARCHIVED
 }
 
+enum InterviewRequestStatus {
+  PENDING
+  ASSIGNED
+}
+
 enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
   FULL
 }
+

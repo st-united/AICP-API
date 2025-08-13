@@ -10,9 +10,9 @@
 */
 -- AlterTable
 ALTER TABLE "Course" DROP COLUMN "linkImage",
-ADD COLUMN     "applicable_objects" TEXT NOT NULL,
-ADD COLUMN     "contact_information" TEXT NOT NULL,
-ADD COLUMN     "course_information" TEXT NOT NULL,
-ADD COLUMN     "link_image" TEXT,
-ADD COLUMN     "overview" TEXT NOT NULL,
+ADD COLUMN     "applicable_objects" TEXT NULL,
+ADD COLUMN     "contact_information" TEXT NULL,
+ADD COLUMN     "course_information" TEXT NULL,
+ADD COLUMN     "link_image" TEXT NULL,
+ADD COLUMN     "overview" TEXT NULL,
 ALTER COLUMN "url" DROP NOT NULL;
