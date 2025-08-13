@@ -13,7 +13,7 @@ export class BookingService {
   constructor(private prisma: PrismaService) {}
 
   async findAllWithFilter(dto: FilterMentorBookingRequestDto): Promise<ResponseItem<PaginatedBookingResponseDto>> {
-    const { name, level, dateStart, dateEnd, page = '1', limit = '10' } = dto;
+    const { name, levels, dateStart, dateEnd, page = '1', limit = '10' } = dto;
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
@@ -29,8 +29,7 @@ export class BookingService {
       };
     }
 
-    if (level && level.length > 0) {
-      const levels = level.split(',').map((l) => l.trim());
+    if (levels && levels.length > 0) {
       filters.mentor = {
         sfiaLevel: {
           in: levels,
