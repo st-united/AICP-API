@@ -18,7 +18,7 @@ export class CourseDto {
   url: string;
 
   @ApiProperty({ required: false })
-  linkImage?: string;
+  linkImage?: string | null;
 
   @ApiProperty({ required: false, default: 'ONLINE' })
   courseType?: string;
@@ -46,4 +46,7 @@ export class CourseDto {
 
   @ApiProperty()
   updatedAt: Date;
+
+  @ApiProperty()
+  isRegistered: boolean;
 }
