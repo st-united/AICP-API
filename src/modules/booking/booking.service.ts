@@ -30,9 +30,10 @@ export class BookingService {
     }
 
     if (level && level.length > 0) {
+      const levels = level.split(',').map((l) => l.trim());
       filters.mentor = {
         sfiaLevel: {
-          in: level,
+          in: levels,
         },
       };
     }
