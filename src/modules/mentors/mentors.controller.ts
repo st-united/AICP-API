@@ -23,12 +23,12 @@ import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
 import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 
 @ApiBearerAuth('access-token')
@@ -90,6 +90,15 @@ export class MentorsController {
     return await this.mentorsService.deactivateMentorAccount(id, url);
   }
 
+  @Get()
+  @UseGuards(JwtAccessTokenGuard)
+  async getFilteredBookings(
+    @Req() req: any,
+    @Query() dto: FilterMentorBookingDto
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    return this.mentorsService.getFilteredBookings(dto, req.user.userId);
+  }
+
   @UseGuards(JwtAccessTokenGuard)
   @Post('check-interview-request')
   @ApiOperation({ summary: 'Check if user has an interview request' })
@@ -117,14 +126,5 @@ export class MentorsController {
     const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId, req.user.email);
     await this.bookingGateway.emitNewBooking();
     return result;
-  }
-
-  @Get()
-  @UseGuards(JwtAccessTokenGuard)
-  async getFilteredBookings(
-    @Req() req: any,
-    @Query() dto: FilterMentorBookingDto
-  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
-    return this.mentorsService.getFilteredBookings(dto, req.user.userId);
   }
 }
