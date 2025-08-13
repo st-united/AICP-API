@@ -1,19 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, Req, UseGuards } from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { GetMenteesDto } from './dto/request/get-mentees.dto';
-import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
-import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @Controller('mentors')
 export class MentorsController {
@@ -68,5 +67,27 @@ export class MentorsController {
   async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req): Promise<ResponseItem<null>> {
     const url = req.headers.origin;
     return await this.mentorsService.deactivateMentorAccount(id, url);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('check-interview-request')
+  @ApiOperation({ summary: 'Check if user has an interview request' })
+  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid user ID or error checking interview request' })
+  async checkUserInterviewRequest(
+    @Body() checkInterviewRequestDto: CheckInterviewRequestDto
+  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(checkInterviewRequestDto.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('check-my-interview-request/:examId')
+  @ApiOperation({ summary: 'Check if current user has an interview request' })
+  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
+  @ApiResponse({ status: 400, description: 'Error checking interview request' })
+  async checkMyInterviewRequest(
+    @Param('examId', ParseUUIDPipe) examId: string
+  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(examId);
   }
 }
