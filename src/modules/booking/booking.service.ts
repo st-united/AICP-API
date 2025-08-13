@@ -41,9 +41,9 @@ export class BookingService {
     const keywordFilter = name
       ? {
           OR: [
-            { interviewRequest: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { email: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
+            { interviewRequest: { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { email: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } } },
           ],
         }
       : {};
