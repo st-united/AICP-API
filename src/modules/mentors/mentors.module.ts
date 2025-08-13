@@ -11,6 +11,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { BookingModule } from '../booking/booking.module';
+import { ScheduledMentorReminderService } from './mentor-booking-reminder.service';
 
 @Module({
   imports: [
@@ -31,6 +32,6 @@ import { BookingModule } from '../booking/booking.module';
     UsersModule,
   ],
   controllers: [MentorsController],
-  providers: [MentorsService, TokenService, EmailService, ConfigService],
+  providers: [MentorsService, TokenService, EmailService, ConfigService, ScheduledMentorReminderService],
 })
 export class MentorsModule {}

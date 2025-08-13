@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
+import { InterviewRequestStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { SlotStatus, TimeSlotBooking } from '@prisma/client';
 import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
@@ -50,6 +51,9 @@ export class BookingService {
     const [records, total] = await this.prisma.$transaction([
       this.prisma.mentorBooking.findMany({
         where: {
+          interviewRequest: {
+            status: InterviewRequestStatus.PENDING,
+          },
           ...filters,
           ...keywordFilter,
         },
@@ -77,6 +81,9 @@ export class BookingService {
 
       this.prisma.mentorBooking.count({
         where: {
+          interviewRequest: {
+            status: InterviewRequestStatus.PENDING,
+          },
           ...filters,
           ...keywordFilter,
         },
