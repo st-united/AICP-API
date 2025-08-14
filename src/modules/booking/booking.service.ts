@@ -15,26 +15,28 @@ export class BookingService {
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
-
     const filters: any = {};
 
-    if (dateStart || dateEnd) {
-      filters.interviewRequest = {
-        interviewDate: {
-          ...(dateStart && { gte: new Date(dateStart) }),
-          ...(dateEnd && { lte: new Date(dateEnd) }),
-        },
-      };
-    }
-
-    if (levels && levels.length > 0) {
-      filters.interviewRequest.exam = {
-        examLevel: {
-          examLevel: {
-            in: levels,
+    if (dateStart || dateEnd || (levels && levels.length > 0)) {
+      filters.interviewRequest = filters.interviewRequest || {};
+      if (dateStart || dateEnd) {
+        filters.interviewRequest = {
+          interviewDate: {
+            ...(dateStart && { gte: new Date(dateStart) }),
+            ...(dateEnd && { lte: new Date(dateEnd) }),
           },
-        },
-      };
+        };
+      }
+
+      if (levels && levels.length > 0) {
+        filters.interviewRequest.exam = {
+          examLevel: {
+            examLevel: {
+              in: levels,
+            },
+          },
+        };
+      }
     }
 
     const keywordFilter = name
