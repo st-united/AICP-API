@@ -406,21 +406,21 @@ export class MentorsService {
       this.prisma.mentorBooking.count({
         where: {
           ...where,
-          status: 'UPCOMING',
+          status: MentorBookingStatus.UPCOMING,
         },
       }),
 
       this.prisma.mentorBooking.count({
         where: {
           ...where,
-          status: 'COMPLETED',
+          status: MentorBookingStatus.COMPLETED,
         },
       }),
 
       this.prisma.mentorBooking.count({
         where: {
           ...where,
-          status: 'NOT_JOINED',
+          status: MentorBookingStatus.NOT_JOINED,
         },
       }),
     ]);
