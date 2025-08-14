@@ -91,7 +91,7 @@ export class BookingService {
       phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
       nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
       examId: booking.interviewRequest?.examId || '',
-      level: booking.mentor?.sfiaLevel || '',
+      level: booking.interviewRequest?.exam?.sfiaLevel || '',
       date: booking.interviewRequest.interviewDate.toISOString() || '',
     }));
 
