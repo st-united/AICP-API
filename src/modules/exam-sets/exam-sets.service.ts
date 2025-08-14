@@ -9,7 +9,7 @@ import { ExamStatus } from '@prisma/client';
 
 @Injectable()
 export class ExamSetsService {
-  private static readonly EXAM_SET_NAME = 'AI INPUT TEST';
+  private static readonly EXAM_SET_NAME = 'AI For Fresher';
   private static readonly DEFAULT_EXAM_DURATION_MINUTES = 40;
 
   constructor(private readonly prisma: PrismaService) {}
@@ -32,36 +32,41 @@ export class ExamSetsService {
     return `This action removes a #${id} examSet`;
   }
 
-  async getExamSetWithQuestions(userId: string): Promise<ResponseItem<GetExamSetDto>> {
-    const examSet = await this.findExamSetWithQuestions();
+  async getExamSetWithQuestions(userId: string, examSetName?: string): Promise<ResponseItem<GetExamSetDto>> {
+    const examSet = await this.findExamSetWithQuestions(examSetName);
     if (!examSet) {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
 
-    const existingExam = await this.findUserExam(userId, examSet.id);
-    if (!existingExam) {
-      return await this.createNewExam(userId, examSet);
+    const allExams = await this.prisma.exam.findMany({
+      where: {
+        userId: userId,
+        examSetId: examSet.id,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    const attempts = allExams.length;
+    const latestExam = allExams[attempts - 1];
+
+    if (!latestExam || latestExam.examStatus === ExamStatus.SUBMITTED) {
+      const response = await this.createNewExam(userId, examSet);
+      return new ResponseItem(
+        response.data,
+        `Bài kiểm tra mới đã được tạo. Đây là lần làm thứ ${attempts + 1}`,
+        GetExamSetDto
+      );
     }
 
-    const examStatus = this.determineExamStatus(existingExam);
-
-    switch (examStatus) {
-      case 'IN_PROGRESS':
-        return await this.handleInProgressExam(userId, existingExam, examSet);
-      case 'SUBMITTED':
-        return new ResponseItem(
-          null,
-          `Bạn đã làm bài ${ExamSetsService.EXAM_SET_NAME}, không thể làm lại.`,
-          GetExamSetDto
-        );
-      default:
-        throw new NotFoundException('Trạng thái bài kiểm tra không hợp lệ');
+    if (latestExam.examStatus === ExamStatus.IN_PROGRESS) {
+      return await this.handleInProgressExam(userId, latestExam, examSet);
     }
+
+    throw new NotFoundException('Trạng thái bài kiểm tra không hợp lệ');
   }
 
-  private async findExamSetWithQuestions(): Promise<ExamSetWithQuestions | null> {
+  private async findExamSetWithQuestions(examSetName?: string): Promise<ExamSetWithQuestions | null> {
     return this.prisma.examSet.findFirst({
-      where: { name: ExamSetsService.EXAM_SET_NAME },
+      where: { name: examSetName ?? ExamSetsService.EXAM_SET_NAME },
       include: {
         exam: true,
         setQuestion: {

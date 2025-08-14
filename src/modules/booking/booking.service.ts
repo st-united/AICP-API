@@ -6,43 +6,45 @@ import { ResponseItem } from '@app/common/dtos';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { SlotStatus, TimeSlotBooking } from '@prisma/client';
-import { log } from 'console';
-
 @Injectable()
 export class BookingService {
   constructor(private prisma: PrismaService) {}
 
   async findAllWithFilter(dto: FilterMentorBookingRequestDto): Promise<ResponseItem<PaginatedBookingResponseDto>> {
-    const { name, level, dateStart, dateEnd, page = '1', limit = '10' } = dto;
+    const { name, levels, dateStart, dateEnd, page = '1', limit = '10' } = dto;
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
-
     const filters: any = {};
 
-    if (dateStart || dateEnd) {
-      filters.interviewRequest = {
-        interviewDate: {
-          ...(dateStart && { gte: new Date(dateStart) }),
-          ...(dateEnd && { lte: new Date(dateEnd) }),
-        },
-      };
-    }
+    if (dateStart || dateEnd || (levels && levels.length > 0)) {
+      filters.interviewRequest = filters.interviewRequest || {};
+      if (dateStart || dateEnd) {
+        filters.interviewRequest = {
+          interviewDate: {
+            ...(dateStart && { gte: new Date(dateStart) }),
+            ...(dateEnd && { lte: new Date(dateEnd) }),
+          },
+        };
+      }
 
-    if (level && level.length > 0) {
-      filters.mentor = {
-        sfiaLevel: {
-          in: level,
-        },
-      };
+      if (levels && levels.length > 0) {
+        filters.interviewRequest.exam = {
+          examLevel: {
+            examLevel: {
+              in: levels,
+            },
+          },
+        };
+      }
     }
 
     const keywordFilter = name
       ? {
           OR: [
-            { interviewRequest: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { email: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
+            { interviewRequest: { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { email: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } } },
           ],
         }
       : {};
@@ -59,6 +61,7 @@ export class BookingService {
             include: {
               exam: {
                 include: {
+                  examLevel: true,
                   examSet: true,
                   user: true,
                 },
@@ -90,7 +93,8 @@ export class BookingService {
       email: booking.interviewRequest?.exam.user?.email || '',
       phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
       nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
-      level: booking.mentor?.sfiaLevel || '',
+      examId: booking.interviewRequest?.examId || '',
+      level: booking.interviewRequest?.exam?.examLevel.examLevel || '',
       date: booking.interviewRequest.interviewDate.toISOString() || '',
     }));
 
@@ -114,7 +118,7 @@ export class BookingService {
     }
 
     const days = [2, 3, 4].map((offset) => {
-      const date = new Date(exam.finishedAt);
+      const date = new Date();
       date.setDate(date.getDate() + offset);
       return date.toISOString().split('T')[0];
     });
@@ -154,7 +158,6 @@ export class BookingService {
           interviewDate: true,
         },
       });
-      console.log(requests);
 
       let usedMorning = 0;
       let usedAfternoon = 0;
@@ -163,16 +166,9 @@ export class BookingService {
         if (morningSlots.includes(req.timeSlot)) usedMorning++;
         else if (afternoonSlots.includes(req.timeSlot)) usedAfternoon++;
       }
-      console.log(usedMorning);
-      console.log(usedAfternoon);
 
       const morningRemaining = Math.max(0, morningTotal - usedMorning);
       const afternoonRemaining = Math.max(0, afternoonTotal - usedAfternoon);
-      console.log(morningTotal);
-      console.log(afternoonTotal);
-
-      console.log(morningRemaining);
-      console.log(afternoonRemaining);
 
       dailyReports.push({
         date: day,
@@ -186,7 +182,6 @@ export class BookingService {
         },
       });
     }
-    console.log(dailyReports);
 
     return {
       message: 'Danh sách slot khả dụng',

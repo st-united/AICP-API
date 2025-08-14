@@ -146,7 +146,7 @@ model Course {
   durationHours      Int?                   @map("duration_hours") @db.SmallInt
   isActive           Boolean                @default(true) @map("is_active")
   aspectId           String                 @map("aspect_id") @db.Uuid
-  linkImage          String?
+  linkImage          String?                @map("link_image")
   sfiaLevels         SFIALevel[]            @map("sfia_level")
   competencyAspect   CompetencyAspect       @relation(fields: [aspectId], references: [id], onDelete: Cascade)
   domain             Domain?                @relation(fields: [domainId], references: [id])
