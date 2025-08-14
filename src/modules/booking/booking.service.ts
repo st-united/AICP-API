@@ -31,8 +31,10 @@ export class BookingService {
 
     if (levels && levels.length > 0) {
       filters.interviewRequest.exam = {
-        sfiaLevel: {
-          in: levels,
+        examLevel: {
+          examLevel: {
+            in: levels,
+          },
         },
       };
     }
@@ -59,6 +61,7 @@ export class BookingService {
             include: {
               exam: {
                 include: {
+                  examLevel: true,
                   examSet: true,
                   user: true,
                 },
@@ -91,7 +94,7 @@ export class BookingService {
       phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
       nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
       examId: booking.interviewRequest?.examId || '',
-      level: booking.interviewRequest?.exam?.sfiaLevel || '',
+      level: booking.interviewRequest?.exam?.examLevel.examLevel || '',
       date: booking.interviewRequest.interviewDate.toISOString() || '',
     }));
 
@@ -155,6 +158,7 @@ export class BookingService {
           interviewDate: true,
         },
       });
+
       let usedMorning = 0;
       let usedAfternoon = 0;
 
