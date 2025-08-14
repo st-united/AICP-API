@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsNumberString, IsArray } from 'class-validator';
-
+import { Transform } from 'class-transformer';
 export class FilterMentorBookingRequestDto {
   @IsOptional()
   @IsString()
@@ -8,7 +8,8 @@ export class FilterMentorBookingRequestDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  level?: string[];
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  levels?: string[];
 
   @IsOptional()
   @IsString()

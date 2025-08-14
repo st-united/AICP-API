@@ -13,36 +13,40 @@ export class BookingService {
   constructor(private prisma: PrismaService) {}
 
   async findAllWithFilter(dto: FilterMentorBookingRequestDto): Promise<ResponseItem<PaginatedBookingResponseDto>> {
-    const { name, level, dateStart, dateEnd, page = '1', limit = '10' } = dto;
+    const { name, levels, dateStart, dateEnd, page = '1', limit = '10' } = dto;
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
-
     const filters: any = {};
 
-    if (dateStart || dateEnd) {
-      filters.interviewRequest = {
-        interviewDate: {
-          ...(dateStart && { gte: new Date(dateStart) }),
-          ...(dateEnd && { lte: new Date(dateEnd) }),
-        },
-      };
-    }
+    if (dateStart || dateEnd || (levels && levels.length > 0)) {
+      filters.interviewRequest = filters.interviewRequest || {};
+      if (dateStart || dateEnd) {
+        filters.interviewRequest = {
+          interviewDate: {
+            ...(dateStart && { gte: new Date(dateStart) }),
+            ...(dateEnd && { lte: new Date(dateEnd) }),
+          },
+        };
+      }
 
-    if (level && level.length > 0) {
-      filters.mentor = {
-        sfiaLevel: {
-          in: level,
-        },
-      };
+      if (levels && levels.length > 0) {
+        filters.interviewRequest.exam = {
+          examLevel: {
+            examLevel: {
+              in: levels,
+            },
+          },
+        };
+      }
     }
 
     const keywordFilter = name
       ? {
           OR: [
-            { interviewRequest: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { email: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
+            { interviewRequest: { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { email: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } } },
           ],
         }
       : {};
@@ -59,6 +63,7 @@ export class BookingService {
             include: {
               exam: {
                 include: {
+                  examLevel: true,
                   examSet: true,
                   user: true,
                 },
@@ -90,7 +95,8 @@ export class BookingService {
       email: booking.interviewRequest?.exam.user?.email || '',
       phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
       nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
-      level: booking.mentor?.sfiaLevel || '',
+      examId: booking.interviewRequest?.examId || '',
+      level: booking.interviewRequest?.exam?.examLevel.examLevel || '',
       date: booking.interviewRequest.interviewDate.toISOString() || '',
     }));
 
@@ -114,7 +120,7 @@ export class BookingService {
     }
 
     const days = [2, 3, 4].map((offset) => {
-      const date = new Date(exam.finishedAt);
+      const date = new Date();
       date.setDate(date.getDate() + offset);
       return date.toISOString().split('T')[0];
     });
@@ -154,6 +160,7 @@ export class BookingService {
           interviewDate: true,
         },
       });
+
       let usedMorning = 0;
       let usedAfternoon = 0;
 

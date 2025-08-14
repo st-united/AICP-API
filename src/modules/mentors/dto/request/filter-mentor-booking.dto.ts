@@ -1,6 +1,7 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MentorBookingStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
 
 export class FilterMentorBookingDto {
   @IsOptional()
@@ -8,8 +9,10 @@ export class FilterMentorBookingDto {
   keyword?: string;
 
   @IsOptional()
-  @IsString()
-  level?: string;
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  levels?: string[];
 
   @IsOptional()
   @IsEnum(MentorBookingStatus)
