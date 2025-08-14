@@ -30,7 +30,7 @@ export class BookingService {
     }
 
     if (levels && levels.length > 0) {
-      filters.mentor = {
+      filters.interviewRequest.exam = {
         sfiaLevel: {
           in: levels,
         },
