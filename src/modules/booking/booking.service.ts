@@ -97,8 +97,8 @@ export class BookingService {
       email: booking.interviewRequest?.exam.user?.email || '',
       phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
       nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
+      level: booking.interviewRequest?.exam?.sfiaLevel || '',
       examId: booking.interviewRequest?.examId || '',
-      level: booking.mentor?.sfiaLevel || '',
       date: booking.interviewRequest.interviewDate.toISOString() || '',
     }));
 
