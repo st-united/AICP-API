@@ -8,7 +8,7 @@ export class FilterMentorBookingRequestDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  level?: string[];
+  levels?: string[];
 
   @IsOptional()
   @IsString()

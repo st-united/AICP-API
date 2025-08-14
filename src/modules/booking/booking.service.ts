@@ -13,7 +13,7 @@ export class BookingService {
   constructor(private prisma: PrismaService) {}
 
   async findAllWithFilter(dto: FilterMentorBookingRequestDto): Promise<ResponseItem<PaginatedBookingResponseDto>> {
-    const { name, level, dateStart, dateEnd, page = '1', limit = '10' } = dto;
+    const { name, levels, dateStart, dateEnd, page = '1', limit = '10' } = dto;
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
@@ -29,10 +29,10 @@ export class BookingService {
       };
     }
 
-    if (level && level.length > 0) {
-      filters.mentor = {
+    if (levels && levels.length > 0) {
+      filters.interviewRequest.exam = {
         sfiaLevel: {
-          in: level,
+          in: levels,
         },
       };
     }
@@ -40,9 +40,9 @@ export class BookingService {
     const keywordFilter = name
       ? {
           OR: [
-            { interviewRequest: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { email: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
+            { interviewRequest: { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { email: { contains: name, mode: 'insensitive' } } } } },
+            { interviewRequest: { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } } },
           ],
         }
       : {};
@@ -90,7 +90,8 @@ export class BookingService {
       email: booking.interviewRequest?.exam.user?.email || '',
       phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
       nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
-      level: booking.mentor?.sfiaLevel || '',
+      examId: booking.interviewRequest?.examId || '',
+      level: booking.interviewRequest?.exam?.sfiaLevel || '',
       date: booking.interviewRequest.interviewDate.toISOString() || '',
     }));
 
@@ -114,7 +115,7 @@ export class BookingService {
     }
 
     const days = [2, 3, 4].map((offset) => {
-      const date = new Date(exam.finishedAt);
+      const date = new Date();
       date.setDate(date.getDate() + offset);
       return date.toISOString().split('T')[0];
     });
