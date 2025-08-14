@@ -8,7 +8,7 @@ import { UsersService } from '@UsersModule/users.service';
 import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { InterviewRequestStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
+import { InterviewRequestStatus, MentorBookingStatus, Prisma, SFIALevel, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
 import { GetMenteesDto } from './dto/request/get-mentees.dto';
