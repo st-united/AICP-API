@@ -8,7 +8,16 @@ export class FilterMentorBookingRequestDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @Transform(({ value }) => {
+    if (!value) return undefined;
+    if (Array.isArray(value)) {
+      return value.filter((item) => item && item.trim() !== '');
+    }
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return undefined;
+  })
   levels?: string[];
 
   @IsOptional()
