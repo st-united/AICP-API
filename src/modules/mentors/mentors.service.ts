@@ -8,7 +8,7 @@ import { UsersService } from '@UsersModule/users.service';
 import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { MentorBookingStatus, Prisma, SFIALevel, TimeSlotBooking } from '@prisma/client';
+import { ExamLevelEnum, MentorBookingStatus, Prisma, SFIALevel, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
 import { GetMenteesDto } from './dto/request/get-mentees.dto';
@@ -337,6 +337,7 @@ export class MentorsService {
             include: {
               exam: {
                 include: {
+                  examLevel: true,
                   user: true,
                   examSet: {
                     select: {
@@ -395,7 +396,7 @@ export class MentorsService {
       timeSlot: booking.interviewRequest.timeSlot,
       interviewDate: booking.interviewRequest.interviewDate,
       nameExamSet: booking.interviewRequest.exam?.examSet?.name,
-      level: booking.interviewRequest.exam?.sfiaLevel,
+      level: booking.interviewRequest.exam?.examLevel?.examLevel,
       status: booking.status,
     }));
 
@@ -417,12 +418,12 @@ export class MentorsService {
   private buildWhereClause(filter: {
     mentorId: string;
     status?: MentorBookingStatus;
-    level?: string;
+    levels?: string[];
     dateStart?: Date | string;
     dateEnd?: Date | string;
     keyword?: string;
   }): Prisma.MentorBookingWhereInput {
-    const { mentorId, status, level, dateStart, dateEnd, keyword } = filter;
+    const { mentorId, status, levels, dateStart, dateEnd, keyword } = filter;
 
     const where: Prisma.MentorBookingWhereInput = {
       mentorId,
@@ -432,13 +433,16 @@ export class MentorsService {
       where.status = status;
     }
 
-    if (level || dateStart || dateEnd || keyword) {
-      where.interviewRequest = {};
+    if (levels || dateStart || dateEnd || keyword) {
+      where.interviewRequest = where.interviewRequest ?? {};
 
-      if (level) {
+      if (levels) {
+        const examLevels = levels.map((level) => level as ExamLevelEnum);
         where.interviewRequest.exam = {
-          sfiaLevel: {
-            equals: level as SFIALevel,
+          examLevel: {
+            examLevel: {
+              in: examLevels,
+            },
           },
         };
       }
