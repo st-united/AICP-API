@@ -6,4 +6,4 @@
 */
 -- AlterTable
 ALTER TABLE "public"."MentorBooking" ADD COLUMN     "meeting_url" TEXT,
-ALTER COLUMN "interview_request_id" SET NOT NULL;
+ALTER COLUMN "interview_request_id" DROP NOT NULL;

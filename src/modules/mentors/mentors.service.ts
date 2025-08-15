@@ -7,16 +7,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { InterviewRequestStatus, MentorBookingStatus, Prisma, SFIALevel, TimeSlotBooking } from '@prisma/client';
+import {
+  InterviewRequestStatus,
+  ExamStatus,
+  MentorBookingStatus,
+  Prisma,
+  SFIALevel,
+  TimeSlotBooking,
+} from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
-import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { AssignMentorDto } from './dto/response/assign-mentor.dto';
-import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { timeSlotEnum, InterviewShift } from '@Constant/enums';
-
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 import { plainToInstance } from 'class-transformer';
@@ -25,6 +27,10 @@ import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/respo
 
 import { google, Auth } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { timeSlotEnum, InterviewShift } from '@Constant/enums';
 
 @Injectable()
 export class MentorsService {
@@ -276,6 +282,13 @@ export class MentorsService {
           examId: dto.examId,
           interviewDate: startOfDay,
           timeSlot: selectedSlot,
+        },
+      });
+
+      await this.prisma.exam.update({
+        where: { id: dto.examId },
+        data: {
+          examStatus: ExamStatus.INTERVIEW_SCHEDULED,
         },
       });
 
