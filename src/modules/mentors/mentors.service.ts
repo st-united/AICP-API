@@ -26,6 +26,7 @@ import { plainToInstance } from 'class-transformer';
 import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { InterviewShift } from '@Constant/enums';
