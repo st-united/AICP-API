@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseUUIDPipe, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseUUIDPipe,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
@@ -14,7 +26,13 @@ import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
 export class MentorsController {
   constructor(
@@ -68,5 +86,12 @@ export class MentorsController {
   async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req): Promise<ResponseItem<null>> {
     const url = req.headers.origin;
     return await this.mentorsService.deactivateMentorAccount(id, url);
+  }
+
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    await this.bookingGateway.emitNewBooking();
+    return result;
   }
 }
