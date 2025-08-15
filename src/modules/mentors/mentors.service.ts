@@ -8,8 +8,8 @@ import { UsersService } from '@UsersModule/users.service';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
 import {
-  InterviewRequestStatus,
   ExamStatus,
+  InterviewRequestStatus,
   MentorBookingStatus,
   Prisma,
   SFIALevel,
@@ -432,6 +432,58 @@ export class MentorsService {
     }
   }
 
+  private buildWhereClause(filter: {
+    mentorId: string;
+    status?: MentorBookingStatus;
+    level?: string;
+    dateStart?: Date | string;
+    dateEnd?: Date | string;
+    keyword?: string;
+  }): Prisma.MentorBookingWhereInput {
+    const { mentorId, status, level, dateStart, dateEnd, keyword } = filter;
+
+    const where: Prisma.MentorBookingWhereInput = {
+      mentorId,
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (level || dateStart || dateEnd || keyword) {
+      where.interviewRequest = {};
+
+      if (level) {
+        where.interviewRequest.exam = {
+          sfiaLevel: {
+            equals: level as SFIALevel,
+          },
+        };
+      }
+
+      if (dateStart || dateEnd) {
+        where.interviewRequest.interviewDate = {};
+        if (dateStart) {
+          where.interviewRequest.interviewDate.gte = new Date(dateStart);
+        }
+        if (dateEnd) {
+          where.interviewRequest.interviewDate.lte = new Date(dateEnd);
+        }
+      }
+
+      if (keyword) {
+        where.interviewRequest.exam.user = {
+          OR: [
+            { fullName: { contains: keyword, mode: 'insensitive' } },
+            { email: { contains: keyword, mode: 'insensitive' } },
+            { phoneNumber: { contains: keyword, mode: 'insensitive' } },
+          ],
+        };
+      }
+    }
+    return where;
+  }
+
   async assignMentorToRequests(
     dto: AssignMentorDto,
     userId: string,
@@ -673,49 +725,6 @@ export class MentorsService {
       },
       'Lấy danh sách lịch phỏng vấn thành công'
     );
-  }
-
-  private buildWhereClause(filter: {
-    mentorId: string;
-    'status[]'?: MentorBookingStatus[];
-    'level[]'?: SFIALevel[];
-    dateStart?: Date | string;
-    dateEnd?: Date | string;
-    keyword?: string;
-  }): Prisma.MentorBookingWhereInput {
-    const { mentorId, 'status[]': status, 'level[]': level, dateStart, dateEnd, keyword } = filter;
-    const where: Prisma.MentorBookingWhereInput = { mentorId };
-    if (status?.length) {
-      where.status = { in: status };
-    }
-    if (level?.length || dateStart || dateEnd || keyword) {
-      where.interviewRequest = {};
-      if (level?.length) {
-        where.interviewRequest.exam = {
-          sfiaLevel: { in: level },
-        };
-      }
-      if (dateStart || dateEnd) {
-        where.interviewRequest.interviewDate = {};
-        if (dateStart) {
-          where.interviewRequest.interviewDate.gte = new Date(dateStart);
-        }
-        if (dateEnd) {
-          where.interviewRequest.interviewDate.lte = new Date(dateEnd);
-        }
-      }
-      if (keyword) {
-        where.interviewRequest.exam = where.interviewRequest.exam || {};
-        where.interviewRequest.exam.user = {
-          OR: [
-            { fullName: { contains: keyword, mode: 'insensitive' } },
-            { email: { contains: keyword, mode: 'insensitive' } },
-            { phoneNumber: { contains: keyword, mode: 'insensitive' } },
-          ],
-        };
-      }
-    }
-    return where;
   }
 
   async sendInterviewReminders(): Promise<void> {
