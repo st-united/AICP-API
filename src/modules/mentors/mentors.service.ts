@@ -9,6 +9,7 @@ import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
 import {
   ExamStatus,
+  ExamLevelEnum,
   InterviewRequestStatus,
   MentorBookingStatus,
   Prisma,
@@ -28,6 +29,7 @@ import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/respo
 import { google, Auth } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { timeSlotEnum, InterviewShift } from '@Constant/enums';
@@ -650,6 +652,7 @@ export class MentorsService {
             include: {
               exam: {
                 include: {
+                  examLevel: true,
                   user: true,
                   examSet: {
                     select: {
@@ -708,7 +711,7 @@ export class MentorsService {
       timeSlot: booking.interviewRequest.timeSlot,
       interviewDate: booking.interviewRequest.interviewDate,
       nameExamSet: booking.interviewRequest.exam?.examSet?.name,
-      level: booking.interviewRequest.exam?.sfiaLevel,
+      level: booking.interviewRequest.exam?.examLevel?.examLevel,
       status: booking.status,
     }));
 
