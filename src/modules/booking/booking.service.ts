@@ -22,10 +22,8 @@ export class BookingService {
 
     if (dateStart || dateEnd) {
       filters.interviewDate = {
-        interviewDate: {
-          ...(dateStart && { gte: new Date(dateStart) }),
-          ...(dateEnd && { lte: new Date(dateEnd) }),
-        },
+        ...(dateStart && { gte: new Date(dateStart) }),
+        ...(dateEnd && { lte: new Date(dateEnd) }),
       };
     }
 
