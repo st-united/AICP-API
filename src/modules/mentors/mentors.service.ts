@@ -541,13 +541,13 @@ export class MentorsService {
             data: { meetingUrl: meetLink },
           });
 
-          await this.emailService.sendEmailInterviewScheduleToUser(
-            user.email,
-            user.fullName,
+          await this.emailService.sendEmailInterviewScheduleToUser({
+            email: user.email,
+            fullName: user.fullName,
             interviewDate,
             timeSlot,
-            meetLink
-          );
+            meetLink,
+          });
         }
       })
     );
@@ -764,14 +764,14 @@ export class MentorsService {
           continue;
         }
 
-        await this.emailService.sendMentorReminderEmail(
-          booking.mentor.user.email,
-          booking.mentor.user.fullName,
-          booking.interviewRequest.exam.user.fullName,
-          booking.interviewRequest.interviewDate,
-          booking.interviewRequest.timeSlot,
-          booking.meetingUrl
-        );
+        await this.emailService.sendMentorReminderEmail({
+          mentorEmail: booking.mentor.user.email,
+          mentorName: booking.mentor.user.fullName,
+          intervieweeName: booking.interviewRequest.exam.user.fullName,
+          interviewDate: booking.interviewRequest.interviewDate,
+          timeSlot: booking.interviewRequest.timeSlot,
+          meetLink: booking.meetingUrl,
+        });
       } catch (error) {
         this.logger.error(`Failed to send reminder to ${booking.mentor.user.email}`, error.stack);
         await this.redisService.deleteValue(reminderKey);

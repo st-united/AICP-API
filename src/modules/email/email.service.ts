@@ -6,6 +6,23 @@ import { timeSlotEnum } from '@Constant/enums';
 import { google } from 'googleapis';
 import * as dotenv from 'dotenv';
 
+interface sendEmailInterviewScheduleToUserParams {
+  email?: string;
+  fullName: string;
+  interviewDate: Date;
+  timeSlot: keyof typeof timeSlotEnum;
+  meetLink: string;
+}
+
+interface sendMentorReminderEmailParams {
+  mentorEmail?: string;
+  mentorName: string;
+  intervieweeName: string;
+  interviewDate: Date;
+  timeSlot: keyof typeof timeSlotEnum;
+  meetLink: string;
+}
+
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
@@ -22,15 +39,15 @@ export class EmailService {
     });
   }
 
-  async sendEmailInterviewScheduleToUser(
-    email: string,
-    fullName: string,
-    interviewDate: Date,
-    timeSlot: keyof typeof timeSlotEnum,
-    meetLink: string
-  ): Promise<void> {
-    const template = this.generateEmailInterviewScheduleToUserTemplate(fullName, interviewDate, timeSlot, meetLink);
-    await this.sendEmail(email, 'Xác nhận phỏng vấn chính thức', template);
+  async sendEmailInterviewScheduleToUser(params: sendEmailInterviewScheduleToUserParams): Promise<void> {
+    const template = this.generateEmailInterviewScheduleToUserTemplate({
+      fullName: params.fullName,
+      interviewDate: params.interviewDate,
+      timeSlot: params.timeSlot,
+      meetLink: params.meetLink,
+    });
+
+    await this.sendEmail(params.email, 'Xác nhận phỏng vấn chính thức', template);
   }
 
   async sendActivationEmail(fullName: string, email: string, token: string): Promise<void> {
@@ -63,22 +80,16 @@ export class EmailService {
     );
   }
 
-  async sendMentorReminderEmail(
-    mentorEmail: string,
-    mentorName: string,
-    intervieweeName: string,
-    interviewDate: Date,
-    timeSlot: keyof typeof timeSlotEnum,
-    meetLink: string
-  ): Promise<void> {
-    const template = this.generateMentorReminderTemplate(
-      mentorName,
-      intervieweeName,
-      interviewDate,
-      timeSlot,
-      meetLink
-    );
-    await this.sendEmail(mentorEmail, 'Nhắc lịch phỏng vấn', template);
+  async sendMentorReminderEmail(params: sendMentorReminderEmailParams): Promise<void> {
+    const template = this.generateMentorReminderTemplate({
+      mentorName: params.mentorName,
+      intervieweeName: params.intervieweeName,
+      interviewDate: params.interviewDate,
+      timeSlot: params.timeSlot,
+      meetLink: params.meetLink,
+    });
+
+    await this.sendEmail(params.mentorEmail, 'Nhắc lịch phỏng vấn', template);
   }
 
   async sendEmailActivateMentorAccount(emailContent: SendEmailNewMentorDto): Promise<void> {
@@ -602,12 +613,8 @@ export class EmailService {
     `;
   }
 
-  private generateEmailInterviewScheduleToUserTemplate(
-    fullName: string,
-    interviewDate: Date,
-    timeSlot: keyof typeof timeSlotEnum,
-    meetLink: string
-  ): string {
+  private generateEmailInterviewScheduleToUserTemplate(params: sendEmailInterviewScheduleToUserParams): string {
+    const { fullName, interviewDate, timeSlot, meetLink } = params;
     const formattedDate = interviewDate.toLocaleDateString('vi-VN', {
       weekday: 'long',
       day: 'numeric',
@@ -661,84 +668,79 @@ export class EmailService {
   `;
   }
 
-  private generateMentorReminderTemplate(
-    mentorName: string,
-    intervieweeName: string,
-    interviewDate: Date,
-    timeSlot: keyof typeof timeSlotEnum,
-    meetLink: string
-  ): string {
+  private generateMentorReminderTemplate(params: sendMentorReminderEmailParams): string {
+    const { mentorName, intervieweeName, interviewDate, timeSlot, meetLink } = params;
     const formattedTimeSlot = timeSlotEnum[timeSlot];
 
     return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Nhắc lịch phỏng vấn</title>
-        <style>
-          body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
-          .container { max-width: 43.75rem; margin: 1.25rem auto; background-color: #fff; border: 0.0625rem solid #d1d1d1; border-radius: 0.75rem; overflow: hidden; }
-          .header { background-color: #00306d; color: #fff; text-align: center; padding: 0.9375rem; font-size: 1.25rem; font-weight: bold; }
-          .content { padding: 1.25rem 2.5rem; font-size: 1.125rem; }
-          .content p { margin: 0.5rem 0; color: #000; }
-          .hello { font-weight: bold; text-align: center; margin-top: 0.625rem; color: #000; }
-          .title { text-align: center; }
-          .info-box { background-color: #096dd930; border-radius: 0.75rem; padding: 0.9375rem; margin: 0.9375rem 0; }
-          .info-box p { margin: 0.375rem 0; }
-          .label { font-weight: bold; }
-          .list-section { margin-top: 0.9375rem; }
-          ul { margin: 0.5rem 0 0.5rem 1.25rem; padding: 0; }
-          li { margin-bottom: 0.3125rem; color: #000; }
-          .note { margin-top: 0.9375rem; padding-left: 1.25rem; }
-          .note p { padding-bottom: 0.3125rem; margin: 0 !important; }
-          .wishing { padding-left: 1.25rem; }
-          .footer { margin-top: 1.25rem; text-align: center; font-size: 0.875rem; color: #555555; border-top: 0.0625rem solid rgb(199, 198, 198); padding: 1.25rem 0.625rem; margin-left: 2.5rem; margin-right: 2.5rem; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">Nhắc lịch phỏng vấn</div>
-          <div class="content">
-            <div class="hello">Xin chào ${mentorName}</div>
-            <p class="title">Đây là email nhắc nhở về buổi phỏng vấn được lên lịch vào ngày mai:</p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Nhắc lịch phỏng vấn</title>
+      <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 43.75rem; margin: 1.25rem auto; background-color: #fff; border: 0.0625rem solid #d1d1d1; border-radius: 0.75rem; overflow: hidden; }
+        .header { background-color: #00306d; color: #fff; text-align: center; padding: 0.9375rem; font-size: 1.25rem; font-weight: bold; }
+        .content { padding: 1.25rem 2.5rem; font-size: 1.125rem; }
+        .content p { margin: 0.5rem 0; color: #000; }
+        .hello { font-weight: bold; text-align: center; margin-top: 0.625rem; color: #000; }
+        .title { text-align: center; }
+        .info-box { background-color: #096dd930; border-radius: 0.75rem; padding: 0.9375rem; margin: 0.9375rem 0; }
+        .info-box p { margin: 0.375rem 0; }
+        .label { font-weight: bold; }
+        .list-section { margin-top: 0.9375rem; }
+        ul { margin: 0.5rem 0 0.5rem 1.25rem; padding: 0; }
+        li { margin-bottom: 0.3125rem; color: #000; }
+        .note { margin-top: 0.9375rem; padding-left: 1.25rem; }
+        .note p { padding-bottom: 0.3125rem; margin: 0 !important; }
+        .wishing { padding-left: 1.25rem; }
+        .footer { margin-top: 1.25rem; text-align: center; font-size: 0.875rem; color: #555555; border-top: 0.0625rem solid rgb(199, 198, 198); padding: 1.25rem 0.625rem; margin-left: 2.5rem; margin-right: 2.5rem; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">Nhắc lịch phỏng vấn</div>
+        <div class="content">
+          <div class="hello">Xin chào ${mentorName}</div>
+          <p class="title">Đây là email nhắc nhở về buổi phỏng vấn được lên lịch vào ngày mai:</p>
 
-            <div class="info-box">
-              <p><span class="label">Tên ứng viên:</span> ${intervieweeName}</p>
-              <p><span class="label">Ngày:</span> ${interviewDate.toLocaleDateString('vi-VN')}</p>
-              <p><span class="label">Giờ:</span> ${formattedTimeSlot}</p>
-              <p><span class="label">Hình thức:</span> Online</p>
-              <p><span class="label">Link google meet:</span> <a href="${meetLink}">${meetLink}</a></p>
-            </div>
-
-            <div class="list-section">
-              <p><strong>Thông tin chuẩn bị:</strong></p>
-              <ul>
-                <li>CV và hồ sơ ứng viên đã được gửi kèm</li>
-                <li>Đọc danh sách câu hỏi phỏng vấn</li>
-                <li>Thông tin chi tiết về công ty và team</li>
-              </ul>
-
-              <p><strong>Lưu ý:</strong></p>
-              <ul>
-                <li>Thời gian dự kiến: 60 phút</li>
-                <li>Vui lòng chuẩn bị trước 10 phút</li>
-                <li>Nếu có thay đổi, vui lòng thông báo ngay</li>
-              </ul>
-            </div>
-
-            <div class="note">
-              <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ:</p>
-              <p>Email: hello@devplus.edu.vn</p>
-              <p>Số điện thoại: (+84)931901608</p>
-            </div>
-
-            <p class="wishing">Thân ái,<br>Đội ngũ DevPlus</p>
+          <div class="info-box">
+            <p><span class="label">Tên ứng viên:</span> ${intervieweeName}</p>
+            <p><span class="label">Ngày:</span> ${interviewDate.toLocaleDateString('vi-VN')}</p>
+            <p><span class="label">Giờ:</span> ${formattedTimeSlot}</p>
+            <p><span class="label">Hình thức:</span> Online</p>
+            <p><span class="label">Link google meet:</span> <a href="${meetLink}">${meetLink}</a></p>
           </div>
-          <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+
+          <div class="list-section">
+            <p><strong>Thông tin chuẩn bị:</strong></p>
+            <ul>
+              <li>CV và hồ sơ ứng viên đã được gửi kèm</li>
+              <li>Đọc danh sách câu hỏi phỏng vấn</li>
+              <li>Thông tin chi tiết về công ty và team</li>
+            </ul>
+
+            <p><strong>Lưu ý:</strong></p>
+            <ul>
+              <li>Thời gian dự kiến: 60 phút</li>
+              <li>Vui lòng chuẩn bị trước 10 phút</li>
+              <li>Nếu có thay đổi, vui lòng thông báo ngay</li>
+            </ul>
+          </div>
+
+          <div class="note">
+            <p>Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ:</p>
+            <p>Email: hello@devplus.edu.vn</p>
+            <p>Số điện thoại: (+84)931901608</p>
+          </div>
+
+          <p class="wishing">Thân ái,<br>Đội ngũ DevPlus</p>
         </div>
-      </body>
-      </html>
-    `;
+        <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+      </div>
+    </body>
+    </html>
+  `;
   }
 }
