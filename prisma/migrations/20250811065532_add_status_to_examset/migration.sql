@@ -11,15 +11,6 @@
 CREATE TYPE "ExamSetStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ACTIVE', 'INACTIVE', 'ARCHIVED');
 
 -- AlterTable
-ALTER TABLE "Course" DROP COLUMN "linkImage",
-ADD COLUMN     "applicable_objects" TEXT NULL,
-ADD COLUMN     "contact_information" TEXT NULL,
-ADD COLUMN     "course_information" TEXT NULL,
-ADD COLUMN     "link_image" TEXT NULL,
-ADD COLUMN     "overview" TEXT NULL,
-ALTER COLUMN "url" DROP NOT NULL;
-
--- AlterTable
 ALTER TABLE "ExamSet" ADD COLUMN     "end_date" TIMESTAMPTZ(6),
 ADD COLUMN     "start_date" TIMESTAMPTZ(6),
 ADD COLUMN     "status" "ExamSetStatus" NOT NULL DEFAULT 'DRAFT',
