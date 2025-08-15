@@ -24,10 +24,15 @@ import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
 export class MentorsController {
   constructor(
@@ -50,7 +55,7 @@ export class MentorsController {
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
     const newBooking = await this.mentorsService.createScheduler(dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
-    this.bookingGateway.emitNewBooking();
+    await this.bookingGateway.emitNewBooking();
     return newBooking;
   }
 
@@ -114,5 +119,12 @@ export class MentorsController {
     @Param('examId', ParseUUIDPipe) examId: string
   ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     return await this.mentorsService.checkUserInterviewRequest(examId);
+  }
+
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    await this.bookingGateway.emitNewBooking();
+    return result;
   }
 }
