@@ -18,34 +18,31 @@ export class BookingService {
     const skip = (Number(page) - 1) * take;
     const filters: any = {};
 
-    if (dateStart || dateEnd || (levels && levels.length > 0)) {
-      filters.interviewRequest = filters.interviewRequest || {};
-      if (dateStart || dateEnd) {
-        filters.interviewRequest = {
-          interviewDate: {
-            ...(dateStart && { gte: new Date(dateStart) }),
-            ...(dateEnd && { lte: new Date(dateEnd) }),
-          },
-        };
-      }
+    if (dateStart || dateEnd) {
+      filters.interviewDate = {
+        interviewDate: {
+          ...(dateStart && { gte: new Date(dateStart) }),
+          ...(dateEnd && { lte: new Date(dateEnd) }),
+        },
+      };
+    }
 
-      if (levels && levels.length > 0) {
-        filters.interviewRequest.exam = {
+    if (levels && levels.length > 0) {
+      filters.exam = {
+        examLevel: {
           examLevel: {
-            examLevel: {
-              in: levels,
-            },
+            in: levels,
           },
-        };
-      }
+        },
+      };
     }
 
     const keywordFilter = name
       ? {
           OR: [
-            { interviewRequest: { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } } },
-            { interviewRequest: { exam: { user: { email: { contains: name, mode: 'insensitive' } } } } },
-            { interviewRequest: { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } } },
+            { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
+            { exam: { user: { email: { contains: name, mode: 'insensitive' } } } },
+            { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
           ],
         }
       : {};
