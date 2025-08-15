@@ -24,10 +24,13 @@ import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-book
 import { plainToInstance } from 'class-transformer';
 import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
+
+import { google, Auth } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { InterviewShift } from '@Constant/enums';
+import { timeSlotEnum, InterviewShift } from '@Constant/enums';
 
 @Injectable()
 export class MentorsService {
@@ -366,106 +369,67 @@ export class MentorsService {
     }
   }
 
-  async getFilteredBookings(
-    dto: FilterMentorBookingDto,
-    mentorId: string
-  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
-    const { page = 1, limit = 10 } = dto;
-    const skip = (page - 1) * limit;
+  async createGoogleCalendarEvent(
+    userEmail: string,
+    mentorEmail: string,
+    interviewDate: Date,
+    timeSlot: keyof typeof timeSlotEnum
+  ): Promise<string> {
+    const oauth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
 
-    const mentor = await this.prisma.mentor.findUnique({
-      where: { userId: mentorId },
-      select: { id: true },
+    oauth2Client.setCredentials({
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
     });
 
-    if (!mentor) {
-      throw new NotFoundException('Mentor not found for this user');
+    const { token } = await oauth2Client.getAccessToken();
+    if (!token) {
+      throw new Error('Failed to obtain access token');
     }
-    const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
 
-    const [records, total, upcoming, completed, notJoined] = await this.prisma.$transaction([
-      this.prisma.mentorBooking.findMany({
-        where,
-        include: {
-          interviewRequest: {
-            include: {
-              exam: {
-                include: {
-                  user: true,
-                  examSet: {
-                    select: {
-                      name: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        skip,
-        take: limit,
-      }),
-      this.prisma.mentorBooking.count({
-        where,
-      }),
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: oauth2Client as Auth.OAuth2Client,
+    });
 
-      this.prisma.mentorBooking.count({
-        where: {
-          ...where,
-          status: 'UPCOMING',
-        },
-      }),
+    const formattedTimeSlot = timeSlotEnum[timeSlot];
+    const [startHour, endHour] = formattedTimeSlot.split('-').map((h) => h.trim());
+    const startDateTime = new Date(interviewDate);
+    startDateTime.setHours(parseInt(startHour.split(':')[0]), 0, 0, 0);
+    const endDateTime = new Date(startDateTime);
+    endDateTime.setHours(parseInt(endHour.split(':')[0]), 0, 0, 0);
 
-      this.prisma.mentorBooking.count({
-        where: {
-          ...where,
-          status: 'COMPLETED',
+    const event = {
+      summary: 'Phỏng vấn chính thức',
+      start: {
+        dateTime: startDateTime.toISOString(),
+        timeZone: 'Asia/Ho_Chi_Minh',
+      },
+      end: {
+        dateTime: endDateTime.toISOString(),
+        timeZone: 'Asia/Ho_Chi_Minh',
+      },
+      attendees: [{ email: userEmail }, { email: mentorEmail }],
+      conferenceData: {
+        createRequest: {
+          requestId: `req-${Date.now()}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' },
         },
-      }),
-
-      this.prisma.mentorBooking.count({
-        where: {
-          ...where,
-          status: 'NOT_JOINED',
-        },
-      }),
-    ]);
-
-    const stats = {
-      total,
-      upcoming,
-      completed,
-      notJoined,
+      },
     };
 
-    const data: MentorBookingResponseV2[] = records.map((booking) => ({
-      id: booking.id,
-      fullName: booking.interviewRequest.exam.user.fullName,
-      email: booking.interviewRequest.exam.user.email,
-      phoneNumber: booking.interviewRequest.exam.user.phoneNumber,
-      timeSlot: booking.interviewRequest.timeSlot,
-      interviewDate: booking.interviewRequest.interviewDate,
-      nameExamSet: booking.interviewRequest.exam?.examSet?.name,
-      level: booking.interviewRequest.exam?.sfiaLevel,
-      status: booking.status,
-    }));
+    try {
+      const response = await calendar.events.insert({
+        calendarId: 'primary',
+        conferenceDataVersion: 1,
+        sendUpdates: 'none',
+        requestBody: event,
+      });
 
-    return new ResponseItem(
-      {
-        data: plainToInstance(MentorBookingResponseV2, data, {
-          excludeExtraneousValues: true,
-        }),
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        stats,
-      },
-      'Lấy danh sách lịch phỏng vấn thành công'
-    );
+      return response.data.hangoutLink || 'Link không khả dụng';
+    } catch (error) {
+      console.error('Error creating Google Calendar event:', error);
+      throw new Error('Failed to create Google Calendar event');
+    }
   }
 
   private buildWhereClause(filter: {
@@ -520,7 +484,11 @@ export class MentorsService {
     return where;
   }
 
-  async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
+  async assignMentorToRequests(
+    dto: AssignMentorDto,
+    userId: string,
+    email: string
+  ): Promise<ResponseItem<AssignMentorResultDto>> {
     const { interviewRequestIds } = dto;
 
     const mentor = await this.prisma.mentor.findUnique({
@@ -601,11 +569,235 @@ export class MentorsService {
       createdAt: Date;
     }[];
 
+    const assignedInterviews = await this.prisma.interviewRequest.findMany({
+      where: {
+        id: { in: toCreate },
+        status: InterviewRequestStatus.ASSIGNED,
+      },
+      select: {
+        id: true,
+        interviewDate: true,
+        timeSlot: true,
+        exam: {
+          select: {
+            user: {
+              select: {
+                email: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await Promise.all(
+      bookings.map(async (booking) => {
+        const interview = assignedInterviews.find((i) => i.id === booking.interviewRequestId);
+        if (!interview) return;
+
+        const { exam, interviewDate, timeSlot } = interview;
+        const user = exam?.user;
+        if (user?.email && user?.fullName && interviewDate && timeSlot) {
+          const meetLink = await this.createGoogleCalendarEvent(user.email, email, interviewDate, timeSlot);
+
+          await this.prisma.mentorBooking.update({
+            where: { id: booking.id },
+            data: { meetingUrl: meetLink },
+          });
+
+          await this.emailService.sendEmailInterviewScheduleToUser({
+            email: user.email,
+            fullName: user.fullName,
+            interviewDate,
+            timeSlot,
+            meetLink,
+          });
+        }
+      })
+    );
+
     return {
       message: 'Yêu cầu phỏng vấn đã được nhận',
       data: {
         bookings,
       },
     };
+  }
+
+  async getFilteredBookings(
+    dto: FilterMentorBookingDto,
+    mentorId: string
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    const { page = 1, limit = 10 } = dto;
+    const skip = (page - 1) * limit;
+
+    const mentor = await this.prisma.mentor.findUnique({
+      where: { userId: mentorId },
+      select: { id: true },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Mentor not found for this user');
+    }
+    const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
+
+    const [records, total, upcoming, completed, notJoined] = await this.prisma.$transaction([
+      this.prisma.mentorBooking.findMany({
+        where,
+        include: {
+          interviewRequest: {
+            include: {
+              exam: {
+                include: {
+                  user: true,
+                  examSet: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.mentorBooking.count({
+        where,
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: MentorBookingStatus.UPCOMING,
+        },
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: MentorBookingStatus.COMPLETED,
+        },
+      }),
+
+      this.prisma.mentorBooking.count({
+        where: {
+          ...where,
+          status: MentorBookingStatus.NOT_JOINED,
+        },
+      }),
+    ]);
+
+    const stats = {
+      total,
+      upcoming,
+      completed,
+      notJoined,
+    };
+
+    const data: MentorBookingResponseV2[] = records.map((booking) => ({
+      id: booking.id,
+      fullName: booking.interviewRequest.exam.user.fullName,
+      email: booking.interviewRequest.exam.user.email,
+      phoneNumber: booking.interviewRequest.exam.user.phoneNumber,
+      timeSlot: booking.interviewRequest.timeSlot,
+      interviewDate: booking.interviewRequest.interviewDate,
+      nameExamSet: booking.interviewRequest.exam?.examSet?.name,
+      level: booking.interviewRequest.exam?.sfiaLevel,
+      status: booking.status,
+    }));
+
+    return new ResponseItem(
+      {
+        data: plainToInstance(MentorBookingResponseV2, data, {
+          excludeExtraneousValues: true,
+        }),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        stats,
+      },
+      'Lấy danh sách lịch phỏng vấn thành công'
+    );
+  }
+
+  async sendInterviewReminders(): Promise<void> {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const start = new Date(tomorrow);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(tomorrow);
+    end.setHours(23, 59, 59, 999);
+
+    const bookings = await this.prisma.mentorBooking.findMany({
+      where: {
+        status: MentorBookingStatus.UPCOMING,
+        interviewRequest: {
+          interviewDate: {
+            gte: start,
+            lte: end,
+          },
+        },
+      },
+      select: {
+        id: true,
+        meetingUrl: true,
+        mentor: {
+          select: {
+            user: {
+              select: {
+                email: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+        interviewRequest: {
+          select: {
+            interviewDate: true,
+            timeSlot: true,
+            exam: {
+              select: {
+                user: {
+                  select: {
+                    fullName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    for (const booking of bookings) {
+      const reminderKey = `mentor_reminder_sent:${booking.id}`;
+      try {
+        const wasSet = await this.redisService.setIfNotExists(reminderKey, 'sent');
+        if (!wasSet) {
+          continue;
+        }
+
+        await this.emailService.sendMentorReminderEmail({
+          mentorEmail: booking.mentor.user.email,
+          mentorName: booking.mentor.user.fullName,
+          intervieweeName: booking.interviewRequest.exam.user.fullName,
+          interviewDate: booking.interviewRequest.interviewDate,
+          timeSlot: booking.interviewRequest.timeSlot,
+          meetLink: booking.meetingUrl,
+        });
+      } catch (error) {
+        this.logger.error(`Failed to send reminder to ${booking.mentor.user.email}`, error.stack);
+        await this.redisService.deleteValue(reminderKey);
+      }
+    }
   }
 }

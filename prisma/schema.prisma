@@ -336,6 +336,7 @@ model MentorBooking {
   status             MentorBookingStatus @default(UPCOMING)
   notes              String?             @db.Text
   pillarFocus        String?             @map("competency_focus") @db.Uuid
+  meetingUrl         String?             @map("meeting_url")
   createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -706,3 +707,4 @@ enum SlotStatus {
   ALMOST_FULL
   FULL
 }
+
