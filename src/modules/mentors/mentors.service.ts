@@ -464,7 +464,6 @@ export class MentorsService {
       },
     };
 
-    console.log('where:', JSON.stringify(where, null, 2));
     return where;
   }
 
