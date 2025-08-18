@@ -434,58 +434,6 @@ export class MentorsService {
     }
   }
 
-  private buildWhereClause(filter: {
-    mentorId: string;
-    status?: MentorBookingStatus;
-    level?: string;
-    dateStart?: Date | string;
-    dateEnd?: Date | string;
-    keyword?: string;
-  }): Prisma.MentorBookingWhereInput {
-    const { mentorId, status, level, dateStart, dateEnd, keyword } = filter;
-
-    const where: Prisma.MentorBookingWhereInput = {
-      mentorId,
-    };
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (level || dateStart || dateEnd || keyword) {
-      where.interviewRequest = {};
-
-      if (level) {
-        where.interviewRequest.exam = {
-          sfiaLevel: {
-            equals: level as SFIALevel,
-          },
-        };
-      }
-
-      if (dateStart || dateEnd) {
-        where.interviewRequest.interviewDate = {};
-        if (dateStart) {
-          where.interviewRequest.interviewDate.gte = new Date(dateStart);
-        }
-        if (dateEnd) {
-          where.interviewRequest.interviewDate.lte = new Date(dateEnd);
-        }
-      }
-
-      if (keyword) {
-        where.interviewRequest.exam.user = {
-          OR: [
-            { fullName: { contains: keyword, mode: 'insensitive' } },
-            { email: { contains: keyword, mode: 'insensitive' } },
-            { phoneNumber: { contains: keyword, mode: 'insensitive' } },
-          ],
-        };
-      }
-    }
-    return where;
-  }
-
   async assignMentorToRequests(
     dto: AssignMentorDto,
     userId: string,
@@ -802,5 +750,48 @@ export class MentorsService {
         await this.redisService.deleteValue(reminderKey);
       }
     }
+  }
+
+  private buildWhereClause(filter: {
+    mentorId: string;
+    statuses?: MentorBookingStatus[];
+    levels?: string[];
+    dateStart?: Date | string;
+    dateEnd?: Date | string;
+    keyword?: string;
+  }): Prisma.MentorBookingWhereInput {
+    const { mentorId, statuses, levels, dateStart, dateEnd, keyword } = filter;
+
+    const where: Prisma.MentorBookingWhereInput = {
+      mentorId,
+      ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
+      interviewRequest: {
+        ...(levels &&
+          levels.length > 0 && {
+            exam: {
+              examLevel: {
+                examLevel: { in: levels as ExamLevelEnum[] },
+              },
+            },
+          }),
+        ...(dateStart || dateEnd
+          ? {
+              interviewDate: {
+                ...(dateStart && { gte: new Date(dateStart) }),
+                ...(dateEnd && { lte: new Date(dateEnd) }),
+              },
+            }
+          : {}),
+        ...(keyword && {
+          OR: [
+            { exam: { user: { fullName: { contains: keyword, mode: 'insensitive' } } } },
+            { exam: { user: { email: { contains: keyword, mode: 'insensitive' } } } },
+            { exam: { user: { phoneNumber: { contains: keyword, mode: 'insensitive' } } } },
+          ],
+        }),
+      },
+    };
+
+    return where;
   }
 }
