@@ -4,7 +4,7 @@ import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, SFIALevel } from '@prisma/client';
-import { examSetDefaultName } from '@Constant/enums';
+import { examSetDefaultName, UserRoleEnum } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
@@ -15,7 +15,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { formatLevel } from '@Constant/format';
 import { DATE_TIME } from '@Constant/datetime';
-import { ExamWithResultDto } from './dto/response/exam-with-result.dto';
+import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
+import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
 
 @Injectable()
 export class ExamService {
@@ -83,7 +84,9 @@ export class ExamService {
     historyExam: GetHistoryExamDto
   ): Promise<ResponseItem<HistoryExamResponseDto[]>> {
     try {
-      const where: any = { userId: userId };
+      const where: any = {
+        userId: userId,
+      };
 
       if (historyExam.startDate || historyExam.endDate) {
         where.createdAt = {};
@@ -96,20 +99,38 @@ export class ExamService {
           where.createdAt.lte = dayjs(historyExam.endDate).endOf('day').toDate();
         }
       }
+
       const exams = await this.prisma.exam.findMany({
         where,
         orderBy: {
-          finishedAt: 'desc',
+          createdAt: 'desc',
         },
         select: {
           id: true,
           examStatus: true,
           sfiaLevel: true,
+          examSet: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          examLevel: {
+            select: {
+              examLevel: true,
+            },
+          },
           createdAt: true,
         },
       });
 
-      return new ResponseItem<HistoryExamResponseDto[]>(exams, 'Lấy lịch sử thi thành công');
+      const result = exams.map((exam, idx) => ({
+        ...exam,
+        attempt: idx + 1,
+        isLatest: idx === 0,
+      }));
+
+      return new ResponseItem<HistoryExamResponseDto[]>(result, 'Lấy lịch sử thi thành công');
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi lấy lịch sử thi');
@@ -124,6 +145,11 @@ export class ExamService {
           id: true,
           startedAt: true,
           sfiaLevel: true,
+          examLevel: {
+            select: {
+              examLevel: true,
+            },
+          },
           overallScore: true,
           examStatus: true,
           createdAt: true,
@@ -243,25 +269,21 @@ export class ExamService {
     });
 
     if (!exam) throw new NotFoundException('Exam not found');
-
-    const templatePath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.hbs');
+    const rootDir = process.cwd();
+    const templatePath = path.resolve(rootDir, 'public/templates/certificate/certificate.hbs');
     const template = fs.readFileSync(templatePath, 'utf-8');
 
-    const cssPath = path.resolve(process.cwd(), 'src/modules/exam/templates/certificate/certificate.css');
+    const cssPath = path.resolve(rootDir, 'public/templates/certificate/certificate.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    const logoBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/logo.png', {
-      encoding: 'base64',
-    });
-    const stampBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/stamp.png', {
-      encoding: 'base64',
-    });
-    const backgroundBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/background.png', {
-      encoding: 'base64',
-    });
-    const medalBase64 = fs.readFileSync('src/modules/exam/templates/certificate/images/medal.png', {
-      encoding: 'base64',
-    });
+    const logoPath = path.resolve(rootDir, 'public/templates/certificate/images/logo.png');
+    const logoBase64 = fs.readFileSync(logoPath, { encoding: 'base64' });
+    const stampPath = path.resolve(rootDir, 'public/templates/certificate/images/stamp.png');
+    const stampBase64 = fs.readFileSync(stampPath, { encoding: 'base64' });
+    const backgroundPath = path.resolve(rootDir, 'public/templates/certificate/images/background.png');
+    const backgroundBase64 = fs.readFileSync(backgroundPath, { encoding: 'base64' });
+    const medalPath = path.resolve(rootDir, 'public/templates/certificate/images/medal.png');
+    const medalBase64 = fs.readFileSync(medalPath, { encoding: 'base64' });
 
     const compiled = handlebars.compile(template);
 
@@ -276,27 +298,51 @@ export class ExamService {
       medal: `data:image/png;base64,${medalBase64}`,
     });
 
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    const contentHeight = await page.evaluate(() => document.body.scrollHeight);
-    const contentWidth = await page.evaluate(() => document.body.scrollWidth);
-
-    const uint8Array = await page.pdf({
-      width: `${contentWidth}px`,
-      height: `${contentHeight}px`,
-      printBackground: true,
-      margin: { top: 0, bottom: 0, left: 0, right: 0 },
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-features=TranslateUI',
+        '--disable-crash-reporter',
+        '--disable-extensions',
+        '--disable-default-apps',
+        '--disable-component-extensions-with-background-pages',
+        '--mute-audio',
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     });
-    const buffer = Buffer.from(uint8Array);
 
-    await browser.close();
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
 
-    return {
-      buffer: buffer,
-      date: exam.updatedAt,
-    };
+      const contentHeight = await page.evaluate(() => document.body.scrollHeight);
+      const contentWidth = await page.evaluate(() => document.body.scrollWidth);
+
+      const uint8Array = await page.pdf({
+        width: `${contentWidth}px`,
+        height: `${contentHeight}px`,
+        printBackground: true,
+        margin: { top: 0, bottom: 0, left: 0, right: 0 },
+      });
+
+      return {
+        buffer: Buffer.from(uint8Array),
+        date: exam.updatedAt,
+      };
+    } finally {
+      await browser.close();
+    }
   }
 
   async getExamWithResult(examId: string, userId: string): Promise<ResponseItem<ExamWithResultDto>> {
@@ -454,5 +500,170 @@ export class ExamService {
     });
 
     return coursesWithRegistrationStatus;
+  }
+
+  async getUsersWithExams(filters: UsersWithExamsFilters = {}): Promise<ResponseItem<UserWithExamsResponseDto[]>> {
+    try {
+      const { fromDate, toDate, university } = filters;
+
+      const whereClause: any = {
+        roles: {
+          some: {
+            role: {
+              name: UserRoleEnum.USER,
+            },
+          },
+        },
+      };
+
+      if (fromDate || toDate) {
+        whereClause.createdAt = {};
+        if (fromDate) whereClause.createdAt.gte = fromDate;
+        if (toDate) whereClause.createdAt.lte = toDate;
+      }
+
+      if (university) {
+        whereClause.university = {
+          equals: university,
+        };
+      }
+
+      const users = await this.prisma.user.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phoneNumber: true,
+          position: true,
+          createdAt: true,
+          updatedAt: true,
+          university: true,
+          userExam: {
+            select: {
+              id: true,
+              startedAt: true,
+              sfiaLevel: true,
+              examLevel: {
+                select: {
+                  examLevel: true,
+                },
+              },
+              overallScore: true,
+              examStatus: true,
+              createdAt: true,
+              examSet: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              examPillarSnapshot: {
+                select: {
+                  pillar: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                  score: true,
+                },
+              },
+              examAspectSnapshot: {
+                select: {
+                  aspect: {
+                    select: {
+                      id: true,
+                      name: true,
+                      represent: true,
+                      pillarId: true,
+                    },
+                  },
+                  score: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const processedUsers: UserWithExamsResponseDto[] = users.map((user) => {
+        const processedExams: DetailExamResponseDto[] = user.userExam.map((exam) => {
+          const { examPillarSnapshot, examAspectSnapshot, overallScore, ...rest } = exam;
+
+          const pillarsWithAspects = examPillarSnapshot.map((pillarSnapshot) => {
+            const pillar = pillarSnapshot.pillar;
+
+            const aspects = examAspectSnapshot
+              .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+              .map((aspectSnapshot) => ({
+                id: aspectSnapshot.aspect.id,
+                name: aspectSnapshot.aspect.name,
+                represent: aspectSnapshot.aspect.represent,
+                score: Number(aspectSnapshot.score),
+              }));
+
+            return {
+              id: pillar.id,
+              name: pillar.name,
+              score: Number(pillarSnapshot.score),
+              aspects: aspects,
+            };
+          });
+
+          const pillarScores = pillarsWithAspects.reduce(
+            (acc, snapshot) => {
+              const name = snapshot.name.toUpperCase();
+
+              switch (name) {
+                case CompetencyDimension.MINDSET:
+                  acc.mindsetScore = snapshot;
+                  break;
+                case CompetencyDimension.SKILLSET:
+                  acc.skillsetScore = snapshot;
+                  break;
+                case CompetencyDimension.TOOLSET:
+                  acc.toolsetScore = snapshot;
+                  break;
+              }
+              return acc;
+            },
+            {
+              mindsetScore: null,
+              skillsetScore: null,
+              toolsetScore: null,
+            }
+          );
+
+          return {
+            ...rest,
+            overallScore: Number(overallScore),
+            ...pillarScores,
+          };
+        });
+
+        return {
+          user: {
+            id: user.id,
+            fullName: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            position: user.position,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            university: user.university,
+          },
+          exams: processedExams,
+        };
+      });
+
+      return new ResponseItem<UserWithExamsResponseDto[]>(
+        processedUsers,
+        'Lấy danh sách người dùng và các bài thi thành công'
+      );
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi lấy danh sách người dùng và các bài thi');
+    }
   }
 }

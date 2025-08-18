@@ -1,6 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsArray, IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateIf,
+} from 'class-validator';
 
 export class UpdateProfileUserDto {
   @ApiProperty({ description: 'fullName', example: 'Nguyen Van A' })
@@ -60,4 +69,24 @@ export class UpdateProfileUserDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  @ApiProperty({ description: 'isStudent', default: true })
+  @Expose()
+  @IsOptional()
+  @IsBoolean()
+  isStudent?: boolean;
+
+  @ApiProperty({ description: 'university', example: 'University of Technology' })
+  @Expose()
+  @ValidateIf((o) => o.isStudent === true)
+  @IsString()
+  @IsNotEmpty({ message: 'University must not be empty when isStudent is true' })
+  university?: string;
+
+  @ApiProperty({ description: 'studentCode', example: 'UST-123456' })
+  @Expose()
+  @ValidateIf((o) => o.isStudent === true)
+  @IsString()
+  @IsNotEmpty({ message: 'Student code must not be empty when isStudent is true' })
+  studentCode?: string;
 }

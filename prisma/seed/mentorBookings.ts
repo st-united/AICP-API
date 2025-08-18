@@ -1,8 +1,9 @@
-import { PrismaClient, MentorBookingStatus } from '@prisma/client';
+import { PrismaClient, MentorBookingStatus, TimeSlotBooking } from '@prisma/client';
 
 export async function seedMentorBookings(
   prisma: PrismaClient,
   userMap: { [email: string]: { id: string } },
+  examMap: { [userId: string]: { id: string } },
   mentors: any[]
 ) {
   const mentorEmails = mentors.map((mentor) => mentor.user.email);
@@ -23,40 +24,49 @@ export async function seedMentorBookings(
     return date;
   }
 
-  const mentorBookingsData = [];
-  mentorEmails.forEach((mentorEmail, mentorIndex) => {
-    for (let i = 0; i < 20; i++) {
-      const menteeIndex = (mentorIndex * 20 + i) % userEmails.length;
-      mentorBookingsData.push({
-        userEmail: userEmails[menteeIndex],
-        mentorEmail,
-        scheduledAt: randomFutureDate(),
-        timeSlot: ['AM_08_09', 'AM_09_10', 'AM_10_11', 'AM_11_12', 'PM_02_03', 'PM_03_04', 'PM_04_05', 'PM_05_06'][
-          Math.floor(Math.random() * 8)
-        ],
-        status: [
-          MentorBookingStatus.ACCEPTED,
-          MentorBookingStatus.PENDING,
-          MentorBookingStatus.REJECTED,
-          MentorBookingStatus.COMPLETED,
-          MentorBookingStatus.CANCELLED,
-        ][Math.floor(Math.random() * 5)],
-        notes: `Session between ${userEmails[menteeIndex]} and ${mentorEmail}`,
-      });
-    }
-  });
+  const timeSlots = [
+    TimeSlotBooking.AM_08_09,
+    TimeSlotBooking.AM_09_10,
+    TimeSlotBooking.AM_10_11,
+    TimeSlotBooking.AM_11_12,
+    TimeSlotBooking.PM_02_03,
+    TimeSlotBooking.PM_03_04,
+    TimeSlotBooking.PM_04_05,
+    TimeSlotBooking.PM_05_06,
+  ];
+
+  const statuses = [MentorBookingStatus.UPCOMING, MentorBookingStatus.NOT_JOINED, MentorBookingStatus.COMPLETED];
 
   const mentorEmailMap = Object.fromEntries(mentors.map((mentor) => [mentor.user.email, mentor]));
 
-  for (const bookingData of mentorBookingsData) {
-    await prisma.mentorBooking.create({
-      data: {
-        userId: userMap[bookingData.userEmail].id,
-        mentorId: mentorEmailMap[bookingData.mentorEmail].id,
-        scheduledAt: bookingData.scheduledAt,
-        status: bookingData.status,
-        notes: bookingData.notes,
-      },
-    });
+  for (const mentorEmail of mentorEmails) {
+    const mentor = mentorEmailMap[mentorEmail];
+    for (let i = 0; i < 20; i++) {
+      const menteeIndex = Math.floor(Math.random() * userEmails.length);
+      const userEmail = userEmails[menteeIndex];
+      const userId = userMap[userEmail]?.id;
+      const examId = examMap[userId]?.id;
+
+      if (!userId || !examId) continue;
+
+      // 1. Tạo InterviewRequest
+      const interviewRequest = await prisma.interviewRequest.create({
+        data: {
+          examId,
+          interviewDate: randomFutureDate(),
+          timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
+        },
+      });
+
+      // 2. Tạo MentorBooking
+      await prisma.mentorBooking.create({
+        data: {
+          interviewRequestId: interviewRequest.id,
+          mentorId: mentor.id,
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+          notes: `Session between ${userEmail} and ${mentorEmail}`,
+        },
+      });
+    }
   }
 }

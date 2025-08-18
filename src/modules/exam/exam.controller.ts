@@ -1,4 +1,15 @@
-import { Controller, Delete, Get, Param, ParseUUIDPipe, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ExamService } from './exam.service';
 import { ResponseItem } from '@app/common/dtos';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
@@ -9,7 +20,7 @@ import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto
 import { Response } from 'express';
 import * as dayjs from 'dayjs';
 import { DATE_TIME } from '@Constant/datetime';
-import { ExamWithResultDto } from './dto/response/exam-with-result.dto';
+import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -29,6 +40,53 @@ export class ExamController {
   @ApiQuery({ name: 'endDate', type: Date, required: false })
   getHistoryExam(@Req() req, @Query() queries: GetHistoryExamDto): Promise<ResponseItem<HistoryExamResponseDto[]>> {
     return this.examService.getHistoryExam(req.user.userId, queries);
+  }
+
+  @Get('users-with-exams')
+  @ApiOperation({
+    summary: 'Lấy danh sách tất cả user với các bài exam của họ, hỗ trợ lọc theo ngày tạo tài khoản hoặc university',
+  })
+  @ApiQuery({
+    name: 'fromDate',
+    required: false,
+    type: 'string',
+    format: 'date',
+    description: 'Ngày bắt đầu (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'toDate',
+    required: false,
+    type: 'string',
+    format: 'date',
+    description: 'Ngày kết thúc (YYYY-MM-DD)',
+  })
+  @ApiQuery({ name: 'university', required: false, type: 'string', description: 'Tên trường đại học' })
+  @ApiResponse({
+    status: 200,
+    description: 'Danh sách user và exams thành công',
+    type: ResponseItem,
+  })
+  @ApiResponse({ status: 400, description: 'Lỗi khi lấy dữ liệu' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getUsersWithExams(
+    @Query('fromDate') fromDateStr?: string,
+    @Query('toDate') toDateStr?: string,
+    @Query('university') university?: string
+  ): Promise<ResponseItem<UserWithExamsResponseDto[]>> {
+    const filters = {
+      fromDate: fromDateStr ? new Date(fromDateStr) : undefined,
+      toDate: toDateStr ? new Date(toDateStr) : undefined,
+      university,
+    };
+
+    if (fromDateStr && isNaN(filters.fromDate.getTime())) {
+      throw new BadRequestException('fromDate không hợp lệ');
+    }
+    if (toDateStr && isNaN(filters.toDate.getTime())) {
+      throw new BadRequestException('toDate không hợp lệ');
+    }
+
+    return this.examService.getUsersWithExams(filters);
   }
 
   @Get(':id')
@@ -76,6 +134,7 @@ export class ExamController {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="AICompetency_Certificate_${dayjs(date).format(DATE_TIME.DAY_YYYY_MM_DD)}.pdf"`,
       'Content-Length': buffer.length,
+      'Access-Control-Expose-Headers': 'Content-Disposition',
     });
 
     res.end(buffer);

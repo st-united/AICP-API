@@ -276,12 +276,12 @@ export class AnswersService {
   }
 
   private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore <= 2) return SFIALevel.LEVEL_1_AWARENESS;
-    if (overallScore <= 3) return SFIALevel.LEVEL_2_FOUNDATION;
-    if (overallScore <= 4) return SFIALevel.LEVEL_3_APPLICATION;
-    if (overallScore <= 5) return SFIALevel.LEVEL_4_INTEGRATION;
-    if (overallScore <= 6) return SFIALevel.LEVEL_5_INNOVATION;
-    if (overallScore <= 7) return SFIALevel.LEVEL_6_LEADERSHIP;
+    if (overallScore < 2) return SFIALevel.LEVEL_1_AWARENESS;
+    if (overallScore < 3) return SFIALevel.LEVEL_2_FOUNDATION;
+    if (overallScore < 4) return SFIALevel.LEVEL_3_APPLICATION;
+    if (overallScore < 5) return SFIALevel.LEVEL_4_INTEGRATION;
+    if (overallScore < 6) return SFIALevel.LEVEL_5_INNOVATION;
+    if (overallScore < 7) return SFIALevel.LEVEL_6_LEADERSHIP;
     return SFIALevel.LEVEL_7_MASTERY;
   }
 
@@ -444,5 +444,33 @@ export class AnswersService {
 
   private isNonEmpty(obj: any): boolean {
     return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
+  }
+
+  async autoSubmitExpiredExams(): Promise<void> {
+    const now = new Date();
+    const tenSecondsAgo = new Date(now.getTime() - 10_000);
+
+    const expiredExams = await this.prisma.exam.findMany({
+      where: {
+        examStatus: ExamStatus.IN_PROGRESS,
+        finishedAt: {
+          lte: tenSecondsAgo,
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!expiredExams.length) return;
+
+    const updatePromises = expiredExams.map((exam) =>
+      this.update(exam.userId, exam.id).catch((error) => {
+        console.error(`[AutoSubmit] Failed examId=${exam.id} userId=${exam.userId}`, error.message);
+      })
+    );
+
+    await Promise.all(updatePromises);
   }
 }

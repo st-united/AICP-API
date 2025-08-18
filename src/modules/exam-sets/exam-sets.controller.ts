@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 import { ExamSetsService } from './exam-sets.service';
 import { CreateExamSetDto } from './dto/create-exam-set.dto';
 import { UpdateExamSetDto } from './dto/update-exam-set.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
-import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiOperation, ApiOkResponse } from '@nestjs/swagger';
 import { GetExamSetDto } from './dto/get-exam-set.dto';
 import { ResponseItem } from '@app/common/dtos';
+import { ExamSetResponseDto, FrameworkDto } from './dto/exam-set-response.dto';
 @ApiTags('exam-sets')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -21,15 +22,16 @@ export class ExamSetsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all exam sets' })
-  findAll() {
+  @ApiOkResponse({ type: [ExamSetResponseDto] })
+  findAll(): Promise<ExamSetResponseDto[]> {
     return this.examSetsService.findAll();
   }
 
   @Get('input-test')
   @ApiOperation({ summary: 'Get exam set with questions' })
-  async getExamSet(@Req() req: any): Promise<ResponseItem<GetExamSetDto>> {
+  async getExamSet(@Req() req: any, @Query('examSetName') examSetName?: string): Promise<ResponseItem<GetExamSetDto>> {
     const userId = req.user.userId;
-    return await this.examSetsService.getExamSetWithQuestions(userId);
+    return await this.examSetsService.getExamSetWithQuestions(userId, examSetName);
   }
 
   @Patch(':id')

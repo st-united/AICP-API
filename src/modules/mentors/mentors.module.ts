@@ -10,6 +10,8 @@ import { RedisModule } from '../redis/redis.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
+import { BookingModule } from '../booking/booking.module';
+import { ScheduledMentorReminderService } from './mentor-booking-reminder.service';
 
 @Module({
   imports: [
@@ -18,6 +20,7 @@ import { PassportModule } from '@nestjs/passport';
     EmailModule,
     RedisModule,
     ConfigModule,
+    BookingModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -29,6 +32,6 @@ import { PassportModule } from '@nestjs/passport';
     UsersModule,
   ],
   controllers: [MentorsController],
-  providers: [MentorsService, TokenService, EmailService, ConfigService],
+  providers: [MentorsService, TokenService, EmailService, ConfigService, ScheduledMentorReminderService],
 })
 export class MentorsModule {}

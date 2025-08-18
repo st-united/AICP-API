@@ -1,21 +1,14 @@
-// src/mentor-booking/dto/create-mentor-booking.dto.ts
-import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
-import { TimeSlotBooking } from '@prisma/client';
+import { InterviewShift } from '@Constant/enums';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class CreateMentorBookingDto {
   @IsString()
-  userId: string;
-
-  @IsString()
-  mentorId: string;
-
-  @IsDateString()
-  scheduledAt: string; // ISO Date string: '2025-06-10'
-
-  @IsEnum(TimeSlotBooking)
-  timeSlot: TimeSlotBooking;
+  examId: string;
 
   @IsOptional()
   @IsString()
-  notes?: string;
+  interviewDate?: string;
+
+  @IsEnum(InterviewShift)
+  interviewShift: InterviewShift;
 }
