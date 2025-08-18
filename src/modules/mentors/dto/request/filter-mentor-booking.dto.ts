@@ -1,6 +1,7 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MentorBookingStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
 
 export class FilterMentorBookingDto {
   @IsOptional()
@@ -8,12 +9,25 @@ export class FilterMentorBookingDto {
   keyword?: string;
 
   @IsOptional()
-  @IsString()
-  level?: string;
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(({ value }) => {
+    if (!value) return undefined;
+    if (Array.isArray(value)) {
+      return value.filter((item) => item && item.trim() !== '');
+    }
+    if (typeof value === 'string') {
+      return [value];
+    }
+    return undefined;
+  })
+  levels?: string[];
 
   @IsOptional()
-  @IsEnum(MentorBookingStatus)
-  status?: MentorBookingStatus;
+  @IsArray()
+  @IsEnum(MentorBookingStatus, { each: true })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  statuses?: MentorBookingStatus[];
 
   @IsOptional()
   @Type(() => Date)
