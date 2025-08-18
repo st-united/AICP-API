@@ -436,46 +436,35 @@ export class MentorsService {
 
     const where: Prisma.MentorBookingWhereInput = {
       mentorId,
+      ...(status && { status }),
+      interviewRequest: {
+        ...(levels &&
+          levels.length > 0 && {
+            exam: {
+              examLevel: {
+                examLevel: { in: levels as ExamLevelEnum[] },
+              },
+            },
+          }),
+        ...(dateStart || dateEnd
+          ? {
+              interviewDate: {
+                ...(dateStart && { gte: new Date(dateStart) }),
+                ...(dateEnd && { lte: new Date(dateEnd) }),
+              },
+            }
+          : {}),
+        ...(keyword && {
+          OR: [
+            { exam: { user: { fullName: { contains: keyword, mode: 'insensitive' } } } },
+            { exam: { user: { email: { contains: keyword, mode: 'insensitive' } } } },
+            { exam: { user: { phoneNumber: { contains: keyword, mode: 'insensitive' } } } },
+          ],
+        }),
+      },
     };
 
-    if (status) {
-      where.status = status;
-    }
-
-    if (levels || dateStart || dateEnd || keyword) {
-      where.interviewRequest = where.interviewRequest ?? {};
-      where.interviewRequest.exam = where.interviewRequest.exam ?? {};
-    }
-
-    if (levels && levels.length > 0) {
-      const examLevels = levels.map((level) => level as ExamLevelEnum);
-      where.interviewRequest.exam.examLevel = {
-        examLevel: {
-          in: examLevels,
-        },
-      };
-    }
-
-    if (dateStart || dateEnd) {
-      where.interviewRequest.interviewDate = {};
-      if (dateStart) {
-        where.interviewRequest.interviewDate.gte = new Date(dateStart);
-      }
-      if (dateEnd) {
-        where.interviewRequest.interviewDate.lte = new Date(dateEnd);
-      }
-    }
-
-    if (keyword) {
-      where.interviewRequest.exam.user = {
-        OR: [
-          { fullName: { contains: keyword, mode: 'insensitive' } },
-          { email: { contains: keyword, mode: 'insensitive' } },
-          { phoneNumber: { contains: keyword, mode: 'insensitive' } },
-        ],
-      };
-    }
-
+    console.log('where:', JSON.stringify(where, null, 2));
     return where;
   }
 
