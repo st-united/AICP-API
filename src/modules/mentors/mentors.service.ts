@@ -426,17 +426,17 @@ export class MentorsService {
 
   private buildWhereClause(filter: {
     mentorId: string;
-    status?: MentorBookingStatus;
+    statuses?: MentorBookingStatus[];
     levels?: string[];
     dateStart?: Date | string;
     dateEnd?: Date | string;
     keyword?: string;
   }): Prisma.MentorBookingWhereInput {
-    const { mentorId, status, levels, dateStart, dateEnd, keyword } = filter;
+    const { mentorId, statuses, levels, dateStart, dateEnd, keyword } = filter;
 
     const where: Prisma.MentorBookingWhereInput = {
       mentorId,
-      ...(status && { status }),
+      ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
       interviewRequest: {
         ...(levels &&
           levels.length > 0 && {

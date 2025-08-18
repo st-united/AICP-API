@@ -24,8 +24,10 @@ export class FilterMentorBookingDto {
   levels?: string[];
 
   @IsOptional()
-  @IsEnum(MentorBookingStatus)
-  status?: MentorBookingStatus;
+  @IsArray()
+  @IsEnum(MentorBookingStatus, { each: true })
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  statuses?: MentorBookingStatus[];
 
   @IsOptional()
   @Type(() => Date)
