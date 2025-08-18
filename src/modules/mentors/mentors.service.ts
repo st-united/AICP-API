@@ -444,38 +444,38 @@ export class MentorsService {
 
     if (levels || dateStart || dateEnd || keyword) {
       where.interviewRequest = where.interviewRequest ?? {};
+      where.interviewRequest.exam = where.interviewRequest.exam ?? {};
+    }
 
-      if (levels) {
-        const examLevels = levels.map((level) => level as ExamLevelEnum);
-        where.interviewRequest.exam = {
-          examLevel: {
-            examLevel: {
-              in: examLevels,
-            },
-          },
-        };
+    if (levels && levels.length > 0) {
+      const examLevels = levels.map((level) => level as ExamLevelEnum);
+      where.interviewRequest.exam.examLevel = {
+        examLevel: {
+          in: examLevels,
+        },
+      };
+    }
+
+    if (dateStart || dateEnd) {
+      where.interviewRequest.interviewDate = {};
+      if (dateStart) {
+        where.interviewRequest.interviewDate.gte = new Date(dateStart);
       }
-
-      if (dateStart || dateEnd) {
-        where.interviewRequest.interviewDate = {};
-        if (dateStart) {
-          where.interviewRequest.interviewDate.gte = new Date(dateStart);
-        }
-        if (dateEnd) {
-          where.interviewRequest.interviewDate.lte = new Date(dateEnd);
-        }
-      }
-
-      if (keyword) {
-        where.interviewRequest.exam.user = {
-          OR: [
-            { fullName: { contains: keyword, mode: 'insensitive' } },
-            { email: { contains: keyword, mode: 'insensitive' } },
-            { phoneNumber: { contains: keyword, mode: 'insensitive' } },
-          ],
-        };
+      if (dateEnd) {
+        where.interviewRequest.interviewDate.lte = new Date(dateEnd);
       }
     }
+
+    if (keyword) {
+      where.interviewRequest.exam.user = {
+        OR: [
+          { fullName: { contains: keyword, mode: 'insensitive' } },
+          { email: { contains: keyword, mode: 'insensitive' } },
+          { phoneNumber: { contains: keyword, mode: 'insensitive' } },
+        ],
+      };
+    }
+
     return where;
   }
 
