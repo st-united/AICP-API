@@ -1,10 +1,14 @@
-import { Controller, Get, Param, Query, Post, Body, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, Query, Post, Body, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import { BookingGateway } from './booking.gateway';
 import { ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessTokenGuard)
 @Controller('bookings')
 export class BookingController {
   constructor(
