@@ -25,7 +25,6 @@ import { CheckInterviewRequestDto } from './dto/request/check-interview-request.
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
-
 @Controller('mentors')
 export class MentorsController {
   constructor(
