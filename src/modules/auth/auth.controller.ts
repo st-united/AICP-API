@@ -117,24 +117,4 @@ export class AuthController {
   async resendActivationEmail(@Body() resendActivationEmailDto: ResendActivationEmailDto) {
     return await this.authService.resendActivationEmail(resendActivationEmailDto.email);
   }
-
-  @Post('send-activation-reminders')
-  @ApiOperation({
-    summary: 'Manually trigger activation reminders (Admin only) - Each user receives only one reminder',
-  })
-  @ApiResponse({ status: 200, description: 'Activation reminders sent successfully' })
-  async sendActivationReminders() {
-    await this.authService.sendActivationReminders();
-    return new ResponseItem(null, 'Đã gửi email nhắc nhở thành công.');
-  }
-
-  @Post('delete-inactive-accounts')
-  @ApiOperation({
-    summary: 'Manually trigger deletion of inactive accounts (Admin only) - Deletes accounts after 30 days',
-  })
-  @ApiResponse({ status: 200, description: 'Account deletion completed successfully' })
-  async deleteInactiveAccounts() {
-    await this.authService.deleteInactiveAccounts();
-    return new ResponseItem(null, 'Đã xóa tài khoản thành công.');
-  }
 }
