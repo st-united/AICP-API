@@ -6,7 +6,6 @@ import { ResponseItem } from '@app/common/dtos';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { SlotStatus, TimeSlotBooking } from '@prisma/client';
-import { log } from 'console';
 
 @Injectable()
 export class BookingService {
@@ -155,7 +154,6 @@ export class BookingService {
           interviewDate: true,
         },
       });
-      console.log(requests);
 
       let usedMorning = 0;
       let usedAfternoon = 0;
@@ -164,16 +162,9 @@ export class BookingService {
         if (morningSlots.includes(req.timeSlot)) usedMorning++;
         else if (afternoonSlots.includes(req.timeSlot)) usedAfternoon++;
       }
-      console.log(usedMorning);
-      console.log(usedAfternoon);
 
       const morningRemaining = Math.max(0, morningTotal - usedMorning);
       const afternoonRemaining = Math.max(0, afternoonTotal - usedAfternoon);
-      console.log(morningTotal);
-      console.log(afternoonTotal);
-
-      console.log(morningRemaining);
-      console.log(afternoonRemaining);
 
       dailyReports.push({
         date: day,
@@ -187,7 +178,6 @@ export class BookingService {
         },
       });
     }
-    console.log(dailyReports);
 
     return {
       message: 'Danh sách slot khả dụng',
