@@ -64,9 +64,31 @@ export class ExamService {
     }
   }
 
-  async hasTakenExam(params: HasTakenExamDto): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    const examSet = await this.findExamSet({ id: params.examSetId, userId: params.userId });
-    const exam = examSet.exam[0];
+  async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<HasTakenExamResponseDto>> {
+    const examSet = await this.prisma.examSet.findFirst({
+      where: {
+        name: params.examSetName,
+        isActive: true,
+      },
+      include: {
+        exam: {
+          where: {
+            userId: params.userId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (!examSet) {
+      throw new NotFoundException(`ExamSet with name ${params.examSetName} not found`);
+    }
+
+    const exam = examSet.exam[0] ?? null;
+
     return this.createExamResponse(examSet, exam, !!exam);
   }
 

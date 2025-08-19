@@ -95,16 +95,13 @@ export class ExamController {
     return await this.examService.getDetailExam(id);
   }
 
-  @Get('has-taken-exam/:examSetId')
+  @Get('has-taken-exam/:examSetName')
   @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi chưa' })
-  @ApiParam({ name: 'examSetId', type: String, description: 'ID bộ đề' })
-  hasTakenExam(
-    @Req() req,
-    @Param('examSetId', ParseUUIDPipe) examSetId: string
-  ): Promise<ResponseItem<HasTakenExamResponseDto>> {
+  @ApiParam({ name: 'examSetName', type: String, description: 'Tên bộ đề' })
+  hasTakenExam(@Req() req, @Param('examSetName') examSetName: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
     return this.examService.hasTakenExam({
       userId: req.user.userId,
-      examSetId,
+      examSetName,
     });
   }
 
