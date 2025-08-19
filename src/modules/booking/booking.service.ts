@@ -64,7 +64,7 @@ export class BookingService {
           },
         },
         orderBy: {
-          interviewDate: 'desc',
+          createdAt: 'desc',
         },
         skip,
         take,
