@@ -21,12 +21,28 @@ import { Response } from 'express';
 import * as dayjs from 'dayjs';
 import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
+import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
 @Controller('exam')
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
+
+  @Get('has-taken-exam')
+  @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi chưa' })
+  @ApiQuery({ name: 'examSetName', type: String, description: 'Tên bộ đề' })
+  async hasTakenExam(
+    @Req() req,
+    @Query('examSetName') examSetName: string
+  ): Promise<ResponseItem<VerifyExamResponseDto>> {
+    console.log(`Kiểm tra người dùng ${req.user.userId} đã làm bài thi ${examSetName} chưa`);
+
+    return await this.examService.hasTakenExam({
+      userId: req.user.userId,
+      examSetName,
+    });
+  }
 
   @Get('taken-input-test')
   @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi Input test chưa' })
@@ -93,16 +109,6 @@ export class ExamController {
   @ApiParam({ name: 'id', type: String, description: 'ID của bài thi user' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.examService.getDetailExam(id);
-  }
-
-  @Get('has-taken-exam/:examSetName')
-  @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi chưa' })
-  @ApiParam({ name: 'examSetName', type: String, description: 'Tên bộ đề' })
-  hasTakenExam(@Req() req, @Param('examSetName') examSetName: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    return this.examService.hasTakenExam({
-      userId: req.user.userId,
-      examSetName,
-    });
   }
 
   @Delete(':id')

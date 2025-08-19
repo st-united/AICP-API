@@ -17,6 +17,7 @@ import { formatLevel } from '@Constant/format';
 import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
+import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
 
 @Injectable()
 export class ExamService {
@@ -64,32 +65,35 @@ export class ExamService {
     }
   }
 
-  async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    const examSet = await this.prisma.examSet.findFirst({
+  async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<VerifyExamResponseDto>> {
+    const exam = await this.prisma.exam.findFirst({
       where: {
-        name: params.examSetName,
-        isActive: true,
+        userId: params.userId,
+        examSet: {
+          name: params.examSetName,
+          isActive: true,
+        },
       },
       include: {
-        exam: {
-          where: {
-            userId: params.userId,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 1,
-        },
+        examSet: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 
-    if (!examSet) {
-      throw new NotFoundException(`ExamSet with name ${params.examSetName} not found`);
+    if (!exam) {
+      throw new NotFoundException(`Exam with examSetName ${params.examSetName} and userId ${params.userId} not found`);
     }
 
-    const exam = examSet.exam[0] ?? null;
-
-    return this.createExamResponse(examSet, exam, !!exam);
+    return new ResponseItem<VerifyExamResponseDto>(
+      {
+        id: exam.id,
+        examStatus: exam.examStatus,
+        examSetName: exam.examSet.name,
+      },
+      'Lấy thông tin bài thi thành công'
+    );
   }
 
   async hasTakenExamInputTest(userId: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
