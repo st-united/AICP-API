@@ -1,0 +1,126 @@
+import { Injectable } from '@nestjs/common';
+import { Response } from 'express';
+import * as ExcelJS from 'exceljs';
+import * as dayjs from 'dayjs';
+import { ExamStatus, UserTrackingStatus } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class ExportService {
+  constructor(private prisma: PrismaService) {}
+
+  async exportStudents(res: Response, fromDate?: string, toDate?: string): Promise<void> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        ...(fromDate && { createdAt: { gte: dayjs(fromDate).startOf('day').toDate() } }),
+        ...(toDate && {
+          createdAt: {
+            ...(fromDate && { gte: dayjs(fromDate).startOf('day').toDate() }),
+            lte: dayjs(toDate).endOf('day').toDate(),
+          },
+        }),
+      },
+      include: {
+        userExam: {
+          include: {
+            examSet: true,
+            InterviewRequest: {
+              include: {
+                MentorBooking: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
+        userPortfolio: true,
+      },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Students');
+
+    // Define columns with proper types
+    worksheet.columns = [
+      { header: 'Full Name', key: 'fullName', width: 20 },
+      { header: 'Email', key: 'email', width: 30 },
+      { header: 'Phone Number', key: 'phoneNumber', width: 15 },
+      { header: 'Test Name', key: 'testName', width: 20 },
+      { header: 'Test Score', key: 'testScore', width: 10, style: { numFmt: '0.00' } },
+      { header: 'Competency Level', key: 'sfiaLevel', width: 15 },
+      { header: 'Test Date', key: 'testDate', width: 12 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Interview Date', key: 'interviewDate', width: 12 },
+      { header: 'Interview Slot', key: 'interviewSlot', width: 15 },
+      { header: 'Student ID', key: 'studentCode', width: 15 },
+      { header: 'University', key: 'university', width: 30 },
+      { header: 'LinkedIn', key: 'linkedIn', width: 30 },
+      { header: 'GitHub', key: 'github', width: 30 },
+      { header: 'Portfolio Files', key: 'portfolioFiles', width: 50 },
+      { header: 'Registration Date', key: 'registrationDate', width: 12 },
+    ];
+
+    // Add data rows with proper null handling
+    users.forEach((user) => {
+      const latestExam = user.userExam[0];
+      const interview = latestExam?.InterviewRequest?.[0];
+
+      worksheet.addRow({
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber || '',
+        testName: latestExam?.examSet?.name || '',
+        testScore: latestExam?.overallScore || '',
+        sfiaLevel: latestExam?.sfiaLevel || '',
+        testDate: latestExam?.createdAt ? dayjs(latestExam.createdAt).format('DD/MM/YYYY') : '',
+        status: this.getUserStatus(user.statusTracking, latestExam?.examStatus),
+        interviewDate: interview?.interviewDate ? dayjs(interview.interviewDate).format('DD/MM/YYYY') : '',
+        interviewSlot: interview?.timeSlot || '',
+        studentCode: user.studentCode || '',
+        university: user.university || '',
+        linkedIn: user.userPortfolio?.linkedInUrl || '',
+        github: user.userPortfolio?.githubUrl || '',
+        portfolioFiles: user.userPortfolio?.experienceFiles?.join('\n') || '',
+        registrationDate: dayjs(user.createdAt).format('DD/MM/YYYY'),
+      });
+    });
+
+    // Style the header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=student_test_data_${dayjs().format('YYYYMMDD')}.xlsx`);
+
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
+  }
+  private getUserStatus(userStatus: UserTrackingStatus, examStatus?: ExamStatus): string {
+    let status = '';
+    if (userStatus === UserTrackingStatus.REGISTERED) {
+      status = 'Activated';
+    }
+    switch (examStatus) {
+      case ExamStatus.IN_PROGRESS:
+        return 'In Progress';
+      case ExamStatus.SUBMITTED:
+        return 'Submitted';
+      case ExamStatus.WAITING_FOR_REVIEW:
+        return 'Waiting for Review';
+      case ExamStatus.GRADED:
+        return 'Graded';
+      case ExamStatus.INTERVIEW_SCHEDULED:
+        return 'Interview Scheduled';
+      case ExamStatus.INTERVIEW_COMPLETED:
+        return 'Interview Completed';
+      case ExamStatus.RESULT_EVALUATED:
+        return 'Result Evaluated';
+      default:
+        return status || 'Not Activated';
+    }
+  }
+}
