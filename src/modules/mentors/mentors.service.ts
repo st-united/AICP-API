@@ -1,19 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseItem } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
-import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
+import { ExamStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
-import { GetMenteesDto } from './dto/request/get-mentees.dto';
-import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
-import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
@@ -271,6 +266,13 @@ export class MentorsService {
           examId: dto.examId,
           interviewDate: startOfDay,
           timeSlot: selectedSlot,
+        },
+      });
+
+      await this.prisma.exam.update({
+        where: { id: dto.examId },
+        data: {
+          examStatus: ExamStatus.INTERVIEW_SCHEDULED,
         },
       });
 
