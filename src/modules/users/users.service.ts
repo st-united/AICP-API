@@ -43,9 +43,7 @@ import {
 import { Response } from 'express';
 import * as sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
-import { UserBookingDto } from './dto/request/user-booking.dto';
-import { UserBookingResponseDto } from './dto/response/user-booking-response.dto';
-import { CheckUserBookingResponseDto } from './dto/response/check-user-booking-response.dto';
+
 @Injectable()
 export class UsersService {
   constructor(
