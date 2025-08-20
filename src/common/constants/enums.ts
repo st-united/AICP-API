@@ -50,3 +50,8 @@ export enum InterviewShift {
   MORNING = 'MORNING',
   AFTERNOON = 'AFTERNOON',
 }
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
