@@ -20,75 +20,59 @@ export class BookingService {
     const skip = (Number(page) - 1) * take;
     const filters: any = {};
 
-    if (dateStart || dateEnd || (levels && levels.length > 0)) {
-      filters.interviewRequest = filters.interviewRequest || {};
-      if (dateStart || dateEnd) {
-        filters.interviewRequest = {
-          interviewDate: {
-            ...(dateStart && { gte: new Date(dateStart) }),
-            ...(dateEnd && { lte: new Date(dateEnd) }),
-          },
-        };
-      }
+    if (dateStart || dateEnd) {
+      filters.interviewDate = {
+        ...(dateStart && { gte: new Date(dateStart) }),
+        ...(dateEnd && { lte: new Date(dateEnd) }),
+      };
+    }
 
-      if (levels && levels.length > 0) {
-        filters.interviewRequest.exam = {
+    if (levels && levels.length > 0) {
+      filters.exam = {
+        examLevel: {
           examLevel: {
-            examLevel: {
-              in: levels,
-            },
+            in: levels,
           },
-        };
-      }
+        },
+      };
     }
 
     const keywordFilter = name
       ? {
           OR: [
-            { interviewRequest: { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } } },
-            { interviewRequest: { exam: { user: { email: { contains: name, mode: 'insensitive' } } } } },
-            { interviewRequest: { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } } },
+            { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
+            { exam: { user: { email: { contains: name, mode: 'insensitive' } } } },
+            { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
           ],
         }
       : {};
 
     const [records, total] = await this.prisma.$transaction([
-      this.prisma.mentorBooking.findMany({
+      this.prisma.interviewRequest.findMany({
         where: {
-          interviewRequest: {
-            status: InterviewRequestStatus.PENDING,
-          },
+          status: InterviewRequestStatus.PENDING,
           ...filters,
           ...keywordFilter,
         },
         include: {
-          mentor: true,
-          interviewRequest: {
+          exam: {
             include: {
-              exam: {
-                include: {
-                  examLevel: true,
-                  examSet: true,
-                  user: true,
-                },
-              },
+              examLevel: true,
+              examSet: true,
+              user: true,
             },
           },
         },
         orderBy: {
-          interviewRequest: {
-            interviewDate: 'desc',
-          },
+          interviewDate: 'desc',
         },
         skip,
         take,
       }),
 
-      this.prisma.mentorBooking.count({
+      this.prisma.interviewRequest.count({
         where: {
-          interviewRequest: {
-            status: InterviewRequestStatus.PENDING,
-          },
+          status: InterviewRequestStatus.PENDING,
           ...filters,
           ...keywordFilter,
         },
@@ -96,15 +80,15 @@ export class BookingService {
     ]);
 
     const data: FilterBookingResponseItemDto[] = records.map((booking) => ({
-      id: booking.interviewRequest?.id || '',
-      timeSlost: booking.interviewRequest?.timeSlot || '',
-      name: booking.interviewRequest?.exam.user?.fullName || '',
-      email: booking.interviewRequest?.exam.user?.email || '',
-      phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
-      nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
-      examId: booking.interviewRequest?.examId || '',
-      level: booking.interviewRequest?.exam?.examLevel.examLevel || '',
-      date: booking.interviewRequest.interviewDate.toISOString() || '',
+      id: booking?.id || '',
+      timeSlost: booking?.timeSlot || '',
+      name: booking?.exam.user?.fullName || '',
+      email: booking?.exam.user?.email || '',
+      phone: booking?.exam.user?.phoneNumber || '',
+      nameExamSet: booking?.exam?.examSet?.name || '',
+      examId: booking?.examId || '',
+      level: booking?.exam?.examLevel.examLevel || '',
+      date: booking?.interviewDate.toISOString() || '',
     }));
 
     return {

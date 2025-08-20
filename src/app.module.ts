@@ -18,6 +18,7 @@ import { ZaloOtpModule } from './modules/zalo-otp/zalo-otp.module';
 import { DomainModule } from './modules/domain/domain.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { BookingModule } from './modules/booking/booking.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { BookingModule } from './modules/booking/booking.module';
     DomainModule,
     CoursesModule,
     BookingModule,
+    ExportModule,
   ],
   providers: [
     {

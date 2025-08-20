@@ -4,7 +4,7 @@ import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, SFIALevel } from '@prisma/client';
-import { examSetDefaultName, UserRoleEnum } from '@Constant/enums';
+import { examSetDefaultName, SortOrder, UserRoleEnum } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
@@ -17,6 +17,7 @@ import { formatLevel } from '@Constant/format';
 import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
+import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
 
 @Injectable()
 export class ExamService {
@@ -64,10 +65,36 @@ export class ExamService {
     }
   }
 
-  async hasTakenExam(params: HasTakenExamDto): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    const examSet = await this.findExamSet({ id: params.examSetId, userId: params.userId });
-    const exam = examSet.exam[0];
-    return this.createExamResponse(examSet, exam, !!exam);
+  async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<VerifyExamResponseDto>> {
+    const exam = await this.prisma.exam.findFirst({
+      where: {
+        userId: params.userId,
+        examSet: {
+          name: params.examSetName,
+          isActive: true,
+        },
+      },
+      include: {
+        examSet: true,
+      },
+      orderBy: {
+        createdAt: SortOrder.DESC,
+      },
+    });
+
+    if (!exam) {
+      throw new NotFoundException(`Exam with examSetName ${params.examSetName} and userId ${params.userId} not found`);
+    }
+
+    return new ResponseItem<VerifyExamResponseDto>(
+      {
+        id: exam.id,
+        examStatus: exam.examStatus,
+        examSetName: exam.examSet.name,
+        examSetDuration: exam.examSet.timeLimitMinutes,
+      },
+      'Lấy thông tin bài thi thành công'
+    );
   }
 
   async hasTakenExamInputTest(userId: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
@@ -379,7 +406,6 @@ export class ExamService {
       throw new NotFoundException('Bộ đề thi không tồn tại');
     }
 
-    // Tính thời gian làm bài
     const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
     const h = Math.floor(diffMs / 3600000)
       .toString()
@@ -476,9 +502,7 @@ export class ExamService {
     return mapping[level];
   }
 
-  async getCoursesByExamLevel(examLevel: ExamLevelEnum, userId: string) {
-    const mappedLevel = this.mapExamLevelToSFIALevel(examLevel);
-
+  async getCoursesByExamLevel(_: ExamLevelEnum, userId: string) {
     const allCourses = await this.prisma.course.findMany({
       where: {
         isActive: true,
@@ -492,12 +516,7 @@ export class ExamService {
       },
     });
 
-    const filteredCourses = allCourses.filter((course) => {
-      if (!course.sfiaLevels || course.sfiaLevels.length === 0) return false;
-
-      return course.sfiaLevels.some((sfia) => SFIALevel[sfia] >= SFIALevel[mappedLevel]);
-    });
-    const coursesWithRegistrationStatus = filteredCourses.map((course) => {
+    const coursesWithRegistrationStatus = allCourses.map((course) => {
       const { userProgress, ...courseData } = course;
       const isRegistered = userProgress.length > 0;
 
@@ -506,6 +525,7 @@ export class ExamService {
         isRegistered,
       };
     });
+
     return coursesWithRegistrationStatus;
   }
 
