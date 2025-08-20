@@ -4,34 +4,35 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
+import { InterviewRequestStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { SlotStatus, TimeSlotBooking } from '@prisma/client';
+import { Order } from '@app/common/constants';
 
 @Injectable()
 export class BookingService {
   constructor(private prisma: PrismaService) {}
 
   async findAllWithFilter(dto: FilterMentorBookingRequestDto): Promise<ResponseItem<PaginatedBookingResponseDto>> {
-    const { name, level, dateStart, dateEnd, page = '1', limit = '10' } = dto;
+    const { name, levels, dateStart, dateEnd, page = '1', limit = '10' } = dto;
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
-
     const filters: any = {};
 
     if (dateStart || dateEnd) {
-      filters.interviewRequest = {
-        interviewDate: {
-          ...(dateStart && { gte: new Date(dateStart) }),
-          ...(dateEnd && { lte: new Date(dateEnd) }),
-        },
+      filters.interviewDate = {
+        ...(dateStart && { gte: new Date(dateStart) }),
+        ...(dateEnd && { lte: new Date(dateEnd) }),
       };
     }
 
-    if (level && level.length > 0) {
-      filters.mentor = {
-        sfiaLevel: {
-          in: level,
+    if (levels && levels.length > 0) {
+      filters.exam = {
+        examLevel: {
+          examLevel: {
+            in: levels,
+          },
         },
       };
     }
@@ -39,59 +40,60 @@ export class BookingService {
     const keywordFilter = name
       ? {
           OR: [
-            { interviewRequest: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { email: { contains: name, mode: 'insensitive' } } } },
-            { interviewRequest: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
+            { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
+            { exam: { user: { email: { contains: name, mode: 'insensitive' } } } },
+            { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
           ],
         }
       : {};
 
-    const [records, total] = await this.prisma.$transaction([
-      this.prisma.mentorBooking.findMany({
+    const [records, total, levelList] = await this.prisma.$transaction([
+      this.prisma.interviewRequest.findMany({
         where: {
+          status: InterviewRequestStatus.PENDING,
           ...filters,
           ...keywordFilter,
         },
         include: {
-          mentor: true,
-          interviewRequest: {
+          exam: {
             include: {
-              exam: {
-                include: {
-                  examSet: true,
-                  user: true,
-                },
-              },
+              examLevel: true,
+              examSet: true,
+              user: true,
             },
           },
         },
         orderBy: {
-          interviewRequest: {
-            interviewDate: 'desc',
-          },
+          createdAt: Order.DESC,
         },
         skip,
         take,
       }),
 
-      this.prisma.mentorBooking.count({
+      this.prisma.interviewRequest.count({
         where: {
+          status: InterviewRequestStatus.PENDING,
           ...filters,
           ...keywordFilter,
         },
       }),
+
+      this.prisma.examLevel.findMany({
+        distinct: ['examLevel'],
+        select: { examLevel: true },
+      }),
     ]);
 
     const data: FilterBookingResponseItemDto[] = records.map((booking) => ({
-      id: booking.interviewRequest?.id || '',
-      timeSlost: booking.interviewRequest?.timeSlot || '',
-      name: booking.interviewRequest?.exam.user?.fullName || '',
-      email: booking.interviewRequest?.exam.user?.email || '',
-      phone: booking.interviewRequest?.exam.user?.phoneNumber || '',
-      nameExamSet: booking.interviewRequest?.exam?.examSet?.name || '',
-      examId: booking.interviewRequest?.examId || '',
-      level: booking.mentor?.sfiaLevel || '',
-      date: booking.interviewRequest.interviewDate.toISOString() || '',
+      id: booking?.id || '',
+      timeSlots: booking?.timeSlot || '',
+      name: booking?.exam.user?.fullName || '',
+      email: booking?.exam.user?.email || '',
+      phone: booking?.exam.user?.phoneNumber || '',
+      nameExamSet: booking?.exam?.examSet?.name || '',
+      examId: booking?.examId || '',
+      level: booking?.exam?.examLevel.examLevel || '',
+      date: booking?.interviewDate.toISOString() || '',
     }));
 
     return {
@@ -101,6 +103,7 @@ export class BookingService {
         page: Number(page),
         limit: take,
         totalPages: Math.ceil(total / take),
+        levels: levelList.map((l) => l.examLevel),
       },
       message: 'Lấy danh sách thành công',
     };
