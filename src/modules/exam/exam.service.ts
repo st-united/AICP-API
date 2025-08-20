@@ -4,7 +4,7 @@ import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, SFIALevel } from '@prisma/client';
-import { examSetDefaultName, UserRoleEnum } from '@Constant/enums';
+import { examSetDefaultName, Order, UserRoleEnum } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
@@ -17,6 +17,7 @@ import { formatLevel } from '@Constant/format';
 import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
+import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
 
 @Injectable()
 export class ExamService {
@@ -64,32 +65,36 @@ export class ExamService {
     }
   }
 
-  async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    const examSet = await this.prisma.examSet.findFirst({
+  async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<VerifyExamResponseDto>> {
+    const exam = await this.prisma.exam.findFirst({
       where: {
-        name: params.examSetName,
-        isActive: true,
+        userId: params.userId,
+        examSet: {
+          name: params.examSetName,
+          isActive: true,
+        },
       },
       include: {
-        exam: {
-          where: {
-            userId: params.userId,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 1,
-        },
+        examSet: true,
+      },
+      orderBy: {
+        createdAt: Order.DESC,
       },
     });
 
-    if (!examSet) {
-      throw new NotFoundException(`ExamSet with name ${params.examSetName} not found`);
+    if (!exam) {
+      throw new NotFoundException(`Exam with examSetName ${params.examSetName} and userId ${params.userId} not found`);
     }
 
-    const exam = examSet.exam[0] ?? null;
-
-    return this.createExamResponse(examSet, exam, !!exam);
+    return new ResponseItem<VerifyExamResponseDto>(
+      {
+        id: exam.id,
+        examStatus: exam.examStatus,
+        examSetName: exam.examSet.name,
+        examSetDuration: exam.examSet.timeLimitMinutes,
+      },
+      'Lấy thông tin bài thi thành công'
+    );
   }
 
   async hasTakenExamInputTest(userId: string): Promise<ResponseItem<HasTakenExamResponseDto>> {
