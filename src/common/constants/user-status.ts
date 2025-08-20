@@ -16,3 +16,6 @@ export const UserStatusText: Record<UserTrackingStatus, string> = {
   [UserTrackingStatus.PROFILE_PENDING]: 'Profile Pending',
   [UserTrackingStatus.PROFILE_COMPLETED]: 'Profile Completed',
 };
+
+export const UNKNOWN_EXAM_STATUS = 'Unknown Exam Status';
+export const UNKNOWN_USER_STATUS = 'Unknown User Status';
