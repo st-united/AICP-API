@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { Response } from 'express';
 import * as ExcelJS from 'exceljs';
 import * as dayjs from 'dayjs';
-import { ExamStatus, UserTrackingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { getUserStatus } from '@app/common/utils/user-status.util';
 
 @Injectable()
 export class ExportService {
@@ -75,7 +75,7 @@ export class ExportService {
         testScore: latestExam?.overallScore || '',
         sfiaLevel: latestExam?.sfiaLevel || '',
         testDate: latestExam?.createdAt ? dayjs(latestExam.createdAt).format('DD/MM/YYYY') : '',
-        status: this.getUserStatus(user.statusTracking, latestExam?.examStatus),
+        status: getUserStatus(user.statusTracking, latestExam?.examStatus),
         interviewDate: interview?.interviewDate ? dayjs(interview.interviewDate).format('DD/MM/YYYY') : '',
         interviewSlot: interview?.timeSlot || '',
         studentCode: user.studentCode || '',
@@ -107,29 +107,5 @@ export class ExportService {
     // Write to response
     await workbook.xlsx.write(res);
     res.end();
-  }
-  private getUserStatus(userStatus: UserTrackingStatus, examStatus?: ExamStatus): string {
-    let status = '';
-    if (userStatus === UserTrackingStatus.REGISTERED) {
-      status = 'Activated';
-    }
-    switch (examStatus) {
-      case ExamStatus.IN_PROGRESS:
-        return 'In Progress';
-      case ExamStatus.SUBMITTED:
-        return 'Submitted';
-      case ExamStatus.WAITING_FOR_REVIEW:
-        return 'Waiting for Review';
-      case ExamStatus.GRADED:
-        return 'Graded';
-      case ExamStatus.INTERVIEW_SCHEDULED:
-        return 'Interview Scheduled';
-      case ExamStatus.INTERVIEW_COMPLETED:
-        return 'Interview Completed';
-      case ExamStatus.RESULT_EVALUATED:
-        return 'Result Evaluated';
-      default:
-        return status || 'Not Activated';
-    }
   }
 }
