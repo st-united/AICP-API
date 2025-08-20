@@ -11,9 +11,7 @@ import { SlotStatus, TimeSlotBooking } from '@prisma/client';
 export class BookingService {
   constructor(private prisma: PrismaService) {}
 
-  async findAllWithFilter(
-    dto: FilterMentorBookingRequestDto
-  ): Promise<ResponseItem<PaginatedBookingResponseDto & { levels: string[] }>> {
+  async findAllWithFilter(dto: FilterMentorBookingRequestDto): Promise<ResponseItem<PaginatedBookingResponseDto>> {
     const { name, levels, dateStart, dateEnd, page = '1', limit = '10' } = dto;
 
     const take = Number(limit);

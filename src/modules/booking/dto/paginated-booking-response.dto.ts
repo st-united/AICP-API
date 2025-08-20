@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ValidateNested, IsArray, IsInt, Min } from 'class-validator';
+import { ValidateNested, IsArray, IsInt, Min, IsString } from 'class-validator';
 import { FilterBookingResponseItemDto } from './filter-booking-response-item.dto';
 
 export class PaginatedBookingResponseDto {
@@ -23,4 +23,8 @@ export class PaginatedBookingResponseDto {
   @IsInt()
   @Min(1)
   totalPages: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  levels: string[];
 }
