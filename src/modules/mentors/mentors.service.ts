@@ -32,7 +32,7 @@ import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/respo
 import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { InterviewShift } from '@Constant/enums';
+import { InterviewShift, Order } from '@Constant/enums';
 
 @Injectable()
 export class MentorsService {
@@ -336,9 +336,14 @@ export class MentorsService {
     if (!mentor) {
       throw new NotFoundException('Mentor not found for this user');
     }
+
     const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
 
-    const [records, total, upcoming, completed, notJoined] = await this.prisma.$transaction([
+    const whereForStats: Prisma.MentorBookingWhereInput = {
+      mentorId: mentor.id,
+    };
+
+    const [records, total, statsTotal, upcoming, completed, notJoined, levelList] = await this.prisma.$transaction([
       this.prisma.mentorBooking.findMany({
         where,
         include: {
@@ -348,50 +353,38 @@ export class MentorsService {
                 include: {
                   examLevel: true,
                   user: true,
-                  examSet: {
-                    select: {
-                      name: true,
-                    },
-                  },
+                  examSet: { select: { name: true } },
                 },
               },
             },
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: { createdAt: Order.DESC },
         skip,
         take: limit,
       }),
+
+      this.prisma.mentorBooking.count({ where }),
+
+      this.prisma.mentorBooking.count({ where: whereForStats }),
       this.prisma.mentorBooking.count({
-        where,
+        where: { ...whereForStats, status: MentorBookingStatus.UPCOMING },
+      }),
+      this.prisma.mentorBooking.count({
+        where: { ...whereForStats, status: MentorBookingStatus.COMPLETED },
+      }),
+      this.prisma.mentorBooking.count({
+        where: { ...whereForStats, status: MentorBookingStatus.NOT_JOINED },
       }),
 
-      this.prisma.mentorBooking.count({
-        where: {
-          ...where,
-          status: MentorBookingStatus.UPCOMING,
-        },
-      }),
-
-      this.prisma.mentorBooking.count({
-        where: {
-          ...where,
-          status: MentorBookingStatus.COMPLETED,
-        },
-      }),
-
-      this.prisma.mentorBooking.count({
-        where: {
-          ...where,
-          status: MentorBookingStatus.NOT_JOINED,
-        },
+      this.prisma.examLevel.findMany({
+        select: { id: true, examLevel: true },
+        orderBy: { examLevel: 'asc' },
       }),
     ]);
 
     const stats = {
-      total,
+      total: statsTotal,
       upcoming,
       completed,
       notJoined,
@@ -419,6 +412,8 @@ export class MentorsService {
         limit,
         totalPages: Math.ceil(total / limit),
         stats,
+        levels: levelList.map((lvl) => lvl.examLevel),
+        statuses: Object.values(MentorBookingStatus),
       },
       'Lấy danh sách lịch phỏng vấn thành công'
     );
@@ -441,9 +436,7 @@ export class MentorsService {
         ...(levels &&
           levels.length > 0 && {
             exam: {
-              examLevel: {
-                examLevel: { in: levels as ExamLevelEnum[] },
-              },
+              examLevel: { examLevel: { in: levels as ExamLevelEnum[] } },
             },
           }),
         ...(dateStart || dateEnd
@@ -456,9 +449,21 @@ export class MentorsService {
           : {}),
         ...(keyword && {
           OR: [
-            { exam: { user: { fullName: { contains: keyword, mode: 'insensitive' } } } },
-            { exam: { user: { email: { contains: keyword, mode: 'insensitive' } } } },
-            { exam: { user: { phoneNumber: { contains: keyword, mode: 'insensitive' } } } },
+            {
+              exam: {
+                user: { fullName: { contains: keyword, mode: 'insensitive' } },
+              },
+            },
+            {
+              exam: {
+                user: { email: { contains: keyword, mode: 'insensitive' } },
+              },
+            },
+            {
+              exam: {
+                user: { phoneNumber: { contains: keyword, mode: 'insensitive' } },
+              },
+            },
           ],
         }),
       },
