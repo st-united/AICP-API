@@ -7,6 +7,8 @@ import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dt
 import { InterviewRequestStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { SlotStatus, TimeSlotBooking } from '@prisma/client';
+import { Order } from '@app/common/constants';
+
 @Injectable()
 export class BookingService {
   constructor(private prisma: PrismaService) {}
@@ -45,7 +47,7 @@ export class BookingService {
         }
       : {};
 
-    const [records, total, LevelList] = await this.prisma.$transaction([
+    const [records, total, levelList] = await this.prisma.$transaction([
       this.prisma.interviewRequest.findMany({
         where: {
           status: InterviewRequestStatus.PENDING,
@@ -62,7 +64,7 @@ export class BookingService {
           },
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: Order.DESC,
         },
         skip,
         take,
@@ -101,7 +103,7 @@ export class BookingService {
         page: Number(page),
         limit: take,
         totalPages: Math.ceil(total / take),
-        levels: LevelList.map((l) => l.examLevel),
+        levels: levelList.map((l) => l.examLevel),
       },
       message: 'Lấy danh sách thành công',
     };
