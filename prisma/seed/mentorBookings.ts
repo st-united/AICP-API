@@ -35,13 +35,7 @@ export async function seedMentorBookings(
     TimeSlotBooking.PM_05_06,
   ];
 
-  const statuses = [
-    MentorBookingStatus.ACCEPTED,
-    MentorBookingStatus.PENDING,
-    MentorBookingStatus.REJECTED,
-    MentorBookingStatus.COMPLETED,
-    MentorBookingStatus.CANCELLED,
-  ];
+  const statuses = [MentorBookingStatus.UPCOMING, MentorBookingStatus.NOT_JOINED, MentorBookingStatus.COMPLETED];
 
   const mentorEmailMap = Object.fromEntries(mentors.map((mentor) => [mentor.user.email, mentor]));
 

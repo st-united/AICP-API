@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseUUIDPipe,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
@@ -9,10 +21,16 @@ import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto'
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
 export class MentorsController {
   constructor(
@@ -26,7 +44,9 @@ export class MentorsController {
     return await this.mentorsService.create(createMentorDto, url);
   }
 
+  @UseGuards(JwtAccessTokenGuard)
   @Post('create-scheduler')
+  @UseGuards(JwtAccessTokenGuard)
   async createScheduler(
     @Req() req,
     @Body() dto: CreateMentorBookingDto
@@ -66,6 +86,22 @@ export class MentorsController {
   async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req): Promise<ResponseItem<null>> {
     const url = req.headers.origin;
     return await this.mentorsService.deactivateMentorAccount(id, url);
+  }
+
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId, req.user.email);
+    await this.bookingGateway.emitNewBooking();
+    return result;
+  }
+
+  @Get()
+  @UseGuards(JwtAccessTokenGuard)
+  async getFilteredBookings(
+    @Req() req: any,
+    @Query() dto: FilterMentorBookingDto
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    return this.mentorsService.getFilteredBookings(dto, req.user.userId);
   }
 
   @UseGuards(JwtAccessTokenGuard)
