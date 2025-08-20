@@ -567,12 +567,7 @@ export class MentorsService {
       })
     );
 
-    return {
-      message: 'Yêu cầu phỏng vấn đã được nhận',
-      data: {
-        bookings,
-      },
-    };
+    return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
   }
 
   async getFilteredBookings(
