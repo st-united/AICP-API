@@ -49,24 +49,29 @@ export async function seedMentorBookings(
 
       if (!userId || !examId) continue;
 
-      // 1. Tạo InterviewRequest
-      const interviewRequest = await prisma.interviewRequest.create({
-        data: {
-          examId,
-          interviewDate: randomFutureDate(),
-          timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
-        },
-      });
+      try {
+        const interviewRequest = await prisma.interviewRequest.create({
+          data: {
+            examId,
+            interviewDate: randomFutureDate(),
+            timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
+          },
+        });
 
-      // 2. Tạo MentorBooking
-      await prisma.mentorBooking.create({
-        data: {
-          interviewRequestId: interviewRequest.id,
-          mentorId: mentor.id,
-          status: statuses[Math.floor(Math.random() * statuses.length)],
-          notes: `Session between ${userEmail} and ${mentorEmail}`,
-        },
-      });
+        await prisma.mentorBooking.create({
+          data: {
+            interviewRequestId: interviewRequest.id,
+            mentorId: mentor.id,
+            status: statuses[Math.floor(Math.random() * statuses.length)],
+            notes: `Session between ${userEmail} and ${mentorEmail}`,
+          },
+        });
+      } catch (error: any) {
+        if (error.code === 'P2002') {
+          continue;
+        }
+        throw error;
+      }
     }
   }
 }
