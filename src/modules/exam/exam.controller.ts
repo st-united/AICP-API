@@ -36,8 +36,6 @@ export class ExamController {
     @Req() req,
     @Query('examSetName') examSetName: string
   ): Promise<ResponseItem<VerifyExamResponseDto>> {
-    console.log(`Kiểm tra người dùng ${req.user.userId} đã làm bài thi ${examSetName} chưa`);
-
     return await this.examService.hasTakenExam({
       userId: req.user.userId,
       examSetName,
