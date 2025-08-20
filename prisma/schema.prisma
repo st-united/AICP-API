@@ -347,7 +347,7 @@ model MentorBooking {
 
 model InterviewRequest {
   id            String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId        String                 @map("exam_id") @db.Uuid
+  examId        String                 @unique @map("exam_id") @db.Uuid
   interviewDate DateTime               @map("interview_date") @db.Timestamptz(6)
   timeSlot      TimeSlotBooking        @map("time_slot")
   status        InterviewRequestStatus @default(PENDING)
