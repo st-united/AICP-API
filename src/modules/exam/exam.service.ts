@@ -91,6 +91,7 @@ export class ExamService {
         id: exam.id,
         examStatus: exam.examStatus,
         examSetName: exam.examSet.name,
+        examSetDuration: exam.examSet.timeLimitMinutes,
       },
       'Lấy thông tin bài thi thành công'
     );

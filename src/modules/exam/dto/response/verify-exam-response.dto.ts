@@ -10,4 +10,7 @@ export class VerifyExamResponseDto {
 
   @Expose()
   examSetName: string;
+
+  @Expose()
+  examSetDuration: number;
 }
