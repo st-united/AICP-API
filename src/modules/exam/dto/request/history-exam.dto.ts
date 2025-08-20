@@ -16,4 +16,9 @@ export class GetHistoryExamDto {
   @IsDate()
   @IsOptional()
   endDate?: Date;
+
+  @Expose()
+  @ApiProperty()
+  @IsOptional()
+  examSetName?: string;
 }
