@@ -93,7 +93,16 @@ export class ExportService {
 
     // Set response headers
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=student_test_data_${dayjs().format('YYYYMMDD')}.xlsx`);
+    const formatDate = (date?: string) => (date ? dayjs(date).format('DD-MM-YYYY') : '');
+    const from = formatDate(fromDate);
+    const to = formatDate(toDate);
+    let dateRange = dayjs().format('DD-MM-YYYY');
+    if (from && to) {
+      dateRange = from === to ? from : `${from}_${to}`;
+    } else if (from || to) {
+      dateRange = from || to;
+    }
+    res.setHeader('Content-Disposition', `attachment; filename=student_test_data_${dateRange}.xlsx`);
 
     // Write to response
     await workbook.xlsx.write(res);
