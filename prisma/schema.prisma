@@ -344,13 +344,14 @@ model MentorBooking {
 }
 
 model InterviewRequest {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId        String          @map("exam_id") @db.Uuid
-  interviewDate DateTime        @map("interview_date") @db.Timestamptz(6)
-  timeSlot      TimeSlotBooking @map("time_slot")
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
-  exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+  id            String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examId        String                 @map("exam_id") @db.Uuid
+  interviewDate DateTime               @map("interview_date") @db.Timestamptz(6)
+  timeSlot      TimeSlotBooking        @map("time_slot")
+  status        InterviewRequestStatus @default(PENDING)
+  createdAt     DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exam          Exam                   @relation(fields: [examId], references: [id], onDelete: Cascade)
   MentorBooking MentorBooking[]
 }
 
@@ -688,12 +689,6 @@ enum TestTrackingStatus {
   RESULT_EVALUATED
 }
 
-enum SlotStatus {
-  AVAILABLE
-  ALMOST_FULL
-  FULL
-}
-
 enum ExamSetStatus {
   DRAFT
   PUBLISHED
@@ -701,3 +696,15 @@ enum ExamSetStatus {
   INACTIVE
   ARCHIVED
 }
+
+enum InterviewRequestStatus {
+  PENDING
+  ASSIGNED
+}
+
+enum SlotStatus {
+  AVAILABLE
+  ALMOST_FULL
+  FULL
+}
+

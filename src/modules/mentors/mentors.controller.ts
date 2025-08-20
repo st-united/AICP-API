@@ -12,7 +12,12 @@ import { BookingGateway } from '../booking/booking.gateway';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
 export class MentorsController {
   constructor(
@@ -77,5 +82,12 @@ export class MentorsController {
     @Param('examId', ParseUUIDPipe) examId: string
   ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     return await this.mentorsService.checkUserInterviewRequest(examId);
+  }
+
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    await this.bookingGateway.emitNewBooking();
+    return result;
   }
 }
