@@ -8,6 +8,7 @@ import { InterviewRequestStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { SlotStatus, TimeSlotBooking } from '@prisma/client';
 import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
+import { Order } from '@app/common/constants';
 
 @Injectable()
 export class BookingService {
@@ -47,7 +48,7 @@ export class BookingService {
         }
       : {};
 
-    const [records, total] = await this.prisma.$transaction([
+    const [records, total, levelList] = await this.prisma.$transaction([
       this.prisma.interviewRequest.findMany({
         where: {
           status: InterviewRequestStatus.PENDING,
@@ -64,7 +65,7 @@ export class BookingService {
           },
         },
         orderBy: {
-          interviewDate: 'desc',
+          createdAt: Order.DESC,
         },
         skip,
         take,
@@ -77,11 +78,16 @@ export class BookingService {
           ...keywordFilter,
         },
       }),
+
+      this.prisma.examLevel.findMany({
+        distinct: ['examLevel'],
+        select: { examLevel: true },
+      }),
     ]);
 
     const data: FilterBookingResponseItemDto[] = records.map((booking) => ({
       id: booking?.id || '',
-      timeSlost: booking?.timeSlot || '',
+      timeSlots: booking?.timeSlot || '',
       name: booking?.exam.user?.fullName || '',
       email: booking?.exam.user?.email || '',
       phone: booking?.exam.user?.phoneNumber || '',
@@ -98,6 +104,7 @@ export class BookingService {
         page: Number(page),
         limit: take,
         totalPages: Math.ceil(total / take),
+        levels: levelList.map((l) => l.examLevel),
       },
       message: 'Lấy danh sách thành công',
     };
