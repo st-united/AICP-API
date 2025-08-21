@@ -12,6 +12,7 @@ import { BookingGateway } from '../booking/booking.gateway';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -31,6 +32,7 @@ export class MentorsController {
     return await this.mentorsService.create(createMentorDto, url);
   }
 
+  @UseGuards(JwtAccessTokenGuard)
   @Post('create-scheduler')
   async createScheduler(
     @Req() req,
@@ -89,5 +91,16 @@ export class MentorsController {
     const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
     await this.bookingGateway.emitNewBooking();
     return result;
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('check-interview-request')
+  @ApiOperation({ summary: 'Check if user has an interview request' })
+  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid user ID or error checking interview request' })
+  async checkUserInterviewRequest(
+    @Body() checkInterviewRequestDto: CheckInterviewRequestDto
+  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(checkInterviewRequestDto.userId);
   }
 }
