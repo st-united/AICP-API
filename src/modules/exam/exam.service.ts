@@ -406,7 +406,6 @@ export class ExamService {
       throw new NotFoundException('Bộ đề thi không tồn tại');
     }
 
-    // Tính thời gian làm bài
     const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
     const h = Math.floor(diffMs / 3600000)
       .toString()
@@ -472,7 +471,7 @@ export class ExamService {
       where: { id: existingExam.examLevelId },
     });
 
-    const result = await this.getCoursesByExamLevel(examLevel.examLevel, userId);
+    const result = await this.getCoursesByExamLevel(userId);
 
     return new ResponseItem<ExamWithResultDto>(
       {
@@ -503,9 +502,7 @@ export class ExamService {
     return mapping[level];
   }
 
-  async getCoursesByExamLevel(examLevel: ExamLevelEnum, userId: string) {
-    const mappedLevel = this.mapExamLevelToSFIALevel(examLevel);
-
+  async getCoursesByExamLevel(userId: string) {
     const allCourses = await this.prisma.course.findMany({
       where: {
         isActive: true,
@@ -519,12 +516,7 @@ export class ExamService {
       },
     });
 
-    const filteredCourses = allCourses.filter((course) => {
-      if (!course.sfiaLevels || course.sfiaLevels.length === 0) return false;
-
-      return course.sfiaLevels.some((sfia) => SFIALevel[sfia] >= SFIALevel[mappedLevel]);
-    });
-    const coursesWithRegistrationStatus = filteredCourses.map((course) => {
+    const coursesWithRegistrationStatus = allCourses.map((course) => {
       const { userProgress, ...courseData } = course;
       const isRegistered = userProgress.length > 0;
 
@@ -533,6 +525,7 @@ export class ExamService {
         isRegistered,
       };
     });
+
     return coursesWithRegistrationStatus;
   }
 
