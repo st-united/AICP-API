@@ -3,6 +3,7 @@ import { BookingService } from './booking.service';
 import { BookingGateway } from './booking.gateway';
 import { ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { ResponseItem } from '@app/common/dtos';
+import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 
 @Controller('bookings')
 export class BookingController {
@@ -11,10 +12,24 @@ export class BookingController {
     private readonly bookingGateway: BookingGateway
   ) {}
 
+  @Get('interview-info/:examId')
+  async getInterviewInfo(@Param('examId') examId: string) {
+    return await this.bookingService.getUserInformationForInterview(examId);
+  }
+
   @Get('available-slots/:examId')
   async getAvailableSlotsByExamId(
     @Param('examId', new ParseUUIDPipe()) examId: string
   ): Promise<ResponseItem<ExamSlotsReportDto>> {
     return await this.bookingService.getAvailableSlotsByExamId(examId);
+  }
+
+  @Get()
+  async getInterviewRequests(@Query() filter: FilterMentorBookingRequestDto) {
+    const users = await this.bookingService.findAllWithFilter(filter);
+    return {
+      message: 'Get interview requests successfully',
+      data: users,
+    };
   }
 }
