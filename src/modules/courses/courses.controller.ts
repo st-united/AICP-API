@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { ResponseItem } from '@app/common/dtos';
 import { CourseResponseDto } from './dto/response/course-response.dto';
@@ -24,9 +24,9 @@ export class CoursesController {
   }
 
   @Get()
-  async findAll(@Req() req: any): Promise<ResponseItem<CourseResponseDto[]>> {
+  async findAll(@Req() req: any, @Query('excludeId') excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
     const userId = req.user.userId;
-    return this.coursesService.findAll(userId);
+    return this.coursesService.findAll(userId, excludeId);
   }
 
   @Get(':id')

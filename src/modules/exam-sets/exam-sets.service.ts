@@ -18,7 +18,24 @@ export class ExamSetsService {
     return 'This action adds a new examSet';
   }
 
-  findAll() {}
+  async findAll() {
+    return this.prisma.examSet.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        name: true,
+        urlImage: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+  }
 
   findOne(id: string) {
     return `This action returns a #${id} examSet`;
