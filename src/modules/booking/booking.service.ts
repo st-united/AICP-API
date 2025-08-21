@@ -7,8 +7,8 @@ import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dt
 import { InterviewRequestStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { SlotStatus, TimeSlotBooking } from '@prisma/client';
-import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
 import { Order } from '@app/common/constants';
+import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
 
 @Injectable()
 export class BookingService {
@@ -158,7 +158,6 @@ export class BookingService {
           interviewDate: true,
         },
       });
-
       let usedMorning = 0;
       let usedAfternoon = 0;
 
