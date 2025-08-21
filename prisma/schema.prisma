@@ -138,11 +138,11 @@ model Level {
 model Course {
   id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title              String      @db.VarChar
-  overview           String?     @db.Text
+  overview           String      @db.Text
   description        String      @db.Text
-  courseInformation  String?     @map("course_information") @db.Text
-  contactInformation String?     @map("contact_information") @db.Text
-  applicableObjects  String?     @map("applicable_objects") @db.Text
+  courseInformation  String      @map("course_information") @db.Text
+  contactInformation String      @map("contact_information") @db.Text
+  applicableObjects  String      @map("applicable_objects") @db.Text
   provider           String      @db.VarChar
   url                String?     @db.Text
   linkImage          String?     @map("link_image") @db.Text
@@ -225,12 +225,12 @@ model Domain {
 }
 
 model CompetencyAspect {
-  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String               @map("pillar_id") @db.Uuid
-  name                  String               @unique @db.VarChar
-  represent             String               @default("") @db.VarChar
-  description           String               @db.Text
-  weightWithinDimension Decimal              @map("weight_within_dimension") @db.Decimal(3, 2)
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pillarId              String              @map("pillar_id") @db.Uuid
+  name                  String              @unique @db.VarChar
+  represent             String              @default("") @db.VarChar
+  description           String              @db.Text
+  weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
   createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
