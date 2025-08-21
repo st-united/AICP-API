@@ -22,6 +22,18 @@ export async function seedDomains(prisma: PrismaClient) {
       name: 'Đa lĩnh vực',
       description: 'Kiến thức AI tổng quát áp dụng cho nhiều lĩnh vực',
     },
+    {
+      name: 'Marketing',
+      description: 'Ứng dụng AI trong nghiên cứu thị trường, phân tích hành vi khách hàng và chiến lược truyền thông',
+    },
+    {
+      name: 'Thiết kế sáng tạo',
+      description: 'Ứng dụng AI trong tạo hình ảnh, chỉnh sửa, thiết kế thương hiệu và sản phẩm truyền thông',
+    },
+    {
+      name: 'Phân tích nghiệp vụ (BA)',
+      description: 'Kết hợp AI để phân tích yêu cầu, tối ưu quy trình và hỗ trợ ra quyết định trong doanh nghiệp',
+    },
   ];
 
   for (const domainData of domainsData) {
