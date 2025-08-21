@@ -14,8 +14,6 @@ import {
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
-import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
@@ -30,12 +28,12 @@ import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
-
+import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
@@ -95,8 +93,8 @@ export class MentorsController {
     return await this.mentorsService.deactivateMentorAccount(id, url);
   }
 
-  @Get()
   @UseGuards(JwtAccessTokenGuard)
+  @Get()
   async getFilteredBookings(
     @Req() req: any,
     @Query() dto: FilterMentorBookingDto

@@ -707,4 +707,3 @@ enum SlotStatus {
   ALMOST_FULL
   FULL
 }
-
