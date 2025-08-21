@@ -50,11 +50,12 @@ export class CoursesService {
     }
   }
 
-  async findAll(userId: string): Promise<ResponseItem<CourseResponseDto[]>> {
+  async findAll(userId: string, excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
     try {
       const courses = await this.prisma.course.findMany({
         where: {
           isActive: true,
+          ...(excludeId && { id: { not: excludeId } }),
         },
         include: {
           userProgress: {
@@ -62,6 +63,9 @@ export class CoursesService {
               userId: userId,
             },
           },
+        },
+        orderBy: {
+          createdAt: 'desc',
         },
       });
 
