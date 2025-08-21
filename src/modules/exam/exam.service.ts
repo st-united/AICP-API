@@ -83,7 +83,15 @@ export class ExamService {
     });
 
     if (!exam) {
-      throw new NotFoundException(`Exam with examSetName ${params.examSetName} and userId ${params.userId} not found`);
+      return new ResponseItem<VerifyExamResponseDto>(
+        {
+          id: null,
+          examStatus: null,
+          examSetName: params.examSetName,
+          examSetDuration: null,
+        },
+        'Người dùng chưa làm bài thi'
+      );
     }
 
     return new ResponseItem<VerifyExamResponseDto>(
