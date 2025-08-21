@@ -155,6 +155,7 @@ export class BookingService {
           interviewDate: true,
         },
       });
+
       let usedMorning = 0;
       let usedAfternoon = 0;
 
