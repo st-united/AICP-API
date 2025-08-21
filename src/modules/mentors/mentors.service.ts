@@ -21,6 +21,7 @@ import { TokenService } from '../auth/services/token.service';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { InterviewShift } from '@Constant/enums';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @Injectable()
 export class MentorsService {
@@ -391,5 +392,48 @@ export class MentorsService {
     }[];
 
     return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
+  }
+
+  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    try {
+      if (!examId) {
+        throw new BadRequestException('id bộ đề là bắt buộc');
+      }
+      const interviewRequest = await this.prisma.interviewRequest.findFirst({
+        where: {
+          examId,
+        },
+        select: {
+          id: true,
+          interviewDate: true,
+          timeSlot: true,
+          examId: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const response: CheckInterviewRequestResponseDto = {
+        hasInterviewRequest: !!interviewRequest,
+        interviewRequest: interviewRequest
+          ? {
+              id: interviewRequest.id,
+              interviewDate: interviewRequest.interviewDate,
+              timeSlot: interviewRequest.timeSlot,
+              examId: interviewRequest.examId,
+            }
+          : undefined,
+      };
+
+      return new ResponseItem(
+        response,
+        interviewRequest ? 'Người dùng đã có lịch phỏng vấn' : 'Người dùng chưa có lịch phỏng vấn',
+        CheckInterviewRequestResponseDto
+      );
+    } catch (error) {
+      this.logger.error('Error checking user interview request:', error);
+      throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
+    }
   }
 }

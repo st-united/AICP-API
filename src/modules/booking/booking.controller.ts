@@ -16,6 +16,11 @@ export class BookingController {
     private readonly bookingGateway: BookingGateway
   ) {}
 
+  @Get('interview-info/:examId')
+  async getInterviewInfo(@Param('examId') examId: string) {
+    return await this.bookingService.getUserInformationForInterview(examId);
+  }
+
   @Get('available-slots/:examId')
   async getAvailableSlotsByExamId(
     @Param('examId', new ParseUUIDPipe()) examId: string
