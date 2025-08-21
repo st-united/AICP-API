@@ -47,7 +47,7 @@ COPY --from=builder /app/yarn.lock ./
 
 # Install only production dependencies
 RUN yarn cache clean && \
-    yarn install --production --network-timeout 100000
+    yarn install --frozen-lockfile --production --network-timeout 100000
 
 # Copy built application and Prisma files
 COPY --from=builder /app/dist ./dist
