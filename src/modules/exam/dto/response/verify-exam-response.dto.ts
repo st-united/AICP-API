@@ -13,4 +13,7 @@ export class VerifyExamResponseDto {
 
   @Expose()
   examSetDuration: number;
+
+  @Expose()
+  totalExams: number;
 }

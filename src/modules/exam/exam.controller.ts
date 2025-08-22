@@ -48,6 +48,14 @@ export class ExamController {
     return this.examService.hasTakenExamInputTest(req.user.userId);
   }
 
+  @Get('has-scheduled')
+  @ApiOperation({ summary: 'Kiểm tra người dùng đã đặt lịch cho bài thi chưa' })
+  @ApiQuery({ name: 'examSetName', type: String, description: 'Tên bộ đề' })
+  async hasScheduled(@Req() req, @Query('examSetName') examSetName: string): Promise<ResponseItem<boolean>> {
+    const userId = req.user.userId;
+    return await this.examService.canScheduleExam(userId, examSetName);
+  }
+
   @Get('history-exam')
   @ApiOperation({ summary: 'Lấy lịch sử làm bài thi' })
   @ApiQuery({ name: 'startDate', type: Date, required: false })
