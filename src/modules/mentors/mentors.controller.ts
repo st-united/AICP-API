@@ -9,13 +9,13 @@ import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto'
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
-import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
