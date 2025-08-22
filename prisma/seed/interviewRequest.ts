@@ -55,18 +55,22 @@ export async function seedInterviewRequest(
 
   for (const bookingData of interviewDateData) {
     const userId = userMap[bookingData.userEmail]?.id;
-    const examId = userId ? examMap[userId]?.id : undefined;
+    const examId = examMap[userId]?.id;
 
-    if (!examId || usedExamIds.has(examId)) continue;
+    if (!examId) continue;
 
-    await prisma.interviewRequest.create({
-      data: {
-        examId,
-        interviewDate: bookingData.scheduledAt,
-        timeSlot: bookingData.timeSlot,
-      },
+    const existing = await prisma.interviewRequest.findUnique({
+      where: { examId },
     });
 
-    usedExamIds.add(examId);
+    if (!existing) {
+      await prisma.interviewRequest.create({
+        data: {
+          examId,
+          interviewDate: bookingData.scheduledAt,
+          timeSlot: bookingData.timeSlot,
+        },
+      });
+    }
   }
 }
