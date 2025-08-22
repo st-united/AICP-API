@@ -138,11 +138,11 @@ model Level {
 model Course {
   id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title              String      @db.VarChar
-  overview           String      @db.Text
+  overview           String?     @db.Text
   description        String      @db.Text
-  courseInformation  String      @map("course_information") @db.Text
-  contactInformation String      @map("contact_information") @db.Text
-  applicableObjects  String      @map("applicable_objects") @db.Text
+  courseInformation  String?     @map("course_information") @db.Text
+  contactInformation String?     @map("contact_information") @db.Text
+  applicableObjects  String?     @map("applicable_objects") @db.Text
   provider           String      @db.VarChar
   url                String?     @db.Text
   linkImage          String?     @map("link_image") @db.Text
@@ -345,7 +345,7 @@ model MentorBooking {
 
 model InterviewRequest {
   id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId        String          @map("exam_id") @db.Uuid
+  examId        String          @unique @map("exam_id") @db.Uuid
   interviewDate DateTime        @map("interview_date") @db.Timestamptz(6)
   timeSlot      TimeSlotBooking @map("time_slot")
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
