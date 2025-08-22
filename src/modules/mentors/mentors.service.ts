@@ -13,7 +13,6 @@ import {
   InterviewRequestStatus,
   MentorBookingStatus,
   Prisma,
-  SFIALevel,
   TimeSlotBooking,
 } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
@@ -223,7 +222,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
+  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const existingBooking = await this.prisma.interviewRequest.findFirst({
         where: { examId: dto.examId },
@@ -233,6 +232,23 @@ export class MentorsService {
         throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
       }
 
+      const exams = await this.prisma.exam.findMany({
+        where: {
+          userId,
+          examSet: {
+            isActive: true,
+            exam: {
+              some: { id: dto.examId },
+            },
+          },
+        },
+      });
+
+      const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
+
+      if (hasScheduled) {
+        throw new ConflictException('Bài thi đã được đặt lịch');
+      }
       const interviewDate = new Date(dto.interviewDate);
       const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
       const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
@@ -296,6 +312,9 @@ export class MentorsService {
 
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(error);
       throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
     }
