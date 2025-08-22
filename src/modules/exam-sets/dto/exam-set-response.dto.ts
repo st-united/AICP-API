@@ -27,18 +27,12 @@ export class ExamSetResponseDto {
   @ApiProperty({ example: '2025-07-24T08:00:00.000Z' })
   endDate: Date;
 
-  @ApiProperty({ example: 'SELF_ASSESSMENT' })
-  assessmentType: string;
+  @ApiProperty({ example: 'DRAFT' })
+  status: string;
 
   @ApiProperty({ example: true })
   isActive: boolean;
 
   @ApiProperty({ example: '2025-07-20T10:00:00.000Z' })
   createdAt: Date;
-
-  @ApiProperty({ type: FrameworkDto })
-  framework: FrameworkDto;
-
-  @ApiProperty({ example: [1, 2, 3] })
-  setQuestion: { questionId: string }[];
 }
