@@ -689,6 +689,12 @@ enum TestTrackingStatus {
   RESULT_EVALUATED
 }
 
+enum SlotStatus {
+  AVAILABLE
+  ALMOST_FULL
+  FULL
+}
+
 enum ExamSetStatus {
   DRAFT
   PUBLISHED
