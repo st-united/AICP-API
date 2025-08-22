@@ -9,10 +9,16 @@ import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto'
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
-import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
 export class MentorsController {
   constructor(
@@ -78,5 +84,23 @@ export class MentorsController {
     @Param('examId', ParseUUIDPipe) examId: string
   ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     return await this.mentorsService.checkUserInterviewRequest(examId);
+  }
+
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    await this.bookingGateway.emitNewBooking();
+    return result;
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('check-interview-request')
+  @ApiOperation({ summary: 'Check if user has an interview request' })
+  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid user ID or error checking interview request' })
+  async checkUserInterviewRequest(
+    @Body() checkInterviewRequestDto: CheckInterviewRequestDto
+  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(checkInterviewRequestDto.userId);
   }
 }

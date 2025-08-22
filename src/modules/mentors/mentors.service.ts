@@ -7,12 +7,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { ExamStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
+import { ExamStatus, InterviewRequestStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { InterviewShift } from '@Constant/enums';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
@@ -371,5 +373,78 @@ export class MentorsService {
       this.logger.error('Error checking user interview request:', error);
       throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
     }
+  }
+
+  async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
+    const { interviewRequestIds } = dto;
+
+    const mentor = await this.prisma.mentor.findUnique({
+      where: { userId },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
+    const validRequests = await this.prisma.interviewRequest.findMany({
+      where: {
+        id: { in: interviewRequestIds },
+      },
+      select: { id: true },
+    });
+
+    const validRequestIds = validRequests.map((r) => r.id);
+    const invalidRequestIds = interviewRequestIds.filter((id) => !validRequestIds.includes(id));
+    if (invalidRequestIds.length > 0) {
+      throw new BadRequestException(`interviewRequestIds không hợp lệ: ${invalidRequestIds.join(', ')}`);
+    }
+
+    const existingBookings = await this.prisma.mentorBooking.findMany({
+      where: {
+        mentorId: mentor.id,
+        interviewRequestId: { in: validRequestIds },
+      },
+      select: { interviewRequestId: true },
+    });
+
+    const alreadyAssignedIds = new Set(existingBookings.map((b) => b.interviewRequestId));
+
+    const toCreate = validRequestIds.filter((id) => !alreadyAssignedIds.has(id));
+
+    if (toCreate.length === 0) {
+      return {
+        message: 'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.',
+        data: { bookings: [] },
+      };
+    }
+
+    const bookings = await this.prisma.$transaction(async (transaction) => {
+      const createdBookings = await Promise.all(
+        toCreate.map((requestId) =>
+          transaction.mentorBooking.create({
+            data: {
+              mentorId: mentor.id,
+              interviewRequestId: requestId,
+            },
+            select: {
+              id: true,
+              interviewRequestId: true,
+              mentorId: true,
+              status: true,
+              createdAt: true,
+            },
+          })
+        )
+      );
+
+      await transaction.interviewRequest.updateMany({
+        where: { id: { in: toCreate } },
+        data: { status: InterviewRequestStatus.ASSIGNED },
+      });
+
+      return createdBookings;
+    });
+
+    return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
   }
 }
