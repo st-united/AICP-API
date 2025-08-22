@@ -734,7 +734,7 @@ export class ExamService {
       });
 
       if (!exams?.length) {
-        throw new NotFoundException(`Bài thi với examSetName ${examSetName} và userId ${userId} không tồn tại`);
+        return new ResponseItem<boolean>(false, 'Bài thi chưa được làm');
       }
 
       const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
@@ -745,9 +745,6 @@ export class ExamService {
       );
     } catch (error) {
       this.logger.error(error);
-      if (error instanceof NotFoundException) {
-        return new ResponseItem<boolean>(true, 'Bài thi chưa được làm, có thể đặt lịch');
-      }
       throw new BadRequestException('Lỗi khi kiểm tra trạng thái đặt lịch bài thi');
     }
   }

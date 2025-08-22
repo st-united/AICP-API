@@ -52,7 +52,7 @@ export class ExamController {
   @ApiOperation({ summary: 'Kiểm tra người dùng đã đặt lịch cho bài thi chưa' })
   @ApiQuery({ name: 'examSetName', type: String, description: 'Tên bộ đề' })
   async hasScheduled(@Req() req, @Query('examSetName') examSetName: string): Promise<ResponseItem<boolean>> {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     return await this.examService.canScheduleExam(userId, examSetName);
   }
 
