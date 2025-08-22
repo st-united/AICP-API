@@ -99,6 +99,7 @@ export class ExamService {
           examStatus: null,
           examSetName: params.examSetName,
           examSetDuration: null,
+          totalExams: null,
         },
         'Người dùng chưa làm bài thi'
       );
@@ -725,7 +726,7 @@ export class ExamService {
         },
       });
 
-      if (!exams || exams.length === 0) {
+      if (!exams?.length) {
         throw new NotFoundException(`Bài thi với examSetName ${examSetName} và userId ${userId} không tồn tại`);
       }
 
