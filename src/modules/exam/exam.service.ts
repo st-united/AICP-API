@@ -733,7 +733,7 @@ export class ExamService {
         },
       });
 
-      if (!exams || exams.length === 0) {
+      if (!exams?.length) {
         throw new NotFoundException(`Bài thi với examSetName ${examSetName} và userId ${userId} không tồn tại`);
       }
 
