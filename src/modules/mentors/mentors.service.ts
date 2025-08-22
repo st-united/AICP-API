@@ -414,47 +414,36 @@ export class MentorsService {
     if (toCreate.length === 0) {
       return {
         message: 'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.',
-        data: {
-          bookings: [],
-        },
+        data: { bookings: [] },
       };
     }
 
-    const transactionOps = [
-      ...toCreate.map((requestId) =>
-        this.prisma.mentorBooking.create({
-          data: {
-            mentorId: mentor.id,
-            interviewRequestId: requestId,
-          },
-          select: {
-            id: true,
-            interviewRequestId: true,
-            mentorId: true,
-            status: true,
-            createdAt: true,
-          },
-        })
-      ),
-      this.prisma.interviewRequest.updateMany({
-        where: {
-          id: { in: toCreate },
-        },
-        data: {
-          status: InterviewRequestStatus.ASSIGNED,
-        },
-      }),
-    ];
+    const bookings = await this.prisma.$transaction(async (transaction) => {
+      const createdBookings = await Promise.all(
+        toCreate.map((requestId) =>
+          transaction.mentorBooking.create({
+            data: {
+              mentorId: mentor.id,
+              interviewRequestId: requestId,
+            },
+            select: {
+              id: true,
+              interviewRequestId: true,
+              mentorId: true,
+              status: true,
+              createdAt: true,
+            },
+          })
+        )
+      );
 
-    const results = await this.prisma.$transaction(transactionOps);
+      await transaction.interviewRequest.updateMany({
+        where: { id: { in: toCreate } },
+        data: { status: InterviewRequestStatus.ASSIGNED },
+      });
 
-    const bookings = results.slice(0, -1) as {
-      id: string;
-      interviewRequestId: string;
-      mentorId: string;
-      status: string;
-      createdAt: Date;
-    }[];
+      return createdBookings;
+    });
 
     return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
   }
