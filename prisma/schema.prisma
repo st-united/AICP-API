@@ -707,9 +707,3 @@ enum InterviewRequestStatus {
   PENDING
   ASSIGNED
 }
-
-enum SlotStatus {
-  AVAILABLE
-  ALMOST_FULL
-  FULL
-}
