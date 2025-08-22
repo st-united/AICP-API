@@ -1,28 +1,23 @@
 import {
-  Body,
   Controller,
-  Delete,
   Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
   Post,
-  Query,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { GetMentorsDto } from './dto/request/get-mentors.dto';
-import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseItem } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { GetMenteesDto } from './dto/request/get-mentees.dto';
-import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
-import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
@@ -31,9 +26,8 @@ import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-book
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
@@ -56,7 +50,7 @@ export class MentorsController {
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto);
+    const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
     await this.bookingGateway.emitNewBooking();
     return newBooking;
