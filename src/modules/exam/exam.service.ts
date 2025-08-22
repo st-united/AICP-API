@@ -99,6 +99,7 @@ export class ExamService {
           examStatus: null,
           examSetName: params.examSetName,
           examSetDuration: null,
+          totalExams: null,
         },
         'Người dùng chưa làm bài thi'
       );
