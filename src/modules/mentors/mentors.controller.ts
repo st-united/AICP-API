@@ -1,16 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  ParseUUIDPipe,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, Req, UseGuards } from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
@@ -92,17 +80,6 @@ export class MentorsController {
     const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
     await this.bookingGateway.emitNewBooking();
     return result;
-  }
-
-  @UseGuards(JwtAccessTokenGuard)
-  @Post('check-interview-request')
-  @ApiOperation({ summary: 'Check if user has an interview request' })
-  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid user ID or error checking interview request' })
-  async checkUserInterviewRequest(
-    @Body() checkInterviewRequestDto: CheckInterviewRequestDto
-  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
-    return await this.mentorsService.checkUserInterviewRequest(checkInterviewRequestDto.userId);
   }
 
   @UseGuards(JwtAccessTokenGuard)
