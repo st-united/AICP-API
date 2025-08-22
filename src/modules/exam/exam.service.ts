@@ -88,6 +88,16 @@ export class ExamService {
             name: params.examSetName,
             isActive: true,
           },
+          examStatus: {
+            in: [
+              ExamStatus.SUBMITTED,
+              ExamStatus.WAITING_FOR_REVIEW,
+              ExamStatus.GRADED,
+              ExamStatus.INTERVIEW_SCHEDULED,
+              ExamStatus.INTERVIEW_COMPLETED,
+              ExamStatus.RESULT_EVALUATED,
+            ],
+          },
         },
       }),
     ]);
