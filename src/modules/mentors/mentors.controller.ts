@@ -26,12 +26,13 @@ export class MentorsController {
     return await this.mentorsService.create(createMentorDto, url);
   }
 
+  @UseGuards(JwtAccessTokenGuard)
   @Post('create-scheduler')
   async createScheduler(
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto);
+    const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
     this.bookingGateway.emitNewBooking();
     return newBooking;

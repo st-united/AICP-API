@@ -30,20 +30,9 @@ export class ExamSetsService {
         description: true,
         startDate: true,
         endDate: true,
-        assessmentType: true,
+        status: true,
         isActive: true,
         createdAt: true,
-        framework: {
-          select: {
-            name: true,
-            version: true,
-          },
-        },
-        setQuestion: {
-          select: {
-            questionId: true,
-          },
-        },
       },
     });
   }

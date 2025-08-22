@@ -1137,7 +1137,7 @@
     path-to-regexp "8.2.0"
     tslib "2.8.1"
 
-"@nestjs/platform-socket.io@^11.1.5":
+"@nestjs/platform-socket.io@11.1.5":
   version "11.1.5"
   resolved "https://registry.yarnpkg.com/@nestjs/platform-socket.io/-/platform-socket.io-11.1.5.tgz#07538470e8680d105c55f5cd550d0c2cd35944c3"
   integrity sha512-DY3zNY+BjbrYpV/t8HL8ptrusrWK8J0cfkfY1iZsfCd+0/1+j8IKno+QMLkerNQAZ7/Frh5tkaKHVwWk18TkMw==
@@ -1194,7 +1194,7 @@
   resolved "https://registry.yarnpkg.com/@nestjs/typeorm/-/typeorm-11.0.0.tgz#b0f45d6902396db89e0ac1f4e738c2ff3407b794"
   integrity sha512-SOeUQl70Lb2OfhGkvnh4KXWlsd+zA08RuuQgT7kKbzivngxzSo1Oc7Usu5VxCxACQC9wc2l9esOHILSJeK7rJA==
 
-"@nestjs/websockets@^11.1.5":
+"@nestjs/websockets@11.1.5":
   version "11.1.5"
   resolved "https://registry.yarnpkg.com/@nestjs/websockets/-/websockets-11.1.5.tgz#b855130b762d15203e0b20e7a83b60d30eac26d0"
   integrity sha512-mAM11HwyS7aeSUbXdOqHbNCRoHwB0OOb+cmx5sgxvszhdG0Y6bwR60nKA4+EXL9xUEeWoxmbfLmSHlTSIJ9GKA==
@@ -6029,7 +6029,7 @@ socket.io-parser@~4.2.4:
     "@socket.io/component-emitter" "~3.1.0"
     debug "~4.3.1"
 
-socket.io@4.8.1, socket.io@^4.8.1:
+socket.io@4.8.1:
   version "4.8.1"
   resolved "https://registry.yarnpkg.com/socket.io/-/socket.io-4.8.1.tgz#fa0eaff965cc97fdf4245e8d4794618459f7558a"
   integrity sha512-oZ7iUCxph8WYRHHcjBEc9unw3adt5CmSNlppj/5Q4k2RIrhl8Z5yY2Xr4j9zj0+wzVZ0bxmYoGSzKJnRl6A4yg==
