@@ -21,6 +21,7 @@ import { Response } from 'express';
 import * as dayjs from 'dayjs';
 import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
+import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -28,10 +29,31 @@ import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
 
+  @Get('has-taken-exam')
+  @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi chưa' })
+  @ApiQuery({ name: 'examSetName', type: String, description: 'Tên bộ đề' })
+  async hasTakenExam(
+    @Req() req,
+    @Query('examSetName') examSetName: string
+  ): Promise<ResponseItem<VerifyExamResponseDto>> {
+    return await this.examService.hasTakenExam({
+      userId: req.user.userId,
+      examSetName,
+    });
+  }
+
   @Get('taken-input-test')
   @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi Input test chưa' })
   hasTakenExamInputTest(@Req() req): Promise<ResponseItem<HasTakenExamResponseDto>> {
     return this.examService.hasTakenExamInputTest(req.user.userId);
+  }
+
+  @Get('has-scheduled')
+  @ApiOperation({ summary: 'Kiểm tra người dùng đã đặt lịch cho bài thi chưa' })
+  @ApiQuery({ name: 'examSetName', type: String, description: 'Tên bộ đề' })
+  async hasScheduled(@Req() req, @Query('examSetName') examSetName: string): Promise<ResponseItem<boolean>> {
+    const userId = req.user.userId;
+    return await this.examService.canScheduleExam(userId, examSetName);
   }
 
   @Get('history-exam')
@@ -93,19 +115,6 @@ export class ExamController {
   @ApiParam({ name: 'id', type: String, description: 'ID của bài thi user' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.examService.getDetailExam(id);
-  }
-
-  @Get('has-taken-exam/:examSetId')
-  @ApiOperation({ summary: 'Kiểm tra người dùng đã làm bài thi chưa' })
-  @ApiParam({ name: 'examSetId', type: String, description: 'ID bộ đề' })
-  hasTakenExam(
-    @Req() req,
-    @Param('examSetId', ParseUUIDPipe) examSetId: string
-  ): Promise<ResponseItem<HasTakenExamResponseDto>> {
-    return this.examService.hasTakenExam({
-      userId: req.user.userId,
-      examSetId,
-    });
   }
 
   @Delete(':id')

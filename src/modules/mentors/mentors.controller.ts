@@ -16,6 +16,8 @@ import { CheckInterviewRequestDto } from './dto/request/check-interview-request.
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -34,11 +36,12 @@ export class MentorsController {
 
   @UseGuards(JwtAccessTokenGuard)
   @Post('create-scheduler')
+  @UseGuards(JwtAccessTokenGuard)
   async createScheduler(
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto);
+    const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
     this.bookingGateway.emitNewBooking();
     return newBooking;

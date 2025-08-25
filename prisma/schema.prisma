@@ -331,16 +331,17 @@ model MentorCompetency {
 
 model MentorBooking {
   id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interviewRequestId String?             @map("interview_request_id") @db.Uuid
   mentorId           String              @map("mentor_id") @db.Uuid
-  status             MentorBookingStatus @default(PENDING)
-  notes              String?
+  status             MentorBookingStatus @default(UPCOMING)
+  notes              String?             @db.Text
+  pillarFocus        String?             @map("competency_focus") @db.Uuid
   createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-  pillarFocus        String?             @map("competency_focus") @db.Uuid
-  interviewRequestId String?             @map("interview_request_id") @db.Uuid
-  competencyPillar   CompetencyPillar?   @relation(fields: [pillarFocus], references: [id])
-  interviewRequest   InterviewRequest?   @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
-  mentor             Mentor              @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+
+  mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  interviewRequest InterviewRequest? @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
+  competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
 
 model InterviewRequest {
@@ -584,12 +585,23 @@ enum QuestionType {
   ESSAY
 }
 
-enum MentorBookingStatus {
+enum ExamSetStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum InterviewRequestStatus {
   PENDING
-  ACCEPTED
-  REJECTED
-  CANCELLED
+  ASSIGNED
+}
+
+enum MentorBookingStatus {
+  UPCOMING
   COMPLETED
+  NOT_JOINED
 }
 
 enum CognitiveLoad {
@@ -687,19 +699,6 @@ enum TestTrackingStatus {
   INTERVIEW_SCHEDULED
   INTERVIEW_COMPLETED
   RESULT_EVALUATED
-}
-
-enum ExamSetStatus {
-  DRAFT
-  PUBLISHED
-  ACTIVE
-  INACTIVE
-  ARCHIVED
-}
-
-enum InterviewRequestStatus {
-  PENDING
-  ASSIGNED
 }
 
 enum SlotStatus {

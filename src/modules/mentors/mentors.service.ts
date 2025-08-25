@@ -7,15 +7,29 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { ExamStatus, InterviewRequestStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
+import {
+  InterviewRequestStatus,
+  MentorBookingStatus,
+  Prisma,
+  ExamStatus,
+  SFIALevel,
+  TimeSlotBooking,
+} from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { InterviewShift } from '@Constant/enums';
+import { timeSlotEnum, InterviewShift } from '@Constant/enums';
+
+import { google, Auth } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { plainToInstance } from 'class-transformer';
+import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @Injectable()
@@ -151,7 +165,7 @@ export class MentorsService {
             bookings: {
               where: {
                 status: {
-                  in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+                  in: [MentorBookingStatus.UPCOMING],
                 },
               },
             },
@@ -207,7 +221,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const existingBooking = await this.prisma.interviewRequest.findFirst({
         where: { examId: dto.examId },
@@ -217,6 +231,23 @@ export class MentorsService {
         throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
       }
 
+      const exams = await this.prisma.exam.findMany({
+        where: {
+          userId,
+          examSet: {
+            isActive: true,
+            exam: {
+              some: { id: dto.examId },
+            },
+          },
+        },
+      });
+
+      const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
+
+      if (hasScheduled) {
+        throw new ConflictException('Bài thi đã được đặt lịch');
+      }
       const interviewDate = new Date(dto.interviewDate);
       const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
       const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
@@ -280,6 +311,9 @@ export class MentorsService {
 
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(error);
       throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
     }
@@ -312,11 +346,120 @@ export class MentorsService {
     }
   }
 
+  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    try {
+      if (!examId) {
+        throw new BadRequestException('id bộ đề là bắt buộc');
+      }
+      const interviewRequest = await this.prisma.interviewRequest.findFirst({
+        where: {
+          examId,
+        },
+        select: {
+          id: true,
+          interviewDate: true,
+          timeSlot: true,
+          examId: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const response: CheckInterviewRequestResponseDto = {
+        hasInterviewRequest: !!interviewRequest,
+        interviewRequest: interviewRequest
+          ? {
+              id: interviewRequest.id,
+              interviewDate: interviewRequest.interviewDate,
+              timeSlot: interviewRequest.timeSlot,
+              examId: interviewRequest.examId,
+            }
+          : undefined,
+      };
+
+      return new ResponseItem(
+        response,
+        interviewRequest ? 'Người dùng đã có lịch phỏng vấn' : 'Người dùng chưa có lịch phỏng vấn',
+        CheckInterviewRequestResponseDto
+      );
+    } catch (error) {
+      this.logger.error('Error checking user interview request:', error);
+      throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
+    }
+  }
+
+  async createGoogleCalendarEvent(
+    userEmail: string,
+    mentorEmail: string,
+    interviewDate: Date,
+    timeSlot: keyof typeof timeSlotEnum
+  ): Promise<string> {
+    const oauth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
+
+    oauth2Client.setCredentials({
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    });
+
+    const { token } = await oauth2Client.getAccessToken();
+    if (!token) {
+      throw new Error('Failed to obtain access token');
+    }
+
+    const calendar = google.calendar({
+      version: 'v3',
+      auth: oauth2Client as Auth.OAuth2Client,
+    });
+
+    const formattedTimeSlot = timeSlotEnum[timeSlot];
+    const [startHour, endHour] = formattedTimeSlot.split('-').map((h) => h.trim());
+    const startDateTime = new Date(interviewDate);
+    startDateTime.setHours(parseInt(startHour.split(':')[0]), 0, 0, 0);
+    const endDateTime = new Date(startDateTime);
+    endDateTime.setHours(parseInt(endHour.split(':')[0]), 0, 0, 0);
+
+    const event = {
+      summary: 'Phỏng vấn chính thức',
+      start: {
+        dateTime: startDateTime.toISOString(),
+        timeZone: 'Asia/Ho_Chi_Minh',
+      },
+      end: {
+        dateTime: endDateTime.toISOString(),
+        timeZone: 'Asia/Ho_Chi_Minh',
+      },
+      attendees: [{ email: userEmail }, { email: mentorEmail }],
+      conferenceData: {
+        createRequest: {
+          requestId: `req-${Date.now()}`,
+          conferenceSolutionKey: { type: 'hangoutsMeet' },
+        },
+      },
+    };
+
+    try {
+      const response = await calendar.events.insert({
+        calendarId: 'primary',
+        conferenceDataVersion: 1,
+        sendUpdates: 'none',
+        requestBody: event,
+      });
+
+      return response.data.hangoutLink || 'Link không khả dụng';
+    } catch (error) {
+      console.error('Error creating Google Calendar event:', error);
+      throw new Error('Failed to create Google Calendar event');
+    }
+  }
+
   async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
     const { interviewRequestIds } = dto;
 
     const mentor = await this.prisma.mentor.findUnique({
       where: { userId },
+      include: {
+        user: { select: { email: true, fullName: true } },
+      },
     });
 
     if (!mentor) {
@@ -382,49 +525,45 @@ export class MentorsService {
       return createdBookings;
     });
 
+    const assignedInterviews = await this.prisma.interviewRequest.findMany({
+      where: {
+        id: { in: toCreate },
+        status: InterviewRequestStatus.ASSIGNED,
+      },
+      select: {
+        interviewDate: true,
+        timeSlot: true,
+        exam: {
+          select: {
+            user: {
+              select: {
+                email: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await Promise.all(
+      assignedInterviews.map(async (interview) => {
+        const { exam, interviewDate, timeSlot } = interview;
+        const user = exam?.user;
+        if (user?.email && user?.fullName && interviewDate && timeSlot) {
+          const meetLink = await this.createGoogleCalendarEvent(user.email, mentor.user.email, interviewDate, timeSlot);
+
+          await this.emailService.sendEmailInterviewScheduleToUser(
+            user.email,
+            user.fullName,
+            interviewDate,
+            timeSlot,
+            meetLink
+          );
+        }
+      })
+    );
+
     return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
-  }
-
-  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
-    try {
-      if (!examId) {
-        throw new BadRequestException('id bộ đề là bắt buộc');
-      }
-      const interviewRequest = await this.prisma.interviewRequest.findFirst({
-        where: {
-          examId,
-        },
-        select: {
-          id: true,
-          interviewDate: true,
-          timeSlot: true,
-          examId: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      const response: CheckInterviewRequestResponseDto = {
-        hasInterviewRequest: !!interviewRequest,
-        interviewRequest: interviewRequest
-          ? {
-              id: interviewRequest.id,
-              interviewDate: interviewRequest.interviewDate,
-              timeSlot: interviewRequest.timeSlot,
-              examId: interviewRequest.examId,
-            }
-          : undefined,
-      };
-
-      return new ResponseItem(
-        response,
-        interviewRequest ? 'Người dùng đã có lịch phỏng vấn' : 'Người dùng chưa có lịch phỏng vấn',
-        CheckInterviewRequestResponseDto
-      );
-    } catch (error) {
-      this.logger.error('Error checking user interview request:', error);
-      throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
-    }
   }
 }
