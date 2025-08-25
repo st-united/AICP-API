@@ -1,19 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseItem } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
-import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { InterviewRequestStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
+import { ExamStatus, InterviewRequestStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
-import { GetMenteesDto } from './dto/request/get-mentees.dto';
-import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
-import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
@@ -21,6 +16,7 @@ import { TokenService } from '../auth/services/token.service';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { InterviewShift } from '@Constant/enums';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @Injectable()
 export class MentorsService {
@@ -211,7 +207,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseDto>> {
     try {
       const existingBooking = await this.prisma.interviewRequest.findFirst({
         where: { examId: dto.examId },
@@ -221,6 +217,23 @@ export class MentorsService {
         throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
       }
 
+      const exams = await this.prisma.exam.findMany({
+        where: {
+          userId,
+          examSet: {
+            isActive: true,
+            exam: {
+              some: { id: dto.examId },
+            },
+          },
+        },
+      });
+
+      const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
+
+      if (hasScheduled) {
+        throw new ConflictException('Bài thi đã được đặt lịch');
+      }
       const interviewDate = new Date(dto.interviewDate);
       const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
       const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
@@ -275,8 +288,18 @@ export class MentorsService {
         },
       });
 
+      await this.prisma.exam.update({
+        where: { id: dto.examId },
+        data: {
+          examStatus: ExamStatus.INTERVIEW_SCHEDULED,
+        },
+      });
+
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(error);
       throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
     }
@@ -391,5 +414,48 @@ export class MentorsService {
     }[];
 
     return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
+  }
+
+  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    try {
+      if (!examId) {
+        throw new BadRequestException('id bộ đề là bắt buộc');
+      }
+      const interviewRequest = await this.prisma.interviewRequest.findFirst({
+        where: {
+          examId,
+        },
+        select: {
+          id: true,
+          interviewDate: true,
+          timeSlot: true,
+          examId: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const response: CheckInterviewRequestResponseDto = {
+        hasInterviewRequest: !!interviewRequest,
+        interviewRequest: interviewRequest
+          ? {
+              id: interviewRequest.id,
+              interviewDate: interviewRequest.interviewDate,
+              timeSlot: interviewRequest.timeSlot,
+              examId: interviewRequest.examId,
+            }
+          : undefined,
+      };
+
+      return new ResponseItem(
+        response,
+        interviewRequest ? 'Người dùng đã có lịch phỏng vấn' : 'Người dùng chưa có lịch phỏng vấn',
+        CheckInterviewRequestResponseDto
+      );
+    } catch (error) {
+      this.logger.error('Error checking user interview request:', error);
+      throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
+    }
   }
 }

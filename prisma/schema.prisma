@@ -226,10 +226,8 @@ model Domain {
 
 model CompetencyAspect {
   id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String               @map("pillar_id") @db.Uuid
   name                  String               @unique @db.VarChar
-  represent             String               @default("") @db.VarChar
-  description           String               @db.Text
+  description           String
   weightWithinDimension Decimal              @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
   createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -241,25 +239,20 @@ model CompetencyAspect {
 }
 
 model ExamSet {
-  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String         @db.VarChar
-  urlImage         String?        @map("url_image") @db.VarChar(255)
-  startDate        DateTime?      @map("start_date") @db.Timestamptz(6)
-  endDate          DateTime?      @map("end_date") @db.Timestamptz(6)
-  status           ExamSetStatus  @default(DRAFT)
-  description      String?        @db.Text
-  frameworkId      String         @map("framework_id") @db.Uuid
-  assessmentType   AssessmentType @default(SELF_ASSESSMENT) @map("assessment_type")
-  timeLimitMinutes Int?           @map("time_limit_minutes") @db.SmallInt
-  passingScore     Decimal?       @default(4) @map("passing_score") @db.Decimal(3, 2)
-  isAdaptive       Boolean        @default(false) @map("is_adaptive") @db.Boolean
-  isActive         Boolean        @default(true) @map("is_active") @db.Boolean
-  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  exam        Exam[]
-  setQuestion ExamSetQuestion[]
-  framework   CompetencyFramework? @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String              @db.VarChar
+  description      String?
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  assessmentType   AssessmentType      @default(SELF_ASSESSMENT) @map("assessment_type")
+  frameworkId      String              @map("framework_id") @db.Uuid
+  isActive         Boolean             @default(true) @map("is_active")
+  isAdaptive       Boolean             @default(false) @map("is_adaptive")
+  passingScore     Decimal?            @default(4) @map("passing_score") @db.Decimal(3, 2)
+  timeLimitMinutes Int?                @map("time_limit_minutes") @db.SmallInt
+  exam             Exam[]
+  framework        CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  setQuestion      ExamSetQuestion[]
 }
 
 model Exam {
@@ -344,14 +337,13 @@ model MentorBooking {
 }
 
 model InterviewRequest {
-  id            String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId        String                 @map("exam_id") @db.Uuid
-  interviewDate DateTime               @map("interview_date") @db.Timestamptz(6)
-  timeSlot      TimeSlotBooking        @map("time_slot")
-  status        InterviewRequestStatus @default(PENDING)
-  createdAt     DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
-  exam          Exam                   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examId        String          @map("exam_id") @db.Uuid
+  interviewDate DateTime        @map("interview_date") @db.Timestamptz(6)
+  timeSlot      TimeSlotBooking @map("time_slot")
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
   MentorBooking MentorBooking[]
 }
 
@@ -687,19 +679,6 @@ enum TestTrackingStatus {
   INTERVIEW_SCHEDULED
   INTERVIEW_COMPLETED
   RESULT_EVALUATED
-}
-
-enum ExamSetStatus {
-  DRAFT
-  PUBLISHED
-  ACTIVE
-  INACTIVE
-  ARCHIVED
-}
-
-enum InterviewRequestStatus {
-  PENDING
-  ASSIGNED
 }
 
 enum SlotStatus {

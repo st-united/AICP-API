@@ -14,15 +14,10 @@ import {
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { GetMentorsDto } from './dto/request/get-mentors.dto';
-import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseItem } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { GetMenteesDto } from './dto/request/get-mentees.dto';
-import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
-import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
@@ -30,6 +25,8 @@ import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -46,12 +43,13 @@ export class MentorsController {
     return await this.mentorsService.create(createMentorDto, url);
   }
 
+  @UseGuards(JwtAccessTokenGuard)
   @Post('create-scheduler')
   async createScheduler(
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto);
+    const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
     this.bookingGateway.emitNewBooking();
     return newBooking;
@@ -93,5 +91,16 @@ export class MentorsController {
     const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
     await this.bookingGateway.emitNewBooking();
     return result;
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('check-my-interview-request/:examId')
+  @ApiOperation({ summary: 'Check if current user has an interview request' })
+  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
+  @ApiResponse({ status: 400, description: 'Error checking interview request' })
+  async checkMyInterviewRequest(
+    @Param('examId', ParseUUIDPipe) examId: string
+  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    return await this.mentorsService.checkUserInterviewRequest(examId);
   }
 }
