@@ -35,7 +35,7 @@ export async function seedMentorBookings(
     TimeSlotBooking.PM_05_06,
   ];
 
-  const statuses = [MentorBookingStatus.UPCOMING, MentorBookingStatus.NOT_JOINED, MentorBookingStatus.COMPLETED];
+  const statuses = [MentorBookingStatus.UPCOMING, MentorBookingStatus.COMPLETED, MentorBookingStatus.NOT_JOINED];
 
   const mentorEmailMap = Object.fromEntries(mentors.map((mentor) => [mentor.user.email, mentor]));
 
@@ -49,9 +49,10 @@ export async function seedMentorBookings(
 
       if (!userId || !examId) continue;
 
-      // 1. Tạo InterviewRequest
-      const interviewRequest = await prisma.interviewRequest.create({
-        data: {
+      const interviewRequest = await prisma.interviewRequest.upsert({
+        where: { examId },
+        update: {},
+        create: {
           examId,
           interviewDate: randomFutureDate(),
           timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],

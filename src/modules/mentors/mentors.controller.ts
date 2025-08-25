@@ -6,10 +6,10 @@ import {
   Patch,
   Param,
   Delete,
-  Query,
   ParseUUIDPipe,
   Req,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
@@ -53,7 +53,7 @@ export class MentorsController {
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto);
+    const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
     this.bookingGateway.emitNewBooking();
     return newBooking;
@@ -104,17 +104,6 @@ export class MentorsController {
     const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
     await this.bookingGateway.emitNewBooking();
     return result;
-  }
-
-  @UseGuards(JwtAccessTokenGuard)
-  @Post('check-interview-request')
-  @ApiOperation({ summary: 'Check if user has an interview request' })
-  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid user ID or error checking interview request' })
-  async checkUserInterviewRequest(
-    @Body() checkInterviewRequestDto: CheckInterviewRequestDto
-  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
-    return await this.mentorsService.checkUserInterviewRequest(checkInterviewRequestDto.userId);
   }
 
   @UseGuards(JwtAccessTokenGuard)

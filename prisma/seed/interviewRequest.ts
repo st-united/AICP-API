@@ -35,7 +35,7 @@ export async function seedInterviewRequest(
         timeSlot: ['AM_08_09', 'AM_09_10', 'AM_10_11', 'AM_11_12', 'PM_02_03', 'PM_03_04', 'PM_04_05', 'PM_05_06'][
           Math.floor(Math.random() * 8)
         ],
-        status: [MentorBookingStatus.UPCOMING, MentorBookingStatus.NOT_JOINED, MentorBookingStatus.COMPLETED][
+        status: [MentorBookingStatus.UPCOMING, MentorBookingStatus.COMPLETED, MentorBookingStatus.NOT_JOINED][
           Math.floor(Math.random() * 5)
         ],
         notes: `Session between ${userEmails[menteeIndex]} and ${mentorEmail}`,
@@ -46,15 +46,21 @@ export async function seedInterviewRequest(
   for (const bookingData of interviewDateData) {
     const userId = userMap[bookingData.userEmail]?.id;
     const examId = examMap[userId]?.id;
-    if (!examId) {
-      continue;
-    }
-    await prisma.interviewRequest.create({
-      data: {
-        examId: examId,
-        interviewDate: new Date(),
-        timeSlot: bookingData.timeSlot,
-      },
+
+    if (!examId) continue;
+
+    const existing = await prisma.interviewRequest.findUnique({
+      where: { examId },
     });
+
+    if (!existing) {
+      await prisma.interviewRequest.create({
+        data: {
+          examId,
+          interviewDate: bookingData.scheduledAt,
+          timeSlot: bookingData.timeSlot,
+        },
+      });
+    }
   }
 }

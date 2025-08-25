@@ -1,14 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseItem } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
-import { GetMentorsDto } from './dto/request/get-mentors.dto';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
 import {
+  ExamStatus,
   ExamLevelEnum,
   InterviewRequestStatus,
   MentorBookingStatus,
@@ -17,10 +17,6 @@ import {
   TimeSlotBooking,
 } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { MenteesByMentorIdDto } from './dto/response/mentees-response.dto';
-import { GetMenteesDto } from './dto/request/get-mentees.dto';
-import { GetAvailableMentorsDto } from './dto/request/get-available-mentors.dto';
-import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
@@ -224,7 +220,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
+  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const existingBooking = await this.prisma.interviewRequest.findFirst({
         where: { examId: dto.examId },
@@ -234,6 +230,23 @@ export class MentorsService {
         throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
       }
 
+      const exams = await this.prisma.exam.findMany({
+        where: {
+          userId,
+          examSet: {
+            isActive: true,
+            exam: {
+              some: { id: dto.examId },
+            },
+          },
+        },
+      });
+
+      const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
+
+      if (hasScheduled) {
+        throw new ConflictException('Bài thi đã được đặt lịch');
+      }
       const interviewDate = new Date(dto.interviewDate);
       const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
       const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
@@ -288,8 +301,18 @@ export class MentorsService {
         },
       });
 
+      await this.prisma.exam.update({
+        where: { id: dto.examId },
+        data: {
+          examStatus: ExamStatus.INTERVIEW_SCHEDULED,
+        },
+      });
+
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(error);
       throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
     }
@@ -423,7 +446,7 @@ export class MentorsService {
   private buildWhereClause(filter: {
     mentorId: string;
     statuses?: MentorBookingStatus[];
-    levels?: string[];
+    levels?: ExamLevelEnum[];
     dateStart?: Date | string;
     dateEnd?: Date | string;
     keyword?: string;
