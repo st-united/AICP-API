@@ -89,7 +89,6 @@ export class MentorsController {
     return await this.mentorsService.deactivateMentorAccount(id, url);
   }
 
-  @Get()
   @UseGuards(JwtAccessTokenGuard)
   @Get()
   async getFilteredBookings(
