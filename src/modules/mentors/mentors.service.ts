@@ -13,7 +13,6 @@ import {
   InterviewRequestStatus,
   MentorBookingStatus,
   Prisma,
-  SFIALevel,
   TimeSlotBooking,
 } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';

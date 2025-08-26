@@ -501,7 +501,7 @@ export class ExamService {
       where: { id: existingExam.examLevelId },
     });
 
-    const result = await this.getCoursesByExamLevel(examLevel.examLevel, userId);
+    const result = await this.getCoursesByExamLevel(userId);
 
     return new ResponseItem<ExamWithResultDto>(
       {
@@ -532,7 +532,7 @@ export class ExamService {
     return mapping[level];
   }
 
-  async getCoursesByExamLevel(_: ExamLevelEnum, userId: string) {
+  async getCoursesByExamLevel(userId: string) {
     const allCourses = await this.prisma.course.findMany({
       where: {
         isActive: true,
