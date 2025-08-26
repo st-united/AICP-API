@@ -223,7 +223,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
+  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const existingBooking = await this.prisma.interviewRequest.findFirst({
         where: { examId: dto.examId },
@@ -233,6 +233,23 @@ export class MentorsService {
         throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
       }
 
+      const exams = await this.prisma.exam.findMany({
+        where: {
+          userId,
+          examSet: {
+            isActive: true,
+            exam: {
+              some: { id: dto.examId },
+            },
+          },
+        },
+      });
+
+      const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
+
+      if (hasScheduled) {
+        throw new ConflictException('Bài thi đã được đặt lịch');
+      }
       const interviewDate = new Date(dto.interviewDate);
       const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
       const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
@@ -296,6 +313,9 @@ export class MentorsService {
 
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(error);
       throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
     }
@@ -434,15 +454,14 @@ export class MentorsService {
     }
   }
 
-  async assignMentorToRequests(
-    dto: AssignMentorDto,
-    userId: string,
-    email: string
-  ): Promise<ResponseItem<AssignMentorResultDto>> {
+  async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
     const { interviewRequestIds } = dto;
 
     const mentor = await this.prisma.mentor.findUnique({
       where: { userId },
+      include: {
+        user: { select: { email: true, fullName: true } },
+      },
     });
 
     if (!mentor) {
@@ -477,47 +496,36 @@ export class MentorsService {
     if (toCreate.length === 0) {
       return {
         message: 'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.',
-        data: {
-          bookings: [],
-        },
+        data: { bookings: [] },
       };
     }
 
-    const transactionOps = [
-      ...toCreate.map((requestId) =>
-        this.prisma.mentorBooking.create({
-          data: {
-            mentorId: mentor.id,
-            interviewRequestId: requestId,
-          },
-          select: {
-            id: true,
-            interviewRequestId: true,
-            mentorId: true,
-            status: true,
-            createdAt: true,
-          },
-        })
-      ),
-      this.prisma.interviewRequest.updateMany({
-        where: {
-          id: { in: toCreate },
-        },
-        data: {
-          status: InterviewRequestStatus.ASSIGNED,
-        },
-      }),
-    ];
+    const bookings = await this.prisma.$transaction(async (transaction) => {
+      const createdBookings = await Promise.all(
+        toCreate.map((requestId) =>
+          transaction.mentorBooking.create({
+            data: {
+              mentorId: mentor.id,
+              interviewRequestId: requestId,
+            },
+            select: {
+              id: true,
+              interviewRequestId: true,
+              mentorId: true,
+              status: true,
+              createdAt: true,
+            },
+          })
+        )
+      );
 
-    const results = await this.prisma.$transaction(transactionOps);
+      await transaction.interviewRequest.updateMany({
+        where: { id: { in: toCreate } },
+        data: { status: InterviewRequestStatus.ASSIGNED },
+      });
 
-    const bookings = results.slice(0, -1) as {
-      id: string;
-      interviewRequestId: string;
-      mentorId: string;
-      status: string;
-      createdAt: Date;
-    }[];
+      return createdBookings;
+    });
 
     const assignedInterviews = await this.prisma.interviewRequest.findMany({
       where: {
@@ -525,7 +533,6 @@ export class MentorsService {
         status: InterviewRequestStatus.ASSIGNED,
       },
       select: {
-        id: true,
         interviewDate: true,
         timeSlot: true,
         exam: {
@@ -542,19 +549,11 @@ export class MentorsService {
     });
 
     await Promise.all(
-      bookings.map(async (booking) => {
-        const interview = assignedInterviews.find((i) => i.id === booking.interviewRequestId);
-        if (!interview) return;
-
+      assignedInterviews.map(async (interview) => {
         const { exam, interviewDate, timeSlot } = interview;
         const user = exam?.user;
         if (user?.email && user?.fullName && interviewDate && timeSlot) {
-          const meetLink = await this.createGoogleCalendarEvent(user.email, email, interviewDate, timeSlot);
-
-          await this.prisma.mentorBooking.update({
-            where: { id: booking.id },
-            data: { meetingUrl: meetLink },
-          });
+          const meetLink = await this.createGoogleCalendarEvent(user.email, mentor.user.email, interviewDate, timeSlot);
 
           await this.emailService.sendEmailInterviewScheduleToUser({
             email: user.email,

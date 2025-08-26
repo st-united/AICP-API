@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { HasTakenExamDto } from './dto/request/has-taken-exam.dto';
 import { HasTakenExamResponseDto } from './dto/response/has-taken-exam-response.dto';
 import { ResponseItem } from '@app/common/dtos';
-import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, SFIALevel } from '@prisma/client';
+import { CompetencyDimension, Exam, ExamLevelEnum, ExamSet, ExamStatus, SFIALevel } from '@prisma/client';
 import { examSetDefaultName, Order, UserRoleEnum } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
@@ -66,24 +65,54 @@ export class ExamService {
   }
 
   async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<VerifyExamResponseDto>> {
-    const exam = await this.prisma.exam.findFirst({
-      where: {
-        userId: params.userId,
-        examSet: {
-          name: params.examSetName,
-          isActive: true,
+    const [exam, totalExams] = await this.prisma.$transaction([
+      this.prisma.exam.findFirst({
+        where: {
+          userId: params.userId,
+          examSet: {
+            name: params.examSetName,
+            isActive: true,
+          },
         },
-      },
-      include: {
-        examSet: true,
-      },
-      orderBy: {
-        createdAt: Order.DESC,
-      },
-    });
+        include: {
+          examSet: true,
+        },
+        orderBy: {
+          createdAt: Order.DESC,
+        },
+      }),
+      this.prisma.exam.count({
+        where: {
+          userId: params.userId,
+          examSet: {
+            name: params.examSetName,
+            isActive: true,
+          },
+          examStatus: {
+            in: [
+              ExamStatus.SUBMITTED,
+              ExamStatus.WAITING_FOR_REVIEW,
+              ExamStatus.GRADED,
+              ExamStatus.INTERVIEW_SCHEDULED,
+              ExamStatus.INTERVIEW_COMPLETED,
+              ExamStatus.RESULT_EVALUATED,
+            ],
+          },
+        },
+      }),
+    ]);
 
     if (!exam) {
-      throw new NotFoundException(`Exam with examSetName ${params.examSetName} and userId ${params.userId} not found`);
+      return new ResponseItem<VerifyExamResponseDto>(
+        {
+          id: null,
+          examStatus: null,
+          examSetName: params.examSetName,
+          examSetDuration: null,
+          totalExams: null,
+        },
+        'Người dùng chưa làm bài thi'
+      );
     }
 
     return new ResponseItem<VerifyExamResponseDto>(
@@ -92,6 +121,7 @@ export class ExamService {
         examStatus: exam.examStatus,
         examSetName: exam.examSet.name,
         examSetDuration: exam.examSet.timeLimitMinutes,
+        totalExams,
       },
       'Lấy thông tin bài thi thành công'
     );
@@ -691,6 +721,34 @@ export class ExamService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi lấy danh sách người dùng và các bài thi');
+    }
+  }
+
+  async canScheduleExam(userId: string, examSetName: string): Promise<ResponseItem<boolean>> {
+    try {
+      const exams = await this.prisma.exam.findMany({
+        where: {
+          userId,
+          examSet: {
+            name: examSetName,
+            isActive: true,
+          },
+        },
+      });
+
+      if (!exams?.length) {
+        return new ResponseItem<boolean>(false, 'Bài thi chưa được làm');
+      }
+
+      const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
+
+      return new ResponseItem<boolean>(
+        !!hasScheduled,
+        hasScheduled ? 'Bài thi đã được đặt lịch' : 'Bài thi chưa được đặt lịch'
+      );
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi kiểm tra trạng thái đặt lịch bài thi');
     }
   }
 }

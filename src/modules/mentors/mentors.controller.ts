@@ -57,7 +57,7 @@ export class MentorsController {
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
-    const newBooking = await this.mentorsService.createScheduler(dto);
+    const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
     await this.bookingGateway.emitNewBooking();
     return newBooking;
@@ -105,7 +105,7 @@ export class MentorsController {
 
   @Post('assign')
   async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
-    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId, req.user.email);
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
     await this.bookingGateway.emitNewBooking();
     return result;
   }

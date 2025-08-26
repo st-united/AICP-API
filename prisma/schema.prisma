@@ -586,6 +586,19 @@ enum QuestionType {
   ESSAY
 }
 
+enum ExamSetStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum InterviewRequestStatus {
+  PENDING
+  ASSIGNED
+}
+
 enum MentorBookingStatus {
   UPCOMING
   COMPLETED
@@ -687,19 +700,6 @@ enum TestTrackingStatus {
   INTERVIEW_SCHEDULED
   INTERVIEW_COMPLETED
   RESULT_EVALUATED
-}
-
-enum ExamSetStatus {
-  DRAFT
-  PUBLISHED
-  ACTIVE
-  INACTIVE
-  ARCHIVED
-}
-
-enum InterviewRequestStatus {
-  PENDING
-  ASSIGNED
 }
 
 enum SlotStatus {
