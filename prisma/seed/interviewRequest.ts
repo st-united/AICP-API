@@ -43,8 +43,8 @@ export async function seedInterviewRequest(
         mentorEmail,
         scheduledAt: randomFutureDate(),
         timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
-        status: [MentorBookingStatus.UPCOMING, MentorBookingStatus.NOT_JOINED, MentorBookingStatus.COMPLETED][
-          Math.floor(Math.random() * 3)
+        status: [MentorBookingStatus.UPCOMING, MentorBookingStatus.COMPLETED, MentorBookingStatus.NOT_JOINED][
+          Math.floor(Math.random() * 5)
         ],
         notes: `Session between ${userEmails[menteeIndex]} and ${mentorEmail}`,
       };
