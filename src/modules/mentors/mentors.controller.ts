@@ -27,7 +27,9 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
+
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
 @Controller('mentors')
@@ -52,7 +54,6 @@ export class MentorsController {
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
     const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
-    await this.bookingGateway.emitNewBooking();
     return newBooking;
   }
 
@@ -96,6 +97,12 @@ export class MentorsController {
     return this.mentorsService.getFilteredBookings(dto, req.user.userId);
   }
 
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId, req.user.email);
+    return result;
+  }
+
   @UseGuards(JwtAccessTokenGuard)
   @Get('check-my-interview-request/:examId')
   @ApiOperation({ summary: 'Check if current user has an interview request' })
@@ -105,12 +112,5 @@ export class MentorsController {
     @Param('examId', ParseUUIDPipe) examId: string
   ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     return await this.mentorsService.checkUserInterviewRequest(examId);
-  }
-
-  @Post('assign')
-  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
-    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId, req.user.email);
-    await this.bookingGateway.emitNewBooking();
-    return result;
   }
 }
