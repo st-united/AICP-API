@@ -7,15 +7,14 @@ export async function seedMentorBookings(
   mentors: any[]
 ) {
   const mentorEmails = mentors.map((mentor) => mentor.user.email);
-  const userEmails = Object.keys(userMap).filter((email) => {
-    return (
+  const userEmails = Object.keys(userMap).filter(
+    (email) =>
       email.includes('user') &&
       !email.includes('mentor') &&
       !email.includes('admin') &&
       !email.includes('company') &&
       !email.includes('examiner')
-    );
-  });
+  );
 
   function randomFutureDate(daysAhead = 30): Date {
     const randomDays = Math.floor(Math.random() * daysAhead) + 1;
@@ -35,45 +34,48 @@ export async function seedMentorBookings(
     TimeSlotBooking.PM_05_06,
   ];
 
-  const statuses = [MentorBookingStatus.UPCOMING, MentorBookingStatus.NOT_JOINED, MentorBookingStatus.COMPLETED];
+  const statuses = [MentorBookingStatus.UPCOMING, MentorBookingStatus.COMPLETED, MentorBookingStatus.NOT_JOINED];
 
   const mentorEmailMap = Object.fromEntries(mentors.map((mentor) => [mentor.user.email, mentor]));
 
   for (const mentorEmail of mentorEmails) {
     const mentor = mentorEmailMap[mentorEmail];
+
     for (let i = 0; i < 20; i++) {
-      const menteeIndex = Math.floor(Math.random() * userEmails.length);
-      const userEmail = userEmails[menteeIndex];
+      const userEmail = userEmails[Math.floor(Math.random() * userEmails.length)];
       const userId = userMap[userEmail]?.id;
       const examId = examMap[userId]?.id;
-
       if (!userId || !examId) continue;
 
+      let interviewRequest;
       try {
-        const interviewRequest = await prisma.interviewRequest.upsert({
-          where: { examId },
-          update: {},
-          create: {
+        interviewRequest = await prisma.interviewRequest.create({
+          data: {
             examId,
             interviewDate: randomFutureDate(),
             timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
           },
         });
-
-        await prisma.mentorBooking.create({
-          data: {
-            interviewRequestId: interviewRequest.id,
-            mentorId: mentor.id,
-            status: statuses[Math.floor(Math.random() * statuses.length)],
-            notes: `Session between ${userEmail} and ${mentorEmail}`,
-          },
-        });
       } catch (error: any) {
         if (error.code === 'P2002') {
-          continue;
+          interviewRequest = await prisma.interviewRequest.findUnique({
+            where: { examId },
+          });
+        } else {
+          throw error;
         }
-        throw error;
       }
+
+      if (!interviewRequest) continue;
+
+      await prisma.mentorBooking.create({
+        data: {
+          interviewRequestId: interviewRequest.id,
+          mentorId: mentor.id,
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+          notes: `Session between ${userEmail} and ${mentorEmail}`,
+        },
+      });
     }
   }
 }
