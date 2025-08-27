@@ -4,9 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
-import { InterviewRequestStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
-import { SlotStatus, TimeSlotBooking } from '@prisma/client';
+import { SlotStatus, TimeSlotBooking, InterviewRequestStatus } from '@prisma/client';
 import { Order } from '@app/common/constants';
 import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
 
@@ -158,7 +157,6 @@ export class BookingService {
           interviewDate: true,
         },
       });
-
       let usedMorning = 0;
       let usedAfternoon = 0;
 
