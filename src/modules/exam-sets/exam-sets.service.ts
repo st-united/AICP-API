@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateExamSetDto } from './dto/create-exam-set.dto';
 import { UpdateExamSetDto } from './dto/update-exam-set.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,6 +6,7 @@ import { GetExamSetDto } from './dto/get-exam-set.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { ExamSetWithQuestions, UserExam, UserAnswer } from './interface/exam-sets.interface';
 import { ExamStatus } from '@prisma/client';
+import { Order } from '@Constant/enums';
 
 @Injectable()
 export class ExamSetsService {
@@ -54,31 +55,54 @@ export class ExamSetsService {
     if (!examSet) {
       throw new NotFoundException('Không tìm thấy bộ đề thi');
     }
+    const FINAL_STATUSES: ExamStatus[] = [
+      ExamStatus.WAITING_FOR_REVIEW,
+      ExamStatus.GRADED,
+      ExamStatus.INTERVIEW_SCHEDULED,
+      ExamStatus.INTERVIEW_COMPLETED,
+      ExamStatus.RESULT_EVALUATED,
+    ];
 
     const allExams = await this.prisma.exam.findMany({
       where: {
         userId: userId,
         examSetId: examSet.id,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: Order.DESC },
     });
     const attempts = allExams.length;
-    const latestExam = allExams[attempts - 1];
+    const finishedAttempts = allExams.filter((exam) => FINAL_STATUSES.includes(exam.examStatus)).length;
+    const latestExam = allExams[0];
 
-    if (!latestExam || latestExam.examStatus === ExamStatus.SUBMITTED) {
-      const response = await this.createNewExam(userId, examSet);
-      return new ResponseItem(
-        response.data,
-        `Bài kiểm tra mới đã được tạo. Đây là lần làm thứ ${attempts + 1}`,
-        GetExamSetDto
-      );
+    if (finishedAttempts >= 3) {
+      throw new ConflictException(`Bạn đã hoàn thành số lần làm tối đa (${finishedAttempts}/3) cho bộ đề này`);
     }
 
-    if (latestExam.examStatus === ExamStatus.IN_PROGRESS) {
+    if (latestExam && latestExam.examStatus === ExamStatus.IN_PROGRESS) {
       return await this.handleInProgressExam(userId, latestExam, examSet);
     }
 
-    throw new NotFoundException('Trạng thái bài kiểm tra không hợp lệ');
+    const forbiddenStatuses: ExamStatus[] = [
+      ExamStatus.WAITING_FOR_REVIEW,
+      ExamStatus.GRADED,
+      ExamStatus.INTERVIEW_SCHEDULED,
+      ExamStatus.INTERVIEW_COMPLETED,
+      ExamStatus.RESULT_EVALUATED,
+    ];
+
+    const hasForbiddenExam = allExams.some((exam) => forbiddenStatuses.includes(exam.examStatus));
+    if (hasForbiddenExam) {
+      throw new ConflictException(
+        'Bạn không thể  làm bài vì một trong các bài thi cho bộ đề này đang trong quá quy trình phỏng vấn'
+      );
+    }
+
+    const response = await this.createNewExam(userId, examSet);
+    return new ResponseItem(
+      response.data,
+      `Bài kiểm tra mới đã được tạo. Đây là lần làm thứ ${attempts + 1}`,
+      GetExamSetDto
+    );
   }
 
   private async findExamSetWithQuestions(examSetName?: string): Promise<ExamSetWithQuestions | null> {
@@ -129,10 +153,10 @@ export class ExamSetsService {
 
   private determineExamStatus(exam: UserExam): ExamStatus {
     const now = new Date();
-    if (exam.examStatus === 'IN_PROGRESS' && now < exam.finishedAt) {
-      return 'IN_PROGRESS';
+    if (exam.examStatus === ExamStatus.IN_PROGRESS && now < exam.finishedAt) {
+      return ExamStatus.IN_PROGRESS;
     }
-    return 'SUBMITTED';
+    return ExamStatus.SUBMITTED;
   }
 
   private async handleInProgressExam(
@@ -144,7 +168,7 @@ export class ExamSetsService {
     const examSetData = this.buildExamSetData(examSet, userAnswers, exam);
 
     const message =
-      exam.examStatus === 'IN_PROGRESS'
+      exam.examStatus === ExamStatus.IN_PROGRESS
         ? 'Bài kiểm tra chưa hoàn thành, bạn có muốn tiếp tục?'
         : 'Thành công nhận bộ đề thi';
 
@@ -152,17 +176,11 @@ export class ExamSetsService {
   }
 
   private async createNewExam(userId: string, examSet: ExamSetWithQuestions): Promise<ResponseItem<GetExamSetDto>> {
-    const examDuration = examSet.timeLimitMinutes ?? ExamSetsService.DEFAULT_EXAM_DURATION_MINUTES;
-    const startedAt = new Date();
-    const finishedAt = new Date(startedAt.getTime() + examDuration * 60 * 1000);
-
     const newExam = await this.prisma.exam.create({
       data: {
         userId,
         examSetId: examSet.id,
-        startedAt,
-        finishedAt,
-        examStatus: 'IN_PROGRESS',
+        examStatus: ExamStatus.IN_PROGRESS,
       },
     });
 
