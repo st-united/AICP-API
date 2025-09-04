@@ -17,6 +17,7 @@ import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
 import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
+import { UpdateTestTimeDto } from './dto/request/update-exam.dto';
 
 @Injectable()
 export class ExamService {
@@ -436,8 +437,7 @@ export class ExamService {
       throw new NotFoundException('Bộ đề thi không tồn tại');
     }
 
-    // Tính thời gian làm bài
-    const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
+    const diffMs = new Date(existingExam.finishedAt).getTime() - new Date(existingExam.startedAt).getTime();
     const h = Math.floor(diffMs / 3600000)
       .toString()
       .padStart(2, '0');
@@ -756,6 +756,30 @@ export class ExamService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi kiểm tra trạng thái đặt lịch bài thi');
+    }
+  }
+
+  async updateTestTime(examId: string, updateTestTimeDto: UpdateTestTimeDto): Promise<ResponseItem<null>> {
+    try {
+      const existingExam = await this.prisma.exam.findUnique({
+        where: { id: examId },
+      });
+      if (!existingExam) {
+        throw new NotFoundException('Không tìm thấy bài làm');
+      }
+      await this.prisma.exam.update({
+        where: { id: examId },
+        data: {
+          ...(updateTestTimeDto.startedAt && { startedAt: updateTestTimeDto.startedAt }),
+          ...(updateTestTimeDto.finishedAt && { finishedAt: updateTestTimeDto.finishedAt }),
+        },
+      });
+
+      return new ResponseItem(null, 'Cập nhật thời gian thi thành công');
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi cập nhật thời gian thi');
     }
   }
 }
