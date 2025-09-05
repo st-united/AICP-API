@@ -64,43 +64,36 @@ export class ExamService {
     }
   }
 
+  private async countUserExams(userId: string, examSetName: string): Promise<number> {
+    return this.prisma.exam.count({
+      where: {
+        userId,
+        examSet: {
+          name: examSetName,
+          isActive: true,
+        },
+        examStatus: {
+          in: [
+            ExamStatus.SUBMITTED,
+            ExamStatus.WAITING_FOR_REVIEW,
+            ExamStatus.GRADED,
+            ExamStatus.INTERVIEW_SCHEDULED,
+            ExamStatus.INTERVIEW_COMPLETED,
+            ExamStatus.RESULT_EVALUATED,
+          ],
+        },
+      },
+    });
+  }
+
   async hasTakenExam(params: { userId: string; examSetName: string }): Promise<ResponseItem<VerifyExamResponseDto>> {
-    const [exam, totalExams] = await this.prisma.$transaction([
-      this.prisma.exam.findFirst({
-        where: {
-          userId: params.userId,
-          examSet: {
-            name: params.examSetName,
-            isActive: true,
-          },
-        },
-        include: {
-          examSet: true,
-        },
-        orderBy: {
-          createdAt: Order.DESC,
-        },
-      }),
-      this.prisma.exam.count({
-        where: {
-          userId: params.userId,
-          examSet: {
-            name: params.examSetName,
-            isActive: true,
-          },
-          examStatus: {
-            in: [
-              ExamStatus.SUBMITTED,
-              ExamStatus.WAITING_FOR_REVIEW,
-              ExamStatus.GRADED,
-              ExamStatus.INTERVIEW_SCHEDULED,
-              ExamStatus.INTERVIEW_COMPLETED,
-              ExamStatus.RESULT_EVALUATED,
-            ],
-          },
-        },
-      }),
-    ]);
+    const examSet = await this.findExamSet({
+      name: params.examSetName,
+      userId: params.userId,
+    });
+
+    const exam = examSet.exam[0];
+    const totalExams = await this.countUserExams(params.userId, params.examSetName);
 
     if (!exam) {
       return new ResponseItem<VerifyExamResponseDto>(
@@ -108,8 +101,8 @@ export class ExamService {
           id: null,
           examStatus: null,
           examSetName: params.examSetName,
-          examSetDuration: null,
-          totalExams: null,
+          examSetDuration: examSet.timeLimitMinutes,
+          totalExams: 0,
         },
         'Người dùng chưa làm bài thi'
       );
@@ -119,8 +112,8 @@ export class ExamService {
       {
         id: exam.id,
         examStatus: exam.examStatus,
-        examSetName: exam.examSet.name,
-        examSetDuration: exam.examSet.timeLimitMinutes,
+        examSetName: examSet.name,
+        examSetDuration: examSet.timeLimitMinutes,
         totalExams,
       },
       'Lấy thông tin bài thi thành công'
