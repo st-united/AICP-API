@@ -225,12 +225,12 @@ model Domain {
 }
 
 model CompetencyAspect {
-  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String              @map("pillar_id") @db.Uuid
-  name                  String              @unique @db.VarChar
-  represent             String              @default("") @db.VarChar
-  description           String              @db.Text
-  weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pillarId              String               @map("pillar_id") @db.Uuid
+  name                  String               @unique @db.VarChar
+  represent             String               @default("") @db.VarChar
+  description           String               @db.Text
+  weightWithinDimension Decimal              @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
   createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -243,10 +243,10 @@ model CompetencyAspect {
 model ExamSet {
   id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String         @db.VarChar
-  urlImage String? @map("url_image") @db.VarChar(255)
-  startDate        DateTime?        @map("start_date") @db.Timestamptz(6)
-  endDate          DateTime?        @map("end_date") @db.Timestamptz(6)
-  status ExamSetStatus @default(DRAFT)
+  urlImage         String?        @map("url_image") @db.VarChar(255)
+  startDate        DateTime?      @map("start_date") @db.Timestamptz(6)
+  endDate          DateTime?      @map("end_date") @db.Timestamptz(6)
+  status           ExamSetStatus  @default(DRAFT)
   description      String?        @db.Text
   frameworkId      String         @map("framework_id") @db.Uuid
   assessmentType   AssessmentType @default(SELF_ASSESSMENT) @map("assessment_type")
@@ -289,6 +289,8 @@ model Exam {
   examPillarSnapshot   ExamPillarSnapshot[]
   InterviewRequest     InterviewRequest[]
   userAnswer           UserAnswer[]
+
+  @@index([userId])
 }
 
 model ExamSetQuestion {
@@ -316,6 +318,7 @@ model Mentor {
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings         MentorBooking[]
   mentorCompetency MentorCompetency[]
+  MentorTimeSpot   MentorTimeSpot[]
 }
 
 model MentorCompetency {
@@ -343,15 +346,34 @@ model MentorBooking {
   mentor             Mentor              @relation(fields: [mentorId], references: [id], onDelete: Cascade)
 }
 
+model MentorTimeSpot {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mentorId         String            @db.Uuid
+  startAt          DateTime          @db.Timestamptz(6)
+  endAt            DateTime          @db.Timestamptz(6)
+  durationMinutes  Int               @map("duration_minutes") @db.SmallInt
+  status           MentorSpotStatus  @default(AVAILABLE)
+  timezone         String            @default("Asia/Ho_Chi_Minh") @db.VarChar
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  interviewRequest InterviewRequest?
+
+  @@unique([mentorId, startAt])
+  @@index([mentorId, status, startAt])
+}
+
 model InterviewRequest {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId        String          @unique @map("exam_id") @db.Uuid
-  interviewDate DateTime        @map("interview_date") @db.Timestamptz(6)
-  timeSlot      TimeSlotBooking @map("time_slot")
-  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
-  exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
-  MentorBooking MentorBooking[]
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examId           String           @unique @map("exam_id") @db.Uuid
+  interviewDate    DateTime         @map("interview_date") @db.Timestamptz(6)
+  timeSlot         TimeSlotBooking? @map("time_slot")
+  mentorTimeSpotId String?          @unique @map("mentor_time_spot_id") @db.Uuid
+  mentorTimeSpot   MentorTimeSpot?  @relation(fields: [mentorTimeSpotId], references: [id], onDelete: SetNull)
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exam             Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  MentorBooking    MentorBooking[]
 }
 
 model CompetencyFramework {
@@ -700,4 +722,11 @@ enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
   FULL
+}
+
+enum MentorSpotStatus {
+  AVAILABLE
+  HELD
+  BOOKED
+  CANCELLED
 }

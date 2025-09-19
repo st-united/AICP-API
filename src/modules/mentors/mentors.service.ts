@@ -6,7 +6,7 @@ import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
 import { EmailService } from '../email/email.service';
-import { generateSecurePassword } from '@app/helpers/randomPassword';
+import { generateSecurePassword } from '@app/common/helpers/randomPassword';
 import { ExamStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';

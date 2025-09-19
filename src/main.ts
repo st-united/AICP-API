@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import 'dotenv/config';
 
 import { AppModule } from '@app/app.module';
+import { ResponseItem } from './common/dtos';
 
 async function bootstrap() {
   const appOptions = { cors: true };
@@ -32,7 +33,9 @@ async function bootstrap() {
     )
     .build();
 
-  const document = SwaggerModule.createDocument(app, options);
+  const document = SwaggerModule.createDocument(app, options, {
+    extraModels: [ResponseItem],
+  });
   SwaggerModule.setup('/docs', app, document);
 
   const port = configService.get<number>('APP_PORT');

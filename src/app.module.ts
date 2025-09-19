@@ -19,6 +19,7 @@ import { DomainModule } from './modules/domain/domain.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
+import { MentorSpotsModule } from './modules/mentor-spots/mentor-spots.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { ExportModule } from './modules/export/export.module';
     CoursesModule,
     BookingModule,
     ExportModule,
+    MentorSpotsModule,
   ],
   providers: [
     {
