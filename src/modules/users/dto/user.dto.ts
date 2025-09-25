@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Domain } from '@prisma/client';
+import { Domain, University } from '@prisma/client';
 import { Expose } from 'class-transformer';
 import { IsOptional } from 'class-validator';
 
@@ -87,7 +87,7 @@ export class UserDto {
 
   @Expose()
   @ApiProperty()
-  university?: string;
+  university?: University;
 
   @Expose()
   @ApiProperty()
