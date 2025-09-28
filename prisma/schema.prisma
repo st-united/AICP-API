@@ -318,7 +318,9 @@ model Mentor {
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings         MentorBooking[]
   mentorCompetency MentorCompetency[]
-  MentorTimeSpot   MentorTimeSpot[]
+
+  schedules MentorSchedule[] @relation("MentorSchedules")
+  timeSpots MentorTimeSpot[] @relation("MentorSpots")
 }
 
 model MentorCompetency {
@@ -346,21 +348,47 @@ model MentorBooking {
   mentor             Mentor              @relation(fields: [mentorId], references: [id], onDelete: Cascade)
 }
 
-model MentorTimeSpot {
-  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mentorId         String            @db.Uuid
-  startAt          DateTime          @db.Timestamptz(6)
-  endAt            DateTime          @db.Timestamptz(6)
-  durationMinutes  Int               @map("duration_minutes") @db.SmallInt
-  status           MentorSpotStatus  @default(AVAILABLE)
-  timezone         String            @default("Asia/Ho_Chi_Minh") @db.VarChar
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  interviewRequest InterviewRequest?
+model MentorSchedule {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mentorId    String    @db.Uuid  @map("mentor_id")
+  name        String    @db.VarChar
+  timezone    String    @db.VarChar
+  durationMin Int       @map("duration_min")
+  notes       String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
 
-  @@unique([mentorId, startAt])
-  @@index([mentorId, status, startAt])
+  mentor Mentor @relation("MentorSchedules", fields: [mentorId], references: [id])
+
+  spots MentorTimeSpot[] @relation("ScheduleSpots")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([mentorId, name], map: "mentorId_name")
+  @@index([mentorId, isActive])
+}
+
+model MentorTimeSpot {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mentorId        String           @db.Uuid @map("mentor_id")
+  startAt         DateTime         @map("start_at")
+  endAt           DateTime         @map("end_at")
+  durationMinutes Int              @map("duration_minutes")
+  status          MentorSpotStatus
+  timezone        String
+  scheduleId      String?          @db.Uuid @map("schedule_id")
+
+  mentor Mentor @relation("MentorSpots", fields: [mentorId], references: [id])
+
+  schedule MentorSchedule? @relation("ScheduleSpots", fields: [scheduleId], references: [id])
+
+  interviewRequest InterviewRequest? @relation("SpotInterview")
+
+  @@index([mentorId, startAt])
+  @@index([scheduleId])
+  @@index([status, startAt])
 }
 
 model InterviewRequest {
@@ -369,11 +397,13 @@ model InterviewRequest {
   interviewDate    DateTime         @map("interview_date") @db.Timestamptz(6)
   timeSlot         TimeSlotBooking? @map("time_slot")
   mentorTimeSpotId String?          @unique @map("mentor_time_spot_id") @db.Uuid
-  mentorTimeSpot   MentorTimeSpot?  @relation(fields: [mentorTimeSpotId], references: [id], onDelete: SetNull)
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-  exam             Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
-  MentorBooking    MentorBooking[]
+
+  mentorTimeSpot MentorTimeSpot? @relation("SpotInterview", fields: [mentorTimeSpotId], references: [id], onDelete: SetNull)
+
+  createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+  MentorBooking MentorBooking[]
 }
 
 model CompetencyFramework {
