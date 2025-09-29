@@ -21,7 +21,6 @@ import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { UniversityModule } from './modules/universities/universities.module';
-import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -68,7 +67,6 @@ import { CacheModule } from '@nestjs/cache-manager';
     ExportModule,
     ImportsModule,
     UniversityModule,
-    CacheModule.register({ isGlobal: true }),
   ],
   providers: [
     {
