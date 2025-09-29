@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Query } from '@nestjs/common';
 import { UniversitiesService } from './universities.service';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { GetUniversitiesDto } from '@app/modules/universities/dto/request/get-universities.dto';
+import { PaginatedResponseDto } from '@app/modules/universities/dto/response/paginated-response.dto';
 
 @Controller('universities')
 export class UniversitiesController {
@@ -28,12 +30,9 @@ export class UniversitiesController {
   })
   @ApiResponse({ status: 200, description: 'List of universities retrieved successfully' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-  async getAllUniversities(@Query('search') search: string, @Query('skip') skip: string, @Query('take') take: string) {
-    return this.universitiesService.getAllUniversities({
-      search,
-      skip: Number(skip) || 0,
-      take: Number(take) || 100,
-    });
+  @Get()
+  async getAllUniversities(@Query() query: GetUniversitiesDto): Promise<PaginatedResponseDto> {
+    return this.universitiesService.getAllUniversities(query);
   }
 
   @Post('sync')
