@@ -1,6 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Prisma } from '@prisma/client';
 import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
