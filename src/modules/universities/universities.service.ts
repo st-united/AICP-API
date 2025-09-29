@@ -2,51 +2,50 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Prisma } from '@prisma/client';
-import { UniversityDto } from './dto/university.dto';
+import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { GetUniversitiesDto } from '@app/modules/universities/dto/request/get-universities.dto';
+import { PaginatedResponseDto } from '@app/modules/universities/dto/response/paginated-response.dto';
+import { plainToClass } from 'class-transformer';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UniversitiesService {
-  private readonly logger = new Logger(UniversitiesService.name);
-  private readonly UNIVERSITIES_API_URL = 'https://diemthi.tuyensinh247.com/api/school/search';
-
   constructor(
     private readonly prismaService: PrismaService,
     private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
+
+  private readonly logger = new Logger(UniversitiesService.name);
+  private readonly UNIVERSITIES_API_URL = this.configService.get<string>('UNIVERSITIES_DATA_URL');
 
   async syncUniversities() {
     this.logger.log('Bắt đầu quá trình đồng bộ dữ liệu trường đại học...');
     try {
-      // 1. Lấy dữ liệu từ API
       const response = await this.httpService.get(this.UNIVERSITIES_API_URL).toPromise();
-      const universities = response.data.data as UniversityDto[];
+      const universities = response.data.data as University[];
 
       if (!universities || universities.length === 0) {
         this.logger.log('Không có dữ liệu nào từ API để đồng bộ.');
         return;
       }
 
-      // 2. Chia nhỏ dữ liệu thành các lô (batch) để xử lý
-      const batchSize = 1000; // Xử lý 100 trường mỗi lần
+      const batchSize = 1000;
       let successCount = 0;
 
       for (let i = 0; i < universities.length; i += batchSize) {
         const batch = universities.slice(i, i + batchSize);
         this.logger.log(`Đang xử lý lô ${i / batchSize + 1}...`);
 
-        // 3. Sử dụng Prisma Transaction để thực hiện upsert cho mỗi lô
         const upsertPromises = batch.map((uni) =>
           this.prismaService.university.upsert({
-            where: { code: uni.code }, // Điều kiện để kiểm tra sự tồn tại
+            where: { code: uni.code },
             update: {
-              // Dữ liệu cần cập nhật nếu đã tồn tại
               name: uni.name,
             },
             create: {
-              // Dữ liệu để tạo mới nếu chưa tồn tại
               code: uni.code,
               name: uni.name,
             },
@@ -63,15 +62,17 @@ export class UniversitiesService {
     }
   }
 
-  async getAllUniversities(params: { search?: string; skip?: number; take?: number }) {
-    const { search, skip = 0, take = 100 } = params;
+  async getAllUniversities(dto: GetUniversitiesDto): Promise<PaginatedResponseDto> {
+    const { search, skip = 0, take = 100 } = dto;
     const cacheKey = `universities_select_${search || 'all'}_${skip}_${take}`;
 
-    const cachedData = await this.cacheManager.get(cacheKey);
+    // Check cache
+    const cachedData = await this.cacheManager.get<PaginatedResponseDto>(cacheKey);
     if (cachedData) {
-      return cachedData;
+      return plainToClass(PaginatedResponseDto, cachedData);
     }
 
+    // Build Prisma query
     const where: Prisma.UniversityWhereInput = search
       ? {
           OR: [
@@ -81,6 +82,7 @@ export class UniversitiesService {
         }
       : {};
 
+    // Fetch universities and total count
     const universities = await this.prismaService.university.findMany({
       where,
       select: {
@@ -95,8 +97,18 @@ export class UniversitiesService {
 
     const total = await this.prismaService.university.count({ where });
 
-    await this.cacheManager.set(cacheKey, { data: universities, total }, 3600);
+    const data = plainToClass(University, universities);
 
-    return { data: universities, total };
+    const response: PaginatedResponseDto = {
+      data,
+      total,
+      skip,
+      take,
+    };
+
+    // Cache the response
+    await this.cacheManager.set(cacheKey, response, 3600);
+
+    return response;
   }
 }
