@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { UniversitiesService } from './universities.service';
-import { UniversitiesController } from './universities.controller';
+import { UniversitiesService } from '@app/modules/universities/universities.service';
+import { UniversitiesController } from '@app/modules/universities/universities.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 
