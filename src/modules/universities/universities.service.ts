@@ -8,6 +8,8 @@ import { GetUniversitiesDto } from '@app/modules/universities/dto/request/get-un
 import { PaginatedResponseDto } from '@app/modules/universities/dto/response/paginated-response.dto';
 import { plainToClass } from 'class-transformer';
 import { ConfigService } from '@nestjs/config';
+import { REDIS_CLIENT } from '@Constant/redis';
+import Redis from 'ioredis';
 
 @Injectable()
 export class UniversitiesService {
@@ -15,7 +17,7 @@ export class UniversitiesService {
     private readonly prismaService: PrismaService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(REDIS_CLIENT) private redisClient: Redis
   ) {}
 
   private readonly logger = new Logger(UniversitiesService.name);
@@ -66,13 +68,11 @@ export class UniversitiesService {
     const { search, skip = 0, take = 100 } = dto;
     const cacheKey = `universities_select_${search || 'all'}_${skip}_${take}`;
 
-    // Check cache
-    const cachedData = await this.cacheManager.get<PaginatedResponseDto>(cacheKey);
+    const cachedData = await this.redisClient.get(cacheKey);
     if (cachedData) {
-      return plainToClass(PaginatedResponseDto, cachedData);
+      return plainToClass(PaginatedResponseDto, JSON.parse(cachedData));
     }
 
-    // Build Prisma query
     const where: Prisma.UniversityWhereInput = search
       ? {
           OR: [
@@ -106,8 +106,7 @@ export class UniversitiesService {
       take,
     };
 
-    // Cache the response
-    await this.cacheManager.set(cacheKey, response, 3600);
+    await this.redisClient.set(cacheKey, JSON.stringify(response), 'EX', 3600);
 
     return response;
   }

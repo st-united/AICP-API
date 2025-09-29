@@ -20,7 +20,6 @@ import { CoursesModule } from './modules/courses/courses.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
 import { UniversityModule } from './modules/universities/universities.module';
-import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -66,7 +65,6 @@ import { CacheModule } from '@nestjs/cache-manager';
     BookingModule,
     ExportModule,
     UniversityModule,
-    CacheModule.register({ isGlobal: true }),
   ],
   providers: [
     {
