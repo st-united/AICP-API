@@ -284,6 +284,13 @@ export class UsersService {
             },
           },
         },
+        university: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -293,13 +300,20 @@ export class UsersService {
         id: role.id,
         name: role.name,
       })),
+      university: user.university
+        ? {
+            id: user.university.id,
+            code: user.university.code,
+            name: user.university.name,
+          }
+        : null,
     };
 
     return new ResponseItem(mappedUser, 'Thành công', ProfileDto);
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
-    const { email, referralCode, job, isStudent, studentCode, university, ...updateData } = updateUserDto;
+    const { email, referralCode, job, isStudent, studentCode, universityId, ...updateData } = updateUserDto;
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
@@ -347,8 +361,8 @@ export class UsersService {
         throw new BadRequestException('Mã sinh viên là bắt buộc');
       }
 
-      if (university) {
-        updateData['university'] = university;
+      if (universityId) {
+        updateData['universityId'] = universityId;
       } else {
         throw new BadRequestException('Tên trường là bắt buộc');
       }
@@ -357,7 +371,7 @@ export class UsersService {
     } else {
       updateData['isStudent'] = false;
       updateData['studentCode'] = null;
-      updateData['university'] = null;
+      updateData['universityId'] = null;
     }
 
     const updateDataWithJob: any = { ...updateData };
@@ -374,6 +388,7 @@ export class UsersService {
       data: updateDataWithJob,
       include: {
         job: true,
+        university: true,
       },
     });
 
@@ -404,7 +419,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl },
-      include: { job: true },
+      include: { job: true, university: true },
     });
 
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công', UserDto);
@@ -420,7 +435,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id },
       data: { avatarUrl: null },
-      include: { job: true },
+      include: { job: true, university: true },
     });
 
     if (fs.existsSync(user.avatarUrl)) {
@@ -669,7 +684,7 @@ export class UsersService {
         await this.prisma.user.update({
           where: { id: userId },
           data: {
-            university: portfolioDto.university,
+            universityId: portfolioDto.university.id,
             studentCode: portfolioDto.studentCode,
             isStudent: true,
           },
@@ -785,7 +800,7 @@ export class UsersService {
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        university: updateStudentInfoDto.university,
+        universityId: updateStudentInfoDto.university.id,
         studentCode: updateStudentInfoDto.studentCode,
         isStudent: updateStudentInfoDto.isStudent,
       },
