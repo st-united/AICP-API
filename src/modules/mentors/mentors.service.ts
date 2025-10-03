@@ -1,37 +1,35 @@
-import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
-import { CreateMentorDto } from './dto/request/create-mentor.dto';
-import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { ResponseItem } from '@app/common/dtos';
-import { MentorResponseDto } from './dto/response/mentor-response.dto';
-import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
-import { EmailService } from '../email/email.service';
+import { ResponseItem } from '@app/common/dtos';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
-  ExamStatus,
   ExamLevelEnum,
+  ExamStatus,
   InterviewRequestStatus,
   MentorBookingStatus,
   Prisma,
   TimeSlotBooking,
 } from '@prisma/client';
-import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { RedisService } from '../redis/redis.service';
-import { TokenService } from '../auth/services/token.service';
-import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
-import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
+import { TokenService } from '../auth/services/token.service';
+import { EmailService } from '../email/email.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
+import { CreateMentorDto } from './dto/request/create-mentor.dto';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { UpdateMentorDto } from './dto/request/update-mentor.dto';
+import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
+import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
+import { MentorResponseDto } from './dto/response/mentor-response.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 
-import { google, Auth } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
-import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
-import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { InterviewShift, Order } from '@Constant/enums';
+import { GoogleCalendarService } from '@app/helpers/google-calendar.service';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { timeSlotEnum, InterviewShift, Order } from '@Constant/enums';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 
 @Injectable()
 export class MentorsService {
@@ -390,69 +388,6 @@ export class MentorsService {
     }
   }
 
-  async createGoogleCalendarEvent(
-    userEmail: string,
-    mentorEmail: string,
-    interviewDate: Date,
-    timeSlot: keyof typeof timeSlotEnum
-  ): Promise<string> {
-    const oauth2Client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
-
-    oauth2Client.setCredentials({
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-    });
-
-    const { token } = await oauth2Client.getAccessToken();
-    if (!token) {
-      throw new Error('Failed to obtain access token');
-    }
-
-    const calendar = google.calendar({
-      version: 'v3',
-      auth: oauth2Client as Auth.OAuth2Client,
-    });
-
-    const formattedTimeSlot = timeSlotEnum[timeSlot];
-    const [startHour, endHour] = formattedTimeSlot.split('-').map((h) => h.trim());
-    const startDateTime = new Date(interviewDate);
-    startDateTime.setHours(parseInt(startHour.split(':')[0]), 0, 0, 0);
-    const endDateTime = new Date(startDateTime);
-    endDateTime.setHours(parseInt(endHour.split(':')[0]), 0, 0, 0);
-
-    const event = {
-      summary: 'Phỏng vấn chính thức',
-      start: {
-        dateTime: startDateTime.toISOString(),
-        timeZone: 'Asia/Ho_Chi_Minh',
-      },
-      end: {
-        dateTime: endDateTime.toISOString(),
-        timeZone: 'Asia/Ho_Chi_Minh',
-      },
-      attendees: [{ email: userEmail }, { email: mentorEmail }],
-      conferenceData: {
-        createRequest: {
-          requestId: `req-${Date.now()}`,
-          conferenceSolutionKey: { type: 'hangoutsMeet' },
-        },
-      },
-    };
-
-    try {
-      const response = await calendar.events.insert({
-        calendarId: 'primary',
-        conferenceDataVersion: 1,
-        sendUpdates: 'none',
-        requestBody: event,
-      });
-
-      return response.data.hangoutLink || 'Link không khả dụng';
-    } catch (error) {
-      console.error('Error creating Google Calendar event:', error);
-      throw new Error('Failed to create Google Calendar event');
-    }
-  }
-
   async getFilteredBookings(
     dto: FilterMentorBookingDto,
     mentorId: string
@@ -712,7 +647,12 @@ export class MentorsService {
         const { exam, interviewDate, timeSlot } = interview;
         const user = exam?.user;
         if (user?.email && user?.fullName && interviewDate && timeSlot) {
-          const meetLink = await this.createGoogleCalendarEvent(user.email, mentor.user.email, interviewDate, timeSlot);
+          const meetLink = await GoogleCalendarService.createInterviewEvent(
+            user.email,
+            mentor.user.email,
+            interviewDate,
+            timeSlot
+          );
 
           await this.emailService.sendEmailInterviewScheduleToUser({
             email: user.email,
