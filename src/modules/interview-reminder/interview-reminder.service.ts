@@ -53,7 +53,7 @@ export class InterviewReminderService {
           if (user && user.email) {
             const meetLink = await GoogleCalendarService.createInterviewEvent(
               user.email,
-              mentor?.user?.email || 'default@email.com',
+              mentor?.user?.email,
               interview.interviewDate,
               interview.timeSlot
             );

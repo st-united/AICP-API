@@ -85,9 +85,4 @@ export class InterviewReminderController {
       };
     }
   }
-
-  @Get('test-tomorrow')
-  async testTomorrowInterviews(): Promise<UpcomingInterviewsResponse> {
-    return this.getUpcomingInterviews('1');
-  }
 }
