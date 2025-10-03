@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { GoogleCalendarService } from '../../helpers/google-calendar.service';
+import { GoogleCalendarService } from '@app/helpers/google-calendar.service';
 
 @Injectable()
 export class InterviewReminderService {
