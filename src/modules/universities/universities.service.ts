@@ -1,22 +1,18 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
-import { GetUniversitiesDto } from '@app/modules/universities/dto/request/get-universities.dto';
-import { PaginatedResponseDto } from '@app/modules/universities/dto/response/paginated-response.dto';
-import { plainToClass } from 'class-transformer';
 import { ConfigService } from '@nestjs/config';
-import { REDIS_CLIENT } from '@Constant/redis';
-import Redis from 'ioredis';
+import { PageMetaDto, PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
+import { Order } from '@Constant/enums';
 
 @Injectable()
 export class UniversitiesService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
-    @Inject(REDIS_CLIENT) private redisClient: Redis
+    private readonly configService: ConfigService
   ) {}
 
   private readonly logger = new Logger(UniversitiesService.name);
@@ -63,14 +59,8 @@ export class UniversitiesService {
     }
   }
 
-  async getAllUniversities(dto: GetUniversitiesDto): Promise<PaginatedResponseDto> {
-    const { search, skip = 0, take = 100 } = dto;
-    const cacheKey = `universities_select_${search || 'all'}_${skip}_${take}`;
-
-    const cachedData = await this.redisClient.get(cacheKey);
-    if (cachedData) {
-      return plainToClass(PaginatedResponseDto, JSON.parse(cachedData));
-    }
+  async getAllUniversities(queries: PageOptionsDto): Promise<ResponsePaginate<University>> {
+    const { search, skip, take } = queries;
 
     const where: Prisma.UniversityWhereInput = search
       ? {
@@ -81,32 +71,26 @@ export class UniversitiesService {
         }
       : {};
 
-    // Fetch universities and total count
-    const universities = await this.prismaService.university.findMany({
-      where,
-      select: {
-        id: true,
-        code: true,
-        name: true,
-      },
-      orderBy: { name: 'asc' },
-      skip,
-      take,
-    });
+    const [result, total] = await this.prismaService.$transaction([
+      this.prismaService.university.findMany({
+        where,
+        select: {
+          id: true,
+          code: true,
+          name: true,
+        },
+        orderBy: { name: Order.ASC },
 
-    const total = await this.prismaService.university.count({ where });
+        skip: skip,
+        take: take,
+      }),
+      this.prismaService.university.count({
+        where,
+      }),
+    ]);
 
-    const data = plainToClass(University, universities);
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
-    const response: PaginatedResponseDto = {
-      data,
-      total,
-      skip,
-      take,
-    };
-
-    await this.redisClient.set(cacheKey, JSON.stringify(response), 'EX', 3600);
-
-    return response;
+    return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách trường đại học thành công');
   }
 }
