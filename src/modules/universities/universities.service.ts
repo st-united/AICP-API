@@ -5,6 +5,7 @@ import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
+import { Order } from '@Constant/enums';
 
 @Injectable()
 export class UniversitiesService {
@@ -78,7 +79,7 @@ export class UniversitiesService {
           code: true,
           name: true,
         },
-        orderBy: { name: 'asc' },
+        orderBy: { name: Order.ASC },
 
         skip: skip,
         take: take,
