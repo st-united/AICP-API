@@ -1,11 +1,8 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
-import { GetUniversitiesDto } from '@app/modules/universities/dto/request/get-universities.dto';
-import { PaginatedResponseDto } from '@app/modules/universities/dto/response/paginated-response.dto';
-import { plainToClass } from 'class-transformer';
 import { ConfigService } from '@nestjs/config';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
 
