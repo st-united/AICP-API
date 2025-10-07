@@ -87,17 +87,22 @@ gen-key:
 
 helm-db:
 	helm install postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
-		--version 15.3.2 \
-		--create-namespace \
-		--namespace devplus-aicp \
-		-f ./k8s/postgres/values.yaml
+			--version 15.3.2 \
+			--create-namespace \
+			--namespace devplus-aicp \
+			--set image.registry=docker.io \
+			--set image.repository=bitnamilegacy/postgresql \
+			--set image.tag=15.7.0-debian-12-r7 \
+			-f ./k8s/postgres/values.yaml
 
 helm-redis:
 	helm install redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
-			--version 18.6.0 \
-			--create-namespace \
+			--version $(REDIS_CHART_VERSION) \
 			--namespace devplus-aicp \
-			-f ./k8s/redis/values.yaml
+			--set image.registry=docker.io \
+			--set image.repository=bitnamilegacy/redis \
+			--set image.tag=7.0.15-debian-12-r6 \
+			--set auth.enabled=false
 
 map-db:
 	kubectl -n devplus-aicp port-forward pod/postgres-aicp-postgresql-0 5432:5432
@@ -248,66 +253,99 @@ helm-postgres-prod:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 	helm upgrade --install postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
-			--version $(POSTGRES_CHART_VERSION) \
-			--namespace $(PROD_NAMESPACE) \
-			--create-namespace \
-			--values ./k8s/postgres/values.yaml \
-			--wait --timeout=600s
+            --version $(POSTGRES_CHART_VERSION) \
+            --namespace $(PROD_NAMESPACE) \
+            --create-namespace \
+            --set image.registry=docker.io \
+            --set image.repository=bitnamilegacy/postgresql \
+            --set image.tag=16.3.0-debian-12-r6 \
+            --set auth.existingSecret=aicp-api-env \
+            --set auth.secretKeys.adminPasswordKey=POSTGRES_PASSWORD \
+            --set auth.secretKeys.userPasswordKey=POSTGRES_PASSWORD \
+            --values ./k8s/postgres/values.yaml \
+            --wait --timeout=600s
 
 # Install Redis for Production
 helm-redis-prod:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 	helm upgrade --install redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
-			--version $(REDIS_CHART_VERSION) \
-			--namespace $(PROD_NAMESPACE) \
-			--create-namespace \
-			--values ./k8s/redis/values.yaml \
-			--wait --timeout=600s
+            --version $(REDIS_CHART_VERSION) \
+            --namespace $(PROD_NAMESPACE) \
+            --create-namespace \
+            --set image.registry=docker.io \
+            --set image.repository=bitnamilegacy/redis \
+            --set image.tag=7.2.3-debian-11-r1 \
+            --set auth.existingSecret=aicp-api-env \
+            --set auth.existingSecretPasswordKey=REDIS_PASSWORD \
+            --values ./k8s/redis/values.yaml \
+            --wait --timeout=600s
 
 # Install PostgreSQL for UAT
 helm-postgres-uat:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 	helm upgrade --install postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
-			--version $(POSTGRES_CHART_VERSION) \
-			--namespace $(UAT_NAMESPACE) \
-			--create-namespace \
-			--values ./k8s/postgres/values-uat.yaml \
-			--wait --timeout=600s
+            --version $(POSTGRES_CHART_VERSION) \
+            --namespace $(UAT_NAMESPACE) \
+            --create-namespace \
+            --set image.registry=docker.io \
+            --set image.repository=bitnamilegacy/postgresql \
+            --set image.tag=16.3.0-debian-12-r6 \
+            --set auth.existingSecret=aicp-api-env \
+            --set auth.secretKeys.adminPasswordKey=POSTGRES_PASSWORD \
+            --set auth.secretKeys.userPasswordKey=POSTGRES_PASSWORD \
+            --values ./k8s/postgres/values-uat.yaml \
+            --wait --timeout=600s
 
 # Install Redis for UAT
 helm-redis-uat:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 	helm upgrade --install redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
-			--version $(REDIS_CHART_VERSION) \
-			--namespace $(UAT_NAMESPACE) \
-			--create-namespace \
-			--values ./k8s/redis/values-uat.yaml \
-			--wait --timeout=600s
+            --version $(REDIS_CHART_VERSION) \
+            --namespace $(UAT_NAMESPACE) \
+            --create-namespace \
+            --set image.registry=docker.io \
+            --set image.repository=bitnamilegacy/redis \
+            --set image.tag=7.2.3-debian-11-r1 \
+            --set auth.existingSecret=aicp-api-env \
+            --set auth.existingSecretPasswordKey=REDIS_PASSWORD \
+            --values ./k8s/redis/values-uat.yaml \
+            --wait --timeout=600s
 
 # Install PostgreSQL for Development
 helm-postgres-dev:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 	helm upgrade --install postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
-			--version $(POSTGRES_CHART_VERSION) \
-			--namespace $(DEV_NAMESPACE) \
-			--create-namespace \
-			--values ./k8s/postgres/values-dev.yaml \
-			--wait --timeout=600s
+            --version $(POSTGRES_CHART_VERSION) \
+            --namespace $(DEV_NAMESPACE) \
+            --create-namespace \
+            --set image.registry=docker.io \
+            --set image.repository=bitnamilegacy/postgresql \
+            --set image.tag=16.3.0-debian-12-r6 \
+            --set auth.existingSecret=aicp-api-env \
+            --set auth.secretKeys.adminPasswordKey=POSTGRES_PASSWORD \
+            --set auth.secretKeys.userPasswordKey=POSTGRES_PASSWORD \
+            --values ./k8s/postgres/values-dev.yaml \
+            --wait --timeout=600s
 
 # Install Redis for Development
 helm-redis-dev:
 	helm repo add bitnami https://charts.bitnami.com/bitnami
 	helm repo update
 	helm upgrade --install redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
-			--version $(REDIS_CHART_VERSION) \
-			--namespace $(DEV_NAMESPACE) \
-			--create-namespace \
-			--values ./k8s/redis/values-dev.yaml \
-			--wait --timeout=600s
+            --version $(REDIS_CHART_VERSION) \
+            --namespace $(DEV_NAMESPACE) \
+            --create-namespace \
+            --set image.registry=docker.io \
+            --set image.repository=bitnamilegacy/redis \
+            --set image.tag=7.2.3-debian-11-r1 \
+            --set auth.existingSecret=aicp-api-env \
+            --set auth.existingSecretPasswordKey=REDIS_PASSWORD \
+            --values ./k8s/redis/values-dev.yaml \
+            --wait --timeout=600s
 
 # Install both for Production
 helm-infra-prod: helm-postgres-prod helm-redis-prod
@@ -375,9 +413,12 @@ upgrade-postgres-uat:
 
 upgrade-postgres-prod:
 	helm upgrade postgres-aicp oci://registry-1.docker.io/bitnamicharts/postgresql \
-			--version $(POSTGRES_CHART_VERSION) \
-			--namespace $(PROD_NAMESPACE) \
-			--values ./k8s/postgres/values.yaml
+    --version 15.3.2 \
+    --namespace devplus-aicp \
+    --set image.registry=docker.io \
+    --set image.repository=bitnamilegacy/postgresql \
+    --set image.tag=16.3.0-debian-12-r6 \
+    -f ./k8s/postgres/values.yaml
 
 upgrade-redis-dev:
 	helm upgrade redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
@@ -393,9 +434,12 @@ upgrade-redis-uat:
 
 upgrade-redis-prod:
 	helm upgrade redis-aicp oci://registry-1.docker.io/bitnamicharts/redis \
-			--version $(REDIS_CHART_VERSION) \
-			--namespace $(PROD_NAMESPACE) \
-			--values ./k8s/redis/values-prod.yaml
+					--version $(REDIS_CHART_VERSION) \
+					--namespace $(PROD_NAMESPACE) \
+					--set image.registry=docker.io \
+					--set image.repository=bitnamilegacy/redis \
+					--set image.tag=7.2.3-debian-11-r1 \
+					--values ./k8s/redis/values.yaml
 
 # Cleanup infrastructure
 cleanup-infra-dev:
