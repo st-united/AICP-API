@@ -1,47 +1,55 @@
-auth:
-  enablePostgresUser: true
-  postgresPassword: +c2QWpz6KnPOt045zKhDeA++
-  username: 'postgres'
-  password: +c2QWpz6KnPOt045zKhDeA++
-  database: 'aicp_uat'
+postgresql:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+    tag: '16.3.0-debian-12-r6'
 
-primary:
-  persistence:
-    enabled: true
-    storageClass: 'standard-rwo'
-    size: 5Gi
-    accessModes:
-      - ReadWriteOnce
+  auth:
+    enablePostgresUser: true
+    existingSecret: aicp-api-env
+    secretKeys:
+      adminPasswordKey: POSTGRES_PASSWORD
+      userPasswordKey: POSTGRES_PASSWORD
+    username: postgres
+    database: aicp_uat
 
-  resources:
-    requests:
-      memory: 256Mi
-      cpu: 100m
-    limits:
-      memory: 512Mi
-      cpu: 500m
+  primary:
+    persistence:
+      enabled: true
+      storageClass: 'standard-rwo'
+      size: 5Gi
+      accessModes:
+        - ReadWriteOnce
 
-  securityContext:
-    enabled: true
-    fsGroup: 1001
-    runAsUser: 1001
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
 
-  containerSecurityContext:
-    enabled: true
-    runAsUser: 1001
-    runAsNonRoot: true
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-        - ALL
+    securityContext:
+      enabled: true
+      fsGroup: 1001
+      runAsUser: 1001
+
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+
+service:
+  port: 5432
+  type: ClusterIP
 
 backup:
   enabled: false
-
-metrics:
-  enabled: true
-  serviceMonitor:
-    enabled: false # Usually no Prometheus in uat
 
 networkPolicy:
   enabled: true
