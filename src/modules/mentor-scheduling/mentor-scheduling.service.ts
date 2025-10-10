@@ -524,8 +524,14 @@ export class MentorSchedulingService {
     const cutDuration = Number.isFinite(duration) ? (duration as number) : durationMin;
 
     return await this.prisma.$transaction(async (tx) => {
+      // Ensure mentor exists to avoid foreign key violation
+      const mentorExists = await tx.mentor.findUnique({ where: { id: mentorId } });
+      if (!mentorExists) {
+        throw new NotFoundException('Mentor không tồn tại');
+      }
+
       const schedule = await tx.mentorSchedule.upsert({
-        where: { mentorId_name: { mentorId, name } }, // @@unique([mentorId, name])
+        where: { mentorId_name: { mentorId, name } },
         create: {
           mentorId,
           name,
