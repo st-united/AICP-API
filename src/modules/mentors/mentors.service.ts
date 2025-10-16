@@ -15,6 +15,7 @@ import {
   Prisma,
   SFIALevel,
   TimeSlotBooking,
+  CompetencyDimension,
 } from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
@@ -30,6 +31,8 @@ import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { InterviewShift, Order } from '@Constant/enums';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { GetExamResultDto } from './dto/response/get-exam-result.dto';
+import { ExamServiceCommon } from '@app/common/services/exam.service';
 
 @Injectable()
 export class MentorsService {
@@ -39,7 +42,8 @@ export class MentorsService {
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
     private readonly redisService: RedisService,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly examServiceCommon: ExamServiceCommon
   ) {}
 
   async create(createMentorDto: CreateMentorDto, url: string): Promise<ResponseItem<MentorResponseDto>> {
@@ -630,6 +634,105 @@ export class MentorsService {
     } catch (error) {
       this.logger.error('Error checking user interview request:', error);
       throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
+    }
+  }
+
+  async getExamResultByBooking(mentorBookingId: string, mentorId: string): Promise<ResponseItem<GetExamResultDto>> {
+    try {
+      const mentor = await this.prisma.mentor.findUnique({
+        where: { userId: mentorId },
+        select: { id: true },
+      });
+      if (!mentor) {
+        throw new NotFoundException('Không tìm thấy mentor');
+      }
+
+      const mentorBooking = await this.prisma.mentorBooking.findFirst({
+        where: {
+          id: mentorBookingId,
+          mentorId: mentor.id,
+        },
+        select: {
+          id: true,
+          status: true,
+          interviewRequestId: true,
+        },
+      });
+
+      if (!mentorBooking) {
+        throw new NotFoundException('Không tìm thấy lịch phỏng vấn');
+      }
+
+      const interviewRequest = await this.prisma.interviewRequest.findFirst({
+        where: {
+          id: mentorBooking.interviewRequestId,
+        },
+        select: {
+          id: true,
+          interviewDate: true,
+          timeSlot: true,
+          examId: true,
+        },
+        orderBy: {
+          createdAt: Order.DESC,
+        },
+      });
+
+      if (!interviewRequest) {
+        throw new NotFoundException('Không tìm thấy lịch phỏng vấn');
+      }
+
+      const exam = await this.examServiceCommon.findExamById(interviewRequest.examId);
+      if (!exam) {
+        throw new NotFoundException('Không tìm thấy bài thi');
+      }
+
+      const scores = await this.examServiceCommon.detectPillarScoresByAspect(
+        exam.examPillarSnapshot,
+        exam.examAspectSnapshot,
+        false
+      );
+
+      const elapsedTime = await this.examServiceCommon.calcElapsed(exam.createdAt, exam.updatedAt);
+      let correctCount = 0;
+      let wrongCount = 0;
+      let skippedCount = 0;
+
+      const [examQuestions, userAnswers] = await Promise.all([
+        this.prisma.examSetQuestion.findMany({
+          where: { examSetId: exam.examSet.id },
+          include: { question: { include: { answerOptions: true } } },
+        }),
+        this.prisma.userAnswer.findMany({
+          where: { examId: interviewRequest.examId },
+          include: { selections: true },
+        }),
+      ]);
+
+      const mapped = await this.examServiceCommon.mapQuestionsWithAnswers(examQuestions, userAnswers);
+      correctCount = mapped.correctCount;
+      wrongCount = mapped.wrongCount;
+      skippedCount = mapped.skippedCount;
+
+      const response: GetExamResultDto = {
+        id: exam.id,
+        examSet: exam.examSet,
+        elapsedTime,
+        correctCount,
+        wrongCount,
+        skippedCount,
+        ...scores,
+        level: exam.examLevel.examLevel,
+        sfiaLevel: exam.sfiaLevel,
+        overallScore: Number(exam.overallScore),
+        userInfo: exam.user,
+      };
+
+      return new ResponseItem<GetExamResultDto>(response, 'Lấy kết quả bài thi');
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
     }
   }
 }

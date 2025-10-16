@@ -17,12 +17,16 @@ import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
 import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
+import { ExamServiceCommon } from '@app/common/services/exam.service';
 
 @Injectable()
 export class ExamService {
   private readonly logger = new Logger(ExamService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly examServiceCommon: ExamServiceCommon
+  ) {}
 
   private createExamResponse(examSet: ExamSet, exam: Exam, hasTaken: boolean): ResponseItem<HasTakenExamResponseDto> {
     const response: HasTakenExamResponseDto = {
@@ -189,99 +193,16 @@ export class ExamService {
 
   async getDetailExam(examId: string): Promise<ResponseItem<DetailExamResponseDto>> {
     try {
-      const exam = await this.prisma.exam.findUnique({
-        where: { id: examId },
-        select: {
-          id: true,
-          startedAt: true,
-          sfiaLevel: true,
-          examLevel: {
-            select: {
-              examLevel: true,
-            },
-          },
-          overallScore: true,
-          examStatus: true,
-          createdAt: true,
-          examSet: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          examPillarSnapshot: {
-            select: {
-              pillar: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-              score: true,
-            },
-          },
-          examAspectSnapshot: {
-            select: {
-              aspect: {
-                select: {
-                  id: true,
-                  name: true,
-                  represent: true,
-                  pillarId: true,
-                },
-              },
-              score: true,
-            },
-          },
-        },
-      });
+      const exam = await this.examServiceCommon.findExamById(examId);
 
       if (!exam) throw new NotFoundException('Bài thi không tồn tại');
 
       const { examPillarSnapshot, examAspectSnapshot, overallScore, ...rest } = exam;
 
-      const pillarsWithAspects = examPillarSnapshot.map((pillarSnapshot) => {
-        const pillar = pillarSnapshot.pillar;
-
-        const aspects = examAspectSnapshot
-          .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
-          .map((aspectSnapshot) => ({
-            id: aspectSnapshot.aspect.id,
-            name: aspectSnapshot.aspect.name,
-            represent: aspectSnapshot.aspect.represent,
-            score: Number(aspectSnapshot.score),
-          }));
-
-        return {
-          id: pillar.id,
-          name: pillar.name,
-          score: Number(pillarSnapshot.score),
-          aspects: aspects,
-        };
-      });
-
-      const pillarScores = pillarsWithAspects.reduce(
-        (acc, snapshot) => {
-          const name = snapshot.name.toUpperCase();
-
-          switch (name) {
-            case CompetencyDimension.MINDSET:
-              acc.mindsetScore = snapshot;
-              break;
-            case CompetencyDimension.SKILLSET:
-              acc.skillsetScore = snapshot;
-              break;
-            case CompetencyDimension.TOOLSET:
-              acc.toolsetScore = snapshot;
-              break;
-          }
-          return acc;
-        },
-        {
-          mindsetScore: null,
-          skillsetScore: null,
-          toolsetScore: null,
-        }
+      const pillarScores = await this.examServiceCommon.detectPillarScoresByAspect(
+        examPillarSnapshot,
+        examAspectSnapshot,
+        true
       );
 
       const response: DetailExamResponseDto = {
@@ -430,17 +351,7 @@ export class ExamService {
     }
 
     // Tính thời gian làm bài
-    const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
-    const h = Math.floor(diffMs / 3600000)
-      .toString()
-      .padStart(2, '0');
-    const m = Math.floor((diffMs % 3600000) / 60000)
-      .toString()
-      .padStart(2, '0');
-    const s = Math.floor((diffMs % 60000) / 1000)
-      .toString()
-      .padStart(2, '0');
-    const elapsedTime = `${h}:${m}:${s}`;
+    const elapsedTime = await this.examServiceCommon.calcElapsed(existingExam.createdAt, existingExam.updatedAt);
 
     const userAnswerMap: Record<string, string[]> = {};
     userAnswers.forEach((ua) => {

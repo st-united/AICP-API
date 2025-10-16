@@ -30,6 +30,7 @@ import { CheckInterviewRequestDto } from './dto/request/check-interview-request.
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { GetExamResultDto } from './dto/response/get-exam-result.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -113,5 +114,14 @@ export class MentorsController {
     @Param('examId', ParseUUIDPipe) examId: string
   ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     return await this.mentorsService.checkUserInterviewRequest(examId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('exam-by-booking/:mentorBookingId/result')
+  async getExamResultByBooking(
+    @Param('mentorBookingId', ParseUUIDPipe) mentorBookingId: string,
+    @Req() mentor
+  ): Promise<ResponseItem<GetExamResultDto>> {
+    return await this.mentorsService.getExamResultByBooking(mentorBookingId, mentor.user.userId);
   }
 }
