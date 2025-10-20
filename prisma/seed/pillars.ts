@@ -9,7 +9,7 @@ export async function seedPillars(prisma: PrismaClient, competencyFrameworks: Co
       name: CompetencyDimension.MINDSET,
       description:
         'Psychological and cognitive foundations for AI adoption: ethics, adaptation, innovation mindset, and continuous learning capabilities.',
-      weightWithinDimension: 0.4,
+      weightWithinDimension: 0.55,
       dimension: CompetencyDimension.MINDSET,
       frameworkId: competencyFrameworkMap['5.0'].id,
     },
@@ -17,7 +17,7 @@ export async function seedPillars(prisma: PrismaClient, competencyFrameworks: Co
       name: CompetencyDimension.SKILLSET,
       description:
         'Applied competencies for AI implementation: problem-solving, critical thinking, collaboration, and project execution skills.',
-      weightWithinDimension: 0.35,
+      weightWithinDimension: 0.3,
       dimension: CompetencyDimension.SKILLSET,
       frameworkId: competencyFrameworkMap['5.0'].id,
     },
@@ -25,7 +25,7 @@ export async function seedPillars(prisma: PrismaClient, competencyFrameworks: Co
       name: CompetencyDimension.TOOLSET,
       description:
         'Technical proficiency with AI tools, platforms, and implementation methodologies in production environments.',
-      weightWithinDimension: 0.25,
+      weightWithinDimension: 0.15,
       dimension: CompetencyDimension.TOOLSET,
       frameworkId: competencyFrameworkMap['5.0'].id,
     },

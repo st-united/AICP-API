@@ -18,6 +18,7 @@ import { seedMentorBookings } from './mentorBookings';
 import { seedUserAnswers } from './userAnswers';
 import { seedExamLevels } from './examlevel';
 import { seedInterviewRequest } from './interviewRequest';
+import { seedAspectSuggestion } from './aspectSuggestion';
 
 const prisma = new PrismaClient();
 
@@ -99,6 +100,9 @@ async function main() {
 
   // 18. User Answers
   await seedUserAnswers(prisma, userMap, questions, exams);
+
+  // 19. Aspect Suggestions
+  await seedAspectSuggestion(prisma, aspects);
 
   console.log('✅ Seeding completed.');
 }
