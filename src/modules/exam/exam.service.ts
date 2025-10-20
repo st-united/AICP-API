@@ -18,6 +18,7 @@ import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam
 import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
 import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
 import { ExamServiceCommon } from '@app/common/services/exam.service';
+import { calcElapsed } from '@app/common/utils/examUtils';
 
 @Injectable()
 export class ExamService {
@@ -351,7 +352,7 @@ export class ExamService {
     }
 
     // Tính thời gian làm bài
-    const elapsedTime = await this.examServiceCommon.calcElapsed(existingExam.createdAt, existingExam.updatedAt);
+    const elapsedTime = calcElapsed(existingExam.createdAt, existingExam.updatedAt);
 
     const userAnswerMap: Record<string, string[]> = {};
     userAnswers.forEach((ua) => {

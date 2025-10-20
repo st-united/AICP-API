@@ -47,6 +47,7 @@ model User {
   userPortfolio      Portfolio?             @relation("UserPortfolio")
   verifierPortfolio  Portfolio[]            @relation("VerifierPortfolio")
   userProgress       UserLearningProgress[]
+  aspectEvaluated    AspectEvaluation[]     @relation("AssessorAspectEvaluation")
 }
 
 model Role {
@@ -238,6 +239,9 @@ model CompetencyAspect {
   competencySkill       CompetencySkill[]
   courses               Course[]
   examAspectSnapshot    ExamAspectSnapshot[]
+  suggestions           AspectSuggestion[]
+  evaluationDetails     AspectEvaluationDetail[]
+
 }
 
 model ExamSet {
@@ -342,6 +346,7 @@ model MentorBooking {
   mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
   interviewRequest InterviewRequest? @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
   competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
+  aspectEvaluation  AspectEvaluation?   @relation("MentorBookingToAspectEvaluation")
 }
 
 model InterviewRequest {
@@ -578,6 +583,48 @@ model ExamLevel {
   exams Exam[]
 }
 
+model AspectSuggestion {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  type       SuggestType
+  priority   Int?              @default(0)
+  aspectId   String            @map("aspect_id") @db.Uuid
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  aspect     CompetencyAspect  @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+}
+
+model AspectEvaluation {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mentorBookingId String                   @unique @db.Uuid @map("mentor_booking_id")
+  assessorId      String                   @db.Uuid @map("assessor_id")
+  progress        Decimal                  @db.Decimal(3, 2)
+  isDraft         Boolean                  @default(true) @map("is_draft")
+  completedAt     DateTime?                @map("completed_at")
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+
+  mentorBooking   MentorBooking            @relation("MentorBookingToAspectEvaluation", fields: [mentorBookingId], references: [id])
+  assessor        User                     @relation("AssessorAspectEvaluation", fields: [assessorId], references: [id], onDelete: Cascade)
+  details         AspectEvaluationDetail[]
+}
+
+model AspectEvaluationDetail {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  aspectEvaluationId String             @db.Uuid @map("aspect_evaluation_id")
+  aspectId           String             @db.Uuid @map("aspect_id")
+  score              Decimal?           @db.Decimal(3, 2)
+  note               String?
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  aspectEvaluation   AspectEvaluation   @relation(fields: [aspectEvaluationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  aspect             CompetencyAspect   @relation(fields: [aspectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+
+
 enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_CHOICE
@@ -705,4 +752,9 @@ enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
   FULL
+}
+
+enum SuggestType {
+  MINING_SUGGEST
+  ASSESSMENT_GUIDED
 }
