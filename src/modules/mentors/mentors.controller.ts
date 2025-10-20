@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+  Req,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
@@ -9,6 +21,8 @@ import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto'
 import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -16,6 +30,9 @@ import { CheckInterviewRequestDto } from './dto/request/check-interview-request.
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { GetExamResultDto } from './dto/response/get-exam-result.dto';
+import { AspectExvaluationDto } from './dto/response/aspect-exvaluation.dto';
+import { SubmitAspectExvaluationRequestDto } from './dto/request/submit-aspect-evalution-request.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -34,13 +51,13 @@ export class MentorsController {
 
   @UseGuards(JwtAccessTokenGuard)
   @Post('create-scheduler')
+  @UseGuards(JwtAccessTokenGuard)
   async createScheduler(
     @Req() req,
     @Body() dto: CreateMentorBookingDto
   ): Promise<ResponseItem<MentorBookingResponseDto>> {
     const newBooking = await this.mentorsService.createScheduler(req.user.userId, dto);
     await this.bookingGateway.notifySlotUpdate(dto.examId);
-    this.bookingGateway.emitNewBooking();
     return newBooking;
   }
 
@@ -75,6 +92,20 @@ export class MentorsController {
     return await this.mentorsService.deactivateMentorAccount(id, url);
   }
 
+  @Get()
+  @UseGuards(JwtAccessTokenGuard)
+  async getFilteredBookings(
+    @Req() req: any,
+    @Query() dto: FilterMentorBookingDto
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    return this.mentorsService.getFilteredBookings(dto, req.user.userId);
+  }
+
+  @Post('assign')
+  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    return result;
+  }
   @UseGuards(JwtAccessTokenGuard)
   @Get('check-my-interview-request/:examId')
   @ApiOperation({ summary: 'Check if current user has an interview request' })
@@ -86,21 +117,51 @@ export class MentorsController {
     return await this.mentorsService.checkUserInterviewRequest(examId);
   }
 
-  @Post('assign')
-  async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
-    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
-    await this.bookingGateway.emitNewBooking();
-    return result;
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('exam-by-booking/:mentorBookingId/result')
+  @ApiOperation({ summary: 'Get exam result by mentor booking ID' })
+  @ApiResponse({ status: 200, description: 'Exam result retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Error retrieving exam result' })
+  async getExamResultByBooking(
+    @Param('mentorBookingId', ParseUUIDPipe) mentorBookingId: string,
+    @Req() userCurrent
+  ): Promise<ResponseItem<GetExamResultDto>> {
+    return await this.mentorsService.getExamResultByBooking(mentorBookingId, userCurrent.user.userId);
   }
 
   @UseGuards(JwtAccessTokenGuard)
-  @Post('check-interview-request')
-  @ApiOperation({ summary: 'Check if user has an interview request' })
-  @ApiResponse({ status: 200, description: 'Interview request check completed successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid user ID or error checking interview request' })
-  async checkUserInterviewRequest(
-    @Body() checkInterviewRequestDto: CheckInterviewRequestDto
-  ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
-    return await this.mentorsService.checkUserInterviewRequest(checkInterviewRequestDto.userId);
+  @Post('aspect-evaluation')
+  @ApiOperation({ summary: 'Generate aspect evaluation for a given mentor booking ID' })
+  @ApiResponse({ status: 200, description: 'Aspect evaluation generated successfully' })
+  @ApiResponse({ status: 400, description: 'Error generating aspect evaluation' })
+  async generateAspectEvaluation(
+    @Body('mentorBookingId', ParseUUIDPipe) mentorBookingId: string,
+    @Req() userCurrent
+  ): Promise<ResponseItem<AspectExvaluationDto>> {
+    return await this.mentorsService.generateAspectEvaluation(mentorBookingId, userCurrent.user.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('aspect-evaluation/:evaluationId')
+  @ApiOperation({ summary: 'Get aspect evaluation for a given evaluation ID' })
+  @ApiResponse({ status: 200, description: 'Aspect evaluation retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Error retrieving aspect evaluation' })
+  async getAspectEvaluation(
+    @Param('evaluationId', ParseUUIDPipe) evaluationId: string,
+    @Req() userCurrent
+  ): Promise<ResponseItem<AspectExvaluationDto>> {
+    return await this.mentorsService.getAspectEvaluation(evaluationId, userCurrent.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('aspect-evaluation/:evaluationId/submit')
+  @ApiOperation({ summary: 'Submit aspect evaluation for a given evaluation ID' })
+  @ApiResponse({ status: 200, description: 'Aspect evaluation submitted successfully' })
+  @ApiResponse({ status: 400, description: 'Error submitting aspect evaluation' })
+  async submitAspectEvaluation(
+    @Param('evaluationId', ParseUUIDPipe) evaluationId: string,
+    @Body() request: SubmitAspectExvaluationRequestDto
+  ) {
+    return await this.mentorsService.submitAspectEvaluation(evaluationId, request);
   }
 }
