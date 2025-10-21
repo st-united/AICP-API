@@ -40,3 +40,7 @@ export const concatSanitizedStrings = (firstString: string, secondString: string
 
   return combined;
 };
+
+export const isNullOrEmpty = (str: string | null | undefined): boolean => {
+  return str === null || str === undefined || str.trim() === '';
+};

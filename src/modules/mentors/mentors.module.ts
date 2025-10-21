@@ -12,7 +12,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { BookingModule } from '../booking/booking.module';
 import { ScheduledMentorReminderService } from './mentor-booking-reminder.service';
-
+import { ExamServiceCommon } from '@app/common/services/exam.service';
 @Module({
   imports: [
     PassportModule,
@@ -32,6 +32,13 @@ import { ScheduledMentorReminderService } from './mentor-booking-reminder.servic
     UsersModule,
   ],
   controllers: [MentorsController],
-  providers: [MentorsService, TokenService, EmailService, ConfigService, ScheduledMentorReminderService],
+  providers: [
+    MentorsService,
+    TokenService,
+    EmailService,
+    ConfigService,
+    ScheduledMentorReminderService,
+    ExamServiceCommon,
+  ],
 })
 export class MentorsModule {}
