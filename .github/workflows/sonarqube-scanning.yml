@@ -1,0 +1,40 @@
+name: Sonar Scanning
+
+on:
+  push:
+    branches: ["main", "uat", "develop"]
+  pull_request:
+    branches: ["main", "uat", "develop"]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    env:
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_PROJECT_KEY: aicp-api
+      SONAR_PROJECT_NAME: AICP API
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Ex: v4.1.0 or sha1, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        with:
+          args: >
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            "-Dsonar.projectName=${{ env.SONAR_PROJECT_NAME }}"
+            -Dsonar.exclusions="**/node_modules/**,**/dist/**,**/.git/**,**/docker/**,**/k8s/**"

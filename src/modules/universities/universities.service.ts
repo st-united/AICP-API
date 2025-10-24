@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { University } from '@app/modules/universities/dto/university.dto';
@@ -92,5 +92,63 @@ export class UniversitiesService {
     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
     return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách trường đại học thành công');
+  }
+
+  async createUniversity(newUniversity: University): Promise<University> {
+    const existingByName = await this.prismaService.university.findFirst({
+      where: { name: newUniversity.name },
+    });
+    if (existingByName) {
+      throw new ConflictException(`University with name '${newUniversity.name}' already exists`);
+    }
+
+    const existingByCode = await this.prismaService.university.findFirst({
+      where: { code: newUniversity.code },
+    });
+    if (existingByCode) {
+      throw new ConflictException(`University with code '${newUniversity.code}' already exists`);
+    }
+
+    const university = await this.prismaService.university.create({
+      data: {
+        name: newUniversity.name!,
+        code: newUniversity.code!,
+      },
+    });
+    return university;
+  }
+
+  async updateUniversity(id: string, updateUniversity: University): Promise<University> {
+    const university = await this.prismaService.university.findUnique({ where: { id } });
+    if (!university) {
+      throw new NotFoundException(`University with ID ${id} not found`);
+    }
+
+    if (updateUniversity.name && updateUniversity.name !== university.name) {
+      const existingByName = await this.prismaService.university.findFirst({
+        where: { name: updateUniversity.name, NOT: { id } },
+      });
+      if (existingByName) {
+        throw new ConflictException(`University with name '${updateUniversity.name}' already exists`);
+      }
+    }
+
+    if (updateUniversity.code && updateUniversity.code !== university.code) {
+      const existingByCode = await this.prismaService.university.findFirst({
+        where: { code: updateUniversity.code, NOT: { id } },
+      });
+      if (existingByCode) {
+        throw new ConflictException(`University with code '${updateUniversity.code}' already exists`);
+      }
+    }
+
+    const updatedUniversity = await this.prismaService.university.update({
+      where: { id },
+      data: {
+        name: updateUniversity.name ?? university.name,
+        code: updateUniversity.code ?? university.code,
+      },
+    });
+    return updatedUniversity;
   }
 }
