@@ -8,6 +8,7 @@ import { Roles } from '@app/modules/auth/guards/decorator/roles.decorator';
 import { UserRoleEnum } from '@Constant/enums';
 import { RolesGuard } from '@app/modules/auth/guards/roles.guard';
 import { CreateUniversityDto, UpdateUniversityDto } from '@app/modules/universities/dto/request';
+import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 
 @Controller('universities')
 export class UniversitiesController {
@@ -41,9 +42,22 @@ export class UniversitiesController {
   }
 
   @Post('sync')
-  @ApiOperation({ summary: 'Sync universities data from an external source' })
-  @ApiResponse({ status: 201, description: 'Universities data synced successfully' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAccessTokenGuard, RolesGuard)
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Synchronize universities from external API (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Synchronization result',
+    type: SimpleResponse,
+    example: {
+      data: 200,
+      message: 'Đã đồng bộ thành công: Insert 200 trường đại học mới.',
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden: Admin role required' })
+  @ApiResponse({ status: 401, description: 'Unauthorized: Invalid or missing token' })
   async syncUniversities() {
     return this.universitiesService.syncUniversities();
   }
