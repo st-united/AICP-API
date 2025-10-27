@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsInt, IsString, IsUUID, Min } from 'class-validator';
+import { IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class University {
   @IsUUID()

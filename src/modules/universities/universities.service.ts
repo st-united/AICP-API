@@ -1,11 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '@app/modules/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
 import { Order } from '@Constant/enums';
+import { CreateUniversityDto, UpdateUniversityDto } from '@app/modules/universities/dto/request';
+import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 
 @Injectable()
 export class UniversitiesService {
@@ -15,47 +17,51 @@ export class UniversitiesService {
     private readonly configService: ConfigService
   ) {}
 
-  private readonly logger = new Logger(UniversitiesService.name);
   private readonly UNIVERSITIES_API_URL = this.configService.get<string>('UNIVERSITIES_DATA_URL');
 
-  async syncUniversities() {
-    this.logger.log('Bắt đầu quá trình đồng bộ dữ liệu trường đại học...');
+  async syncUniversities(): Promise<SimpleResponse<number>> {
     try {
       const response = await this.httpService.get(this.UNIVERSITIES_API_URL).toPromise();
-      const universities = response.data.data as University[];
+      const universities: University[] = response.data.data;
 
       if (!universities || universities.length === 0) {
-        this.logger.log('Không có dữ liệu nào từ API để đồng bộ.');
-        return;
+        return new SimpleResponse(0, 'Không có dữ liệu nào từ API để đồng bộ.');
       }
 
       const batchSize = 1000;
-      let successCount = 0;
+      let insertCount = 0;
+
+      const existingUniversities = await this.prismaService.university.findMany({
+        select: { code: true, name: true },
+      });
+      const existingCodes = new Set(existingUniversities.map((u) => u.code));
+      const existingNames = new Set(existingUniversities.map((u) => u.name));
 
       for (let i = 0; i < universities.length; i += batchSize) {
         const batch = universities.slice(i, i + batchSize);
-        this.logger.log(`Đang xử lý lô ${i / batchSize + 1}...`);
 
-        const upsertPromises = batch.map((uni) =>
-          this.prismaService.university.upsert({
-            where: { code: uni.code },
-            update: {
-              name: uni.name,
-            },
-            create: {
+        const newUniversities = batch.filter((uni) => !existingCodes.has(uni.code) && !existingNames.has(uni.name));
+
+        if (newUniversities.length === 0) {
+          continue;
+        }
+
+        const createPromises = newUniversities.map((uni) =>
+          this.prismaService.university.create({
+            data: {
               code: uni.code,
               name: uni.name,
             },
           })
         );
 
-        await this.prismaService.$transaction(upsertPromises);
-        successCount += batch.length;
+        await this.prismaService.$transaction(createPromises);
+        insertCount += newUniversities.length;
       }
 
-      this.logger.log(`Đồng bộ thành công ${successCount} trường đại học!`);
+      return new SimpleResponse(insertCount, `Đã đồng bộ thành công: Insert ${insertCount} trường đại học mới.`);
     } catch (error) {
-      this.logger.error('Đã xảy ra lỗi trong quá trình đồng bộ:', error.stack);
+      return new SimpleResponse(0, `Đã xảy ra lỗi trong quá trình đồng bộ: ${error.message}`);
     }
   }
 
@@ -92,5 +98,58 @@ export class UniversitiesService {
     const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
 
     return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách trường đại học thành công');
+  }
+
+  async createUniversity({ name, code }: CreateUniversityDto): Promise<University> {
+    const existingByName = await this.prismaService.university.findFirst({
+      where: { name },
+    });
+    if (existingByName) {
+      throw new ConflictException(`Trường đại học có tên '${name}' đã tồn tại`);
+    }
+
+    const existingByCode = await this.prismaService.university.findFirst({
+      where: { code },
+    });
+    if (existingByCode) {
+      throw new ConflictException(`Trường đại học có mã '${code}' đã tồn tại`);
+    }
+
+    return this.prismaService.university.create({
+      data: { name, code },
+    });
+  }
+
+  async updateUniversity(id: string, { name, code }: UpdateUniversityDto): Promise<University> {
+    const university = await this.prismaService.university.findUnique({ where: { id } });
+    if (!university) {
+      throw new NotFoundException(`Không tìm thấy trường đại học có ID ${id}`);
+    }
+
+    if (name && name !== university.name) {
+      const existingByName = await this.prismaService.university.findFirst({
+        where: { name, NOT: { id } },
+      });
+      if (existingByName) {
+        throw new ConflictException(`Trường đại học có tên '${name}' đã tồn tại`);
+      }
+    }
+
+    if (code && code !== university.code) {
+      const existingByCode = await this.prismaService.university.findFirst({
+        where: { code, NOT: { id } },
+      });
+      if (existingByCode) {
+        throw new ConflictException(`Trường đại học có mã '${code}' đã tồn tại`);
+      }
+    }
+
+    return this.prismaService.university.update({
+      where: { id },
+      data: {
+        name: name ?? university.name,
+        code: code ?? university.code,
+      },
+    });
   }
 }
