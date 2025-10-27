@@ -1,12 +1,13 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { UniversitiesService } from './universities.service';
+import { UniversitiesService } from '@app/modules/universities/universities.service';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
-import { University } from './dto/university.dto';
-import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
-import { Roles } from '../auth/guards/decorator/roles.decorator';
+import { University } from '@app/modules/universities/dto/university.dto';
+import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
+import { Roles } from '@app/modules/auth/guards/decorator/roles.decorator';
 import { UserRoleEnum } from '@Constant/enums';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RolesGuard } from '@app/modules/auth/guards/roles.guard';
+import { CreateUniversityDto, UpdateUniversityDto } from '@app/modules/universities/dto/request';
 
 @Controller('universities')
 export class UniversitiesController {
@@ -55,7 +56,7 @@ export class UniversitiesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new university (Admin or Super Admin only)' })
   @ApiBody({
-    type: University,
+    type: CreateUniversityDto,
     description: 'University creation data (id is ignored)',
     examples: {
       create: {
@@ -68,7 +69,7 @@ export class UniversitiesController {
   @ApiResponse({ status: 403, description: 'Forbidden: Admin or Super Admin role required' })
   @ApiResponse({ status: 401, description: 'Unauthorized: Invalid or missing token' })
   @ApiResponse({ status: 409, description: 'Conflict: University name or code already exists' })
-  async create(@Body() newUniversity: University): Promise<University> {
+  async create(@Body() newUniversity: CreateUniversityDto): Promise<University> {
     return this.universitiesService.createUniversity(newUniversity);
   }
 
@@ -80,7 +81,7 @@ export class UniversitiesController {
   @ApiOperation({ summary: 'Update an existing university (Admin or Super Admin only)' })
   @ApiParam({ name: 'id', description: 'University ID', type: String })
   @ApiBody({
-    type: University,
+    type: CreateUniversityDto,
     description: 'University update data (partial fields allowed)',
     examples: {
       update: {
@@ -93,7 +94,7 @@ export class UniversitiesController {
   @ApiResponse({ status: 403, description: 'Forbidden: Admin role required' })
   @ApiResponse({ status: 401, description: 'Unauthorized: Invalid or missing token' })
   @ApiResponse({ status: 409, description: 'Conflict: University name or code already exists' })
-  async update(@Param('id') id: string, @Body() updateUniversityDto: University): Promise<University> {
+  async update(@Param('id') id: string, @Body() updateUniversityDto: UpdateUniversityDto): Promise<University> {
     return this.universitiesService.updateUniversity(id, updateUniversityDto);
   }
 }
