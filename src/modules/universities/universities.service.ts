@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
 import { Order } from '@Constant/enums';
 import { CreateUniversityDto, UpdateUniversityDto } from '@app/modules/universities/dto/request';
+import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 
 @Injectable()
 export class UniversitiesService {
@@ -16,18 +17,15 @@ export class UniversitiesService {
     private readonly configService: ConfigService
   ) {}
 
-  private readonly logger = new Logger(UniversitiesService.name);
   private readonly UNIVERSITIES_API_URL = this.configService.get<string>('UNIVERSITIES_DATA_URL');
 
-  async syncUniversities(): Promise<void> {
-    this.logger.log('Bắt đầu quá trình đồng bộ dữ liệu trường đại học...');
+  async syncUniversities(): Promise<SimpleResponse<number>> {
     try {
       const response = await this.httpService.get(this.UNIVERSITIES_API_URL).toPromise();
       const universities: University[] = response.data.data;
 
       if (!universities || universities.length === 0) {
-        this.logger.log('Không có dữ liệu nào từ API để đồng bộ.');
-        return;
+        return new SimpleResponse(0, 'Không có dữ liệu nào từ API để đồng bộ.');
       }
 
       const batchSize = 1000;
@@ -41,12 +39,10 @@ export class UniversitiesService {
 
       for (let i = 0; i < universities.length; i += batchSize) {
         const batch = universities.slice(i, i + batchSize);
-        this.logger.log(`Đang xử lý lô ${i / batchSize + 1} với ${batch.length} trường...`);
 
         const newUniversities = batch.filter((uni) => !existingCodes.has(uni.code) && !existingNames.has(uni.name));
 
         if (newUniversities.length === 0) {
-          this.logger.log(`Lô này không có trường mới nào để insert.`);
           continue;
         }
 
@@ -61,12 +57,11 @@ export class UniversitiesService {
 
         await this.prismaService.$transaction(createPromises);
         insertCount += newUniversities.length;
-        this.logger.log(`Đã insert ${newUniversities.length} trường trong lô ${i / batchSize + 1}`);
       }
 
-      this.logger.log(`Đồng bộ thành công: Đã insert ${insertCount} trường đại học mới!`);
+      return new SimpleResponse(insertCount, `Đã đồng bộ thành công: Insert ${insertCount} trường đại học mới.`);
     } catch (error) {
-      this.logger.error('Đã xảy ra lỗi trong quá trình đồng bộ:', error.stack);
+      return new SimpleResponse(0, `Đã xảy ra lỗi trong quá trình đồng bộ: ${error.message}`);
     }
   }
 
@@ -110,14 +105,14 @@ export class UniversitiesService {
       where: { name },
     });
     if (existingByName) {
-      throw new ConflictException(`University with name '${name}' already exists`);
+      throw new ConflictException(`Trường đại học có tên '${name}' đã tồn tại`);
     }
 
     const existingByCode = await this.prismaService.university.findFirst({
       where: { code },
     });
     if (existingByCode) {
-      throw new ConflictException(`University with code '${code}' already exists`);
+      throw new ConflictException(`Trường đại học có mã '${code}' đã tồn tại`);
     }
 
     return this.prismaService.university.create({
@@ -128,7 +123,7 @@ export class UniversitiesService {
   async updateUniversity(id: string, { name, code }: UpdateUniversityDto): Promise<University> {
     const university = await this.prismaService.university.findUnique({ where: { id } });
     if (!university) {
-      throw new NotFoundException(`University with ID ${id} not found`);
+      throw new NotFoundException(`Không tìm thấy trường đại học có ID ${id}`);
     }
 
     if (name && name !== university.name) {
@@ -136,7 +131,7 @@ export class UniversitiesService {
         where: { name, NOT: { id } },
       });
       if (existingByName) {
-        throw new ConflictException(`University with name '${name}' already exists`);
+        throw new ConflictException(`Trường đại học có tên '${name}' đã tồn tại`);
       }
     }
 
@@ -145,7 +140,7 @@ export class UniversitiesService {
         where: { code, NOT: { id } },
       });
       if (existingByCode) {
-        throw new ConflictException(`University with code '${code}' already exists`);
+        throw new ConflictException(`Trường đại học có mã '${code}' đã tồn tại`);
       }
     }
 
