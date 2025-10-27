@@ -1,10 +1,11 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@app/modules/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { PageMetaDto, PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
+import { CreateUniversityDto, UpdateUniversityDto } from '@app/modules/universities/dto/request';
 
 @Injectable()
 export class UniversitiesService {
@@ -93,7 +94,7 @@ export class UniversitiesService {
     return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách trường đại học thành công');
   }
 
-  async createUniversity(newUniversity: University): Promise<University> {
+  async createUniversity(newUniversity: CreateUniversityDto): Promise<University> {
     const existingByName = await this.prismaService.university.findFirst({
       where: { name: newUniversity.name },
     });
@@ -117,7 +118,7 @@ export class UniversitiesService {
     return university;
   }
 
-  async updateUniversity(id: string, updateUniversity: University): Promise<University> {
+  async updateUniversity(id: string, updateUniversity: UpdateUniversityDto): Promise<University> {
     const university = await this.prismaService.university.findUnique({ where: { id } });
     if (!university) {
       throw new NotFoundException(`University with ID ${id} not found`);
