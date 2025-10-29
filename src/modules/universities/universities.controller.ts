@@ -1,7 +1,19 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { UniversitiesService } from '@app/modules/universities/universities.service';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
+import { PageOptionsDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { University } from '@app/modules/universities/dto/university.dto';
 import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
 import { Roles } from '@app/modules/auth/guards/decorator/roles.decorator';
@@ -13,6 +25,15 @@ import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
 @Controller('universities')
 export class UniversitiesController {
   constructor(private readonly universitiesService: UniversitiesService) {}
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get university by ID' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Thành công' })
+  @ApiResponse({ status: 404, description: 'Trường đại học không tồn tại' })
+  async getUniversity(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string): Promise<ResponseItem<University>> {
+    return this.universitiesService.getUniversity(id);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get all universities with optional search and pagination' })
