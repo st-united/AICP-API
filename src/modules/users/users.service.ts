@@ -41,7 +41,7 @@ import {
   validateDeletedFiles,
 } from '@app/validations/portfolio-validation';
 import { Response } from 'express';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 
 @Injectable()
