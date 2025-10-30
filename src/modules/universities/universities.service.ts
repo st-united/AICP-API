@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { University } from '@app/modules/universities/dto/university.dto';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { PageMetaDto, PageOptionsDto, ResponsePaginate } from '@app/common/dtos';
+import { PageMetaDto, PageOptionsDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { Order } from '@Constant/enums';
 import { CreateUniversityDto, UpdateUniversityDto } from '@app/modules/universities/dto/request';
 import { SimpleResponse } from '@app/common/dtos/base-response-item.dto';
@@ -151,5 +151,18 @@ export class UniversitiesService {
         code: code ?? university.code,
       },
     });
+  }
+
+  async getUniversity(id: string): Promise<ResponseItem<University>> {
+    const university = await this.prismaService.university.findUnique({
+      where: { id },
+      select: { id: true, code: true, name: true },
+    });
+
+    if (!university) {
+      throw new NotFoundException('Trường đại học không tồn tại');
+    }
+
+    return new ResponseItem(university, 'Lấy thông tin trường đại học thành công');
   }
 }
