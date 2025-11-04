@@ -43,6 +43,7 @@ import {
 import { Response } from 'express';
 import sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
+import { calculateProfileCompleted } from '@app/helpers/checkProfileCompleted';
 
 @Injectable()
 export class UsersService {
@@ -309,7 +310,9 @@ export class UsersService {
         : null,
     };
 
-    return new ResponseItem(mappedUser, 'Thành công', ProfileDto);
+    const profileCompleted = calculateProfileCompleted(mappedUser);
+
+    return new ResponseItem({ ...mappedUser, profileCompleted }, 'Thành công', ProfileDto);
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
