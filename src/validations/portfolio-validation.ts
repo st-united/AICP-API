@@ -141,13 +141,11 @@ export const validatePortfolioRequest = (
 ): void => {
   const hasFiles = (certificateFiles?.length || 0) + (experienceFiles?.length || 0) > 0;
   const hasDeletions = (deletedCertifications?.length || 0) + (deletedExperiences?.length || 0) > 0;
-  const hasUrlUpdates = linkedInUrl !== undefined || githubUrl !== undefined || portfolioUrl !== undefined;
-  const hasTextUpdates = developmentFocusAnswer !== undefined;
+  const hasUrl = linkedInUrl !== undefined || githubUrl !== undefined || portfolioUrl !== undefined;
+  const hasText = developmentFocusAnswer !== undefined;
 
-  if (!hasFiles && !hasDeletions && !hasUrlUpdates && !hasTextUpdates && isStudent === undefined) {
-    throw new BadRequestException(
-      'Yêu cầu phải chứa ít nhất một thay đổi: file mới, xóa file, cập nhật URL, hoặc cập nhật text'
-    );
+  if (!hasFiles && !hasDeletions && !hasUrl && !hasText && isStudent === undefined) {
+    throw new BadRequestException('Yêu cầu điền thông tin đầy đủ vào các trường');
   }
 };
 
