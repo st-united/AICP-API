@@ -7,6 +7,9 @@ import { Prisma } from '@prisma/client';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { UserLearningProgressResponseDto } from './dto/response/user-learning-progress-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { PaginatedSearchCourseResponseDto } from './dto/response/paginated-search-course-response.dto';
+import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
+import { title } from 'process';
 
 @Injectable()
 export class CoursesService {
@@ -131,5 +134,53 @@ export class CoursesService {
       this.logger.error('Error getting course by id:', error);
       throw new BadRequestException('Lỗi khi lấy thông tin khóa học');
     }
+  }
+
+  async searchCoursesPaining(
+    request: PaginatedSearchCourseDto
+  ): Promise<ResponseItem<PaginatedSearchCourseResponseDto>> {
+    const { searchText, page, limit, domains, status } = request;
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const take = Number(limit);
+
+    const filters: any = {};
+
+    if (searchText !== undefined) {
+      filters.title = { contains: searchText, mode: 'insensitive' };
+    }
+
+    if (domains !== undefined && domains.length > 0) {
+      filters.domainId = {
+        in: domains,
+      };
+    }
+
+    if (status !== undefined) {
+      filters.isActive = status;
+    }
+
+    const total = await this.prisma.course.count({ where: filters });
+    const courses = await this.prisma.course.findMany({
+      where: filters,
+      take,
+      skip,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const courseDtos = plainToInstance(CourseResponseDto, courses, {
+      excludeExtraneousValues: true,
+    });
+
+    return new ResponseItem<PaginatedSearchCourseResponseDto>(
+      {
+        data: courseDtos,
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
+      },
+      'Tim kiếm khóa học thành công'
+    );
   }
 }

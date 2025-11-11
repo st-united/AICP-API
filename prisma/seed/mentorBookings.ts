@@ -55,6 +55,13 @@ export async function seedMentorBookings(
 
       if (!userId || !examId) continue;
 
+      const exitsInterviewRequest = await prisma.interviewRequest.findFirst({
+        where: {
+          examId,
+        },
+      });
+
+      if (exitsInterviewRequest) continue;
       // 1. Tạo InterviewRequest
       const interviewRequest = await prisma.interviewRequest.create({
         data: {
