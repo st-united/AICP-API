@@ -33,4 +33,7 @@ export class CourseResponseDto {
 
   @Expose()
   isRegistered: boolean;
+
+  @Expose()
+  isActive?: boolean;
 }
