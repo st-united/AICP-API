@@ -1,13 +1,12 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { CourseResponseDto } from './dto/response/course-response.dto';
 import { Prisma } from '@prisma/client';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { UserLearningProgressResponseDto } from './dto/response/user-learning-progress-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { PaginatedSearchCourseResponseDto } from './dto/response/paginated-search-course-response.dto';
 import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
 import { title } from 'process';
 
@@ -136,51 +135,44 @@ export class CoursesService {
     }
   }
 
-  async searchCoursesPaining(
-    request: PaginatedSearchCourseDto
-  ): Promise<ResponseItem<PaginatedSearchCourseResponseDto>> {
-    const { searchText, page, limit, domains, status } = request;
+  async searchCoursesPaining(request: PaginatedSearchCourseDto): Promise<ResponsePaginate<CourseResponseDto>> {
+    const { search, domains, status } = request;
 
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+    const where: Prisma.CourseWhereInput = {
+      ...(search && { title: { contains: search, mode: 'insensitive' } }),
+      ...(domains && { domainId: { in: domains } }),
+      ...(status && { isActive: status }),
+    };
 
-    const filters: any = {};
+    const [result, total] = await this.prisma.$transaction([
+      this.prisma.course.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          overview: true,
+          description: true,
+          courseInformation: true,
+          contactInformation: true,
+          applicableObjects: true,
+          provider: true,
+          url: true,
+          linkImage: true,
+          isActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: request.take,
+        skip: request.skip,
+      }),
+      this.prisma.course.count({ where }),
+    ]);
 
-    if (searchText !== undefined) {
-      filters.title = { contains: searchText, mode: 'insensitive' };
-    }
-
-    if (domains !== undefined && domains.length > 0) {
-      filters.domainId = {
-        in: domains,
-      };
-    }
-
-    if (status !== undefined) {
-      filters.isActive = status;
-    }
-
-    const total = await this.prisma.course.count({ where: filters });
-    const courses = await this.prisma.course.findMany({
-      where: filters,
-      take,
-      skip,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const courseDtos = plainToInstance(CourseResponseDto, courses, {
+    const courseDtos = plainToInstance(CourseResponseDto, result, {
       excludeExtraneousValues: true,
     });
 
-    return new ResponseItem<PaginatedSearchCourseResponseDto>(
-      {
-        data: courseDtos,
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / Number(limit)),
-      },
-      'Tim kiếm khóa học thành công'
-    );
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
+
+    return new ResponsePaginate(courseDtos, pageMetaDto, 'Tim kiếm khóa học thành công');
   }
 }

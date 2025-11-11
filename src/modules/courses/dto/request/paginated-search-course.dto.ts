@@ -1,19 +1,8 @@
+import { PageOptionsDto } from '@app/common/dtos';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString, IsNumberString, IsArray, IsBoolean } from 'class-validator';
 
-export class PaginatedSearchCourseDto {
-  @IsOptional()
-  @IsNumberString()
-  page?: string;
-
-  @IsOptional()
-  @IsNumberString()
-  limit?: string;
-
-  @IsOptional()
-  @IsString()
-  searchText?: string;
-
+export class PaginatedSearchCourseDto extends PageOptionsDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
