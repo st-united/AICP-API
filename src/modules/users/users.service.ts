@@ -43,6 +43,8 @@ import {
 import { Response } from 'express';
 import * as sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
+import { CurrentUserRankingDto, RankingUserDto } from './dto/ranking-user.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class UsersService {
@@ -54,6 +56,10 @@ export class UsersService {
     private readonly googleCloudStorageService: GoogleCloudStorageService,
     private readonly redisService: RedisService
   ) {}
+
+  private readonly TOP_100_KEY = 'ranking:top100';
+  private readonly TOTAL_USERS_KEY = 'ranking:totalUsers';
+  private readonly CACHE_TTL_SECONDS = 300;
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
     const emailExisted = await this.prisma.user.findUnique({
@@ -791,5 +797,98 @@ export class UsersService {
       },
     });
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async handleRankingRefresh() {
+    try {
+      await this.refreshRankingData();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  private async refreshRankingData() {
+    const [users, totalUsers] = await Promise.all([
+      this.prisma.user.findMany({
+        take: 100,
+        select: { id: true, fullName: true, avatarUrl: true },
+      }),
+      this.prisma.user.count({
+        where: {
+          roles: {
+            some: {
+              role: {
+                name: UserRoleEnum.USER,
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    // Fake score và rank
+    const usersWithFakeScore = users.map((u) => ({
+      ...u,
+      score: Math.floor(Math.random() * 1000) + 100,
+    }));
+
+    const sorted = usersWithFakeScore.sort((a, b) => b.score - a.score);
+
+    const topRanking: RankingUserDto[] = sorted.map((u, idx) => ({
+      rank: idx + 1,
+      ...u,
+    }));
+
+    await Promise.all([
+      this.redisService.setValue(this.TOP_100_KEY, JSON.stringify(topRanking), this.CACHE_TTL_SECONDS),
+      this.redisService.setValue(this.TOTAL_USERS_KEY, totalUsers.toString(), this.CACHE_TTL_SECONDS),
+    ]);
+
+    return { topRanking, totalUsers };
+  }
+
+  async getRanking(currentUserId: string) {
+    try {
+      const [cachedTop100, cachedTotal] = await Promise.all([
+        this.redisService.getValue(this.TOP_100_KEY),
+        this.redisService.getValue(this.TOTAL_USERS_KEY),
+      ]);
+
+      let topRanking: RankingUserDto[];
+      let totalUsers: number;
+
+      if (cachedTop100 && cachedTotal) {
+        topRanking = JSON.parse(cachedTop100);
+        totalUsers = parseInt(cachedTotal, 10);
+      } else {
+        const result = await this.refreshRankingData();
+        topRanking = result.topRanking;
+        totalUsers = result.totalUsers;
+      }
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: currentUserId },
+        select: { id: true, fullName: true, avatarUrl: true },
+      });
+
+      if (!user) {
+        return { totalUsers, topRanking, currentUser: null };
+      }
+
+      const fakeScore = Math.floor(Math.random() * 1000) + 100;
+
+      const fakeRank = Math.floor(Math.random() * totalUsers) + 1;
+
+      const currentUser: CurrentUserRankingDto = {
+        userId: user.id,
+        rank: fakeRank,
+        score: fakeScore,
+      };
+
+      return { totalUsers, topRanking, currentUser };
+    } catch (error) {
+      throw error;
+    }
   }
 }
