@@ -1,18 +1,13 @@
 import { ProfileDto } from '@UsersModule/dto/profile.dto';
 
-export function calculateProfileCompleted(user: Partial<ProfileDto>): boolean {
-  const phone = (user.phoneNumber || '').trim();
-  if (!phone) return false;
-
-  if (!user.zaloVerified) return false;
-
+export const calculateProfileCompleted = (user: Partial<ProfileDto>): boolean => {
+  const phone = user.phoneNumber?.trim();
+  const verified = user.zaloVerified === true;
   const hasJob = Array.isArray(user.job) && user.job.length > 0;
 
-  if (user.isStudent) {
-    const hasUniversity = !!user.university;
-    const hasStudentCode = !!(user.studentCode || '').trim();
-    return hasJob && hasUniversity && hasStudentCode;
-  }
+  if (!phone || !verified || !hasJob) return false;
 
-  return false;
-}
+  if (user.isStudent === true) return !!user.university && !!user.studentCode?.trim();
+
+  return user.isStudent === false;
+};
