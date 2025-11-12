@@ -1,10 +1,12 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Delete,
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Query,
   Req,
   Res,
@@ -22,6 +24,7 @@ import * as dayjs from 'dayjs';
 import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
+import { UpdateTestTimeDto } from './dto/request/update-exam.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -157,5 +160,10 @@ export class ExamController {
     @Req() req
   ): Promise<ResponseItem<ExamWithResultDto>> {
     return this.examService.getExamWithResult(id, req.user.userId);
+  }
+
+  @Patch('update-test-time/:examId')
+  updateTestTime(@Param('examId', ParseUUIDPipe) examId: string, @Body() updateTestTimeDto: UpdateTestTimeDto) {
+    return this.examService.updateTestTime(examId, updateTestTimeDto);
   }
 }
