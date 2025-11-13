@@ -141,7 +141,7 @@ export class CoursesService {
     const where: Prisma.CourseWhereInput = {
       ...(search && { title: { contains: search, mode: 'insensitive' } }),
       ...(domains && { domainId: { in: domains } }),
-      ...(status && { isActive: status }),
+      isActive: status,
     };
 
     const [result, total] = await this.prisma.$transaction([
