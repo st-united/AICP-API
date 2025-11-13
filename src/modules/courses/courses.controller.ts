@@ -5,6 +5,7 @@ import { CourseResponseDto } from './dto/response/course-response.dto';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
 @Controller('courses')
@@ -27,6 +28,11 @@ export class CoursesController {
   async findAll(@Req() req: any, @Query('excludeId') excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
     const userId = req.user.userId;
     return this.coursesService.findAll(userId, excludeId);
+  }
+
+  @Get('/paging')
+  async searchCoursesPaining(@Query() request: PaginatedSearchCourseDto) {
+    return this.coursesService.searchCoursesPaining(request);
   }
 
   @Get(':id')
