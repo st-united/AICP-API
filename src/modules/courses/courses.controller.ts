@@ -12,6 +12,11 @@ import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
+  @Get('paging')
+  async searchCoursesPaining(@Query() request: PaginatedSearchCourseDto) {
+    return this.coursesService.searchCoursesPaining(request);
+  }
+
   @Post(':id/register')
   registerCourse(@Param('id', ParseUUIDPipe) courseId: string, @Req() req: any) {
     const userId = req.user.userId;
@@ -28,11 +33,6 @@ export class CoursesController {
   async findAll(@Req() req: any, @Query('excludeId') excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
     const userId = req.user.userId;
     return this.coursesService.findAll(userId, excludeId);
-  }
-
-  @Get('/paging')
-  async searchCoursesPaining(@Query() request: PaginatedSearchCourseDto) {
-    return this.coursesService.searchCoursesPaining(request);
   }
 
   @Get(':id')
