@@ -12,6 +12,23 @@ import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
+  @Get('paging')
+  async searchCoursesPaining(@Query() request: PaginatedSearchCourseDto) {
+    return this.coursesService.searchCoursesPaining(request);
+  }
+
+  @Get()
+  async findAll(@Req() req: any, @Query('excludeId') excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
+    const userId = req.user.userId;
+    return this.coursesService.findAll(userId, excludeId);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any): Promise<ResponseItem<CourseResponseDto>> {
+    const userId = req.user.userId;
+    return this.coursesService.findOne(id, userId);
+  }
+
   @Post(':id/register')
   registerCourse(@Param('id', ParseUUIDPipe) courseId: string, @Req() req: any) {
     const userId = req.user.userId;
@@ -22,22 +39,5 @@ export class CoursesController {
     };
 
     return this.coursesService.registerCourse(dto);
-  }
-
-  @Get()
-  async findAll(@Req() req: any, @Query('excludeId') excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
-    const userId = req.user.userId;
-    return this.coursesService.findAll(userId, excludeId);
-  }
-
-  @Get('/paging')
-  async searchCoursesPaining(@Query() request: PaginatedSearchCourseDto) {
-    return this.coursesService.searchCoursesPaining(request);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any): Promise<ResponseItem<CourseResponseDto>> {
-    const userId = req.user.userId;
-    return this.coursesService.findOne(id, userId);
   }
 }

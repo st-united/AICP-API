@@ -1,6 +1,6 @@
 import { PageOptionsDto } from '@app/common/dtos';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, IsNumberString, IsArray, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsArray } from 'class-validator';
 
 export class PaginatedSearchCourseDto extends PageOptionsDto {
   @IsOptional()
@@ -13,7 +13,6 @@ export class PaginatedSearchCourseDto extends PageOptionsDto {
   domains?: string[];
 
   @IsOptional()
-  // @IsBoolean()
   @Transform(({ value }) => {
     if (value === 'true') return true;
     if (value === 'false') return false;
