@@ -20,7 +20,7 @@ import { CreateCourseDto } from './dto/request/create-course.dto';
 import { pathNameCommon } from '@Constant/url';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
-import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
+import { GoogleCloudStorageService } from '@app/modules/google-cloud/google-cloud-storage.service';
 
 @Injectable()
 export class CoursesService {
@@ -192,8 +192,8 @@ export class CoursesService {
   }
 
   private async uploadThumbnailImage(thumbnailUrl: Express.Multer.File): Promise<string> {
-    const destPath = pathNameCommon('courses', `${uuidv4()}-${thumbnailUrl.originalname}`);
     try {
+      const destPath = pathNameCommon('courses', `${uuidv4()}-${thumbnailUrl.originalname}`);
       const uploadedUrl = await this.googleCloudStorageService.uploadFile(thumbnailUrl, destPath);
       if (thumbnailUrl.path && fs.existsSync(thumbnailUrl.path)) fs.unlinkSync(thumbnailUrl.path);
       return uploadedUrl;
@@ -206,19 +206,18 @@ export class CoursesService {
 
   async createCourse(request: CreateCourseDto): Promise<ResponseItem<CourseResponseDto>> {
     try {
-      const thumbnailUrl = this.uploadThumbnailImage(request.thumbnailImage);
-      const courseData: Omit<Prisma.CourseCreateInput, 'id' | 'isActive' | 'provider' | 'domain' | 'competencyAspect'> =
-        {
-          title: request.title,
-          overview: request.overview,
-          description: request.description,
-          courseInformation: request.courseInformation,
-          contactInformation: request.contactInformation,
-          applicableObjects: request.applicableObjects,
-          linkImage: await thumbnailUrl,
-          courseType: request.courseType.toString(),
-          durationHours: request.durationHours,
-        };
+      const thumbnailUrl = await this.uploadThumbnailImage(request.thumbnailImage);
+      const courseData: Omit<Prisma.CourseCreateInput, 'id' | 'isActive' | 'provider' | 'domain'> = {
+        title: request.title,
+        overview: request.overview,
+        description: request.description,
+        courseInformation: request.courseInformation,
+        contactInformation: request.contactInformation,
+        applicableObjects: request.applicableObjects,
+        linkImage: thumbnailUrl,
+        courseType: request.courseType.toString(),
+        durationHours: request.durationHours,
+      };
 
       const newCourse = await this.prisma.course.create({
         data: {
@@ -252,12 +251,13 @@ export class CoursesService {
         skipDuplicates: true,
       });
 
-      const courseDto = plainToInstance(CourseResponseDto, newCourse, {
-        excludeExtraneousValues: true,
-      });
-      return new ResponseItem(courseDto, 'Thêm mới chương trình học thành công');
+      return new ResponseItem(
+        plainToInstance(CourseResponseDto, newCourse, {
+          excludeExtraneousValues: true,
+        }),
+        'Thêm mới chương trình học thành công'
+      );
     } catch (error) {
-      this.logger.error('Lỗi khi tạo mới chương trình học:', error);
       throw new BadRequestException('Lỗi khi tạo mới chương trình học');
     }
   }

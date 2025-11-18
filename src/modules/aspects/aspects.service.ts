@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '@app/modules/prisma/prisma.service';
+import { AspectDto } from '@app/modules/aspects/dto/response/aspect.dto';
 
 @Injectable()
 export class AspectsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(): Promise<AspectDto[]> {
     return await this.prisma.competencyAspect.findMany({
       select: {
         id: true,
