@@ -11,18 +11,18 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { CoursesService } from './courses.service';
+import { CoursesService } from '@app/modules/courses/courses.service';
 import { ResponseItem } from '@app/common/dtos';
-import { CourseResponseDto } from './dto/response/course-response.dto';
-import { RegisterCourseDto } from './dto/request/register-course.dto';
-import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { CourseResponseDto } from '@app/modules/courses/dto/response/course-response.dto';
+import { RegisterCourseDto } from '@app/modules/courses/dto/request/register-course.dto';
+import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
-import { Roles } from '../auth/guards/decorator/roles.decorator';
+import { Roles } from '@app/modules/auth/guards/decorator/roles.decorator';
 import { UserRoleEnum } from '@Constant/enums';
-import { CreateCourseDto } from './dto/request/create-course.dto';
+import { CreateCourseDto } from '@app/modules/courses/dto/request/create-course.dto';
 import { VALIDATION_THUMB_IMAGE } from '@app/validations';
 import { SFIALevel } from '@prisma/client';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { RolesGuard } from '@app/modules/auth/guards/roles.guard';
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard, RolesGuard)
 @Controller('courses')
