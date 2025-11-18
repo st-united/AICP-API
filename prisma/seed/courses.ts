@@ -1,7 +1,7 @@
 import { PrismaClient, CompetencyAspect, Domain, SFIALevel } from '@prisma/client';
 
 export async function seedCourses(prisma: PrismaClient, categories: CompetencyAspect[], domains: Domain[]) {
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.name, c]));
+  // const categoryMap = Object.fromEntries(categories.map((c) => [c.name, c]));
   const domainMap = Object.fromEntries(domains.map((d) => [d.name, d]));
 
   const coursesData = [
@@ -427,7 +427,7 @@ export async function seedCourses(prisma: PrismaClient, categories: CompetencyAs
       provider: courseData.provider,
       url: courseData.url || null,
       linkImage: courseData.linkImage || null,
-      aspectId: categoryMap[courseData.category].id,
+      // aspectId: categoryMap[courseData.category].id,
       domainId: courseData.domain ? domainMap[courseData.domain].id : null,
       sfiaLevels: courseData.sfiaLevels ?? [],
     })),

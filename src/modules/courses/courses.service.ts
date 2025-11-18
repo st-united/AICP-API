@@ -1,4 +1,11 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  HttpException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { ResponseItem } from '@app/common/dtos';
@@ -7,12 +14,20 @@ import { Prisma } from '@prisma/client';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { UserLearningProgressResponseDto } from './dto/response/user-learning-progress-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { CreateCourseDto } from './dto/request/create-course.dto';
+import { pathNameCommon } from '@Constant/url';
+import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import { GoogleCloudStorageService } from '../google-cloud/google-cloud-storage.service';
 
 @Injectable()
 export class CoursesService {
   private readonly logger = new Logger(CoursesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly googleCloudStorageService: GoogleCloudStorageService
+  ) {}
 
   async registerCourse(dto: RegisterCourseDto): Promise<ResponseItem<UserLearningProgressResponseDto>> {
     const { userId, courseId } = dto;
@@ -130,6 +145,77 @@ export class CoursesService {
 
       this.logger.error('Error getting course by id:', error);
       throw new BadRequestException('Lỗi khi lấy thông tin khóa học');
+    }
+  }
+
+  private async uploadThumbnailImage(thumbnailUrl: Express.Multer.File): Promise<string> {
+    const destPath = pathNameCommon('courses', `${uuidv4()}-${thumbnailUrl.originalname}`);
+    try {
+      const uploadedUrl = await this.googleCloudStorageService.uploadFile(thumbnailUrl, destPath);
+      if (thumbnailUrl.path && fs.existsSync(thumbnailUrl.path)) fs.unlinkSync(thumbnailUrl.path);
+      return uploadedUrl;
+    } catch (error) {
+      if (thumbnailUrl.path && fs.existsSync(thumbnailUrl.path)) fs.unlinkSync(thumbnailUrl.path);
+      if (error instanceof HttpException) throw error;
+      throw new BadRequestException(`Lỗi upload file ${thumbnailUrl.originalname}: ${error.message}`);
+    }
+  }
+
+  async createCourse(request: CreateCourseDto): Promise<ResponseItem<CourseResponseDto>> {
+    try {
+      const thumbnailUrl = this.uploadThumbnailImage(request.thumbnailImage);
+      const courseData: Omit<Prisma.CourseCreateInput, 'id' | 'isActive' | 'provider' | 'domain' | 'competencyAspect'> =
+        {
+          title: request.title,
+          overview: request.overview,
+          description: request.description,
+          courseInformation: request.courseInformation,
+          contactInformation: request.contactInformation,
+          applicableObjects: request.applicableObjects,
+          linkImage: await thumbnailUrl,
+          courseType: request.courseType.toString(),
+          durationHours: request.durationHours,
+        };
+
+      const newCourse = await this.prisma.course.create({
+        data: {
+          ...courseData,
+          isActive: true,
+          provider: 'Dev Plus',
+          domain: { connect: { id: request.domain } },
+          sfiaLevels: { set: request.sfiaLevels },
+        },
+        select: {
+          id: true,
+          title: true,
+          overview: true,
+          description: true,
+          courseInformation: true,
+          contactInformation: true,
+          applicableObjects: true,
+          linkImage: true,
+          courseType: true,
+          durationHours: true,
+          isActive: true,
+          provider: true,
+        },
+      });
+
+      await this.prisma.courseAspect.createMany({
+        data: request.competencyAspects.map((aspectId) => ({
+          courseId: newCourse.id,
+          aspectId,
+        })),
+        skipDuplicates: true,
+      });
+
+      const courseDto = plainToInstance(CourseResponseDto, newCourse, {
+        excludeExtraneousValues: true,
+      });
+      return new ResponseItem(courseDto, 'Thêm mới chương trình học thành công');
+    } catch (error) {
+      this.logger.error('Lỗi khi tạo mới chương trình học:', error);
+      throw new BadRequestException('Lỗi khi tạo mới chương trình học');
     }
   }
 }

@@ -149,7 +149,6 @@ model Course {
   courseType         String?     @default("ONLINE") @map("course_type") @db.VarChar
   durationHours      Int?        @map("duration_hours") @db.SmallInt
   difficultyLevel    SFIALevel?  @map("difficulty_level")
-  aspectId           String      @map("aspect_id") @db.Uuid
   domainId           String?     @db.Uuid
   sfiaLevels         SFIALevel[] @map("sfia_level")
   isActive           Boolean     @default(true) @map("is_active") @db.Boolean
@@ -158,8 +157,8 @@ model Course {
 
   learningPathCourse LearningPathCourse[]
   userProgress       UserLearningProgress[]
-  competencyAspect   CompetencyAspect       @relation(fields: [aspectId], references: [id], onDelete: Cascade)
   domain             Domain?                @relation(fields: [domainId], references: [id])
+  courseAspects CourseAspect[]
 }
 
 model AnswerOption {
@@ -236,8 +235,8 @@ model CompetencyAspect {
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   competencyPillar      CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
   competencySkill       CompetencySkill[]
-  courses               Course[]
   examAspectSnapshot    ExamAspectSnapshot[]
+  courseAspects CourseAspect[]
 }
 
 model ExamSet {
@@ -576,6 +575,19 @@ model ExamLevel {
   exams Exam[]
 }
 
+model CourseAspect {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId  String           @map("course_id") @db.Uuid
+  aspectId  String           @map("aspect_id") @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  aspect    CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, aspectId])
+}
+
 enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_CHOICE
@@ -700,4 +712,10 @@ enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
   FULL
+}
+
+enum CourseTypes {
+  ONLINE
+  OFFLINE
+  ONLINE_OFFLINE
 }
