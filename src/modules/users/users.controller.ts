@@ -25,7 +25,15 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { UserDto } from './dto/user.dto';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateUserDto } from './dto/request/create-user.dto';
 import { Public } from '../auth/guards/decorator/public.decorator';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
@@ -37,6 +45,7 @@ import { PORTFOLIO_FILE_INTERCEPTOR } from '@app/validations/portfolio-validatio
 import { DownloadPortfolioFileDto } from './dto/download-portfolio-file.dto';
 import { Response } from 'express';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
+import { RankingResponseDto } from './dto/response/ranking-response.dto';
 
 @ApiTags('users')
 @ApiBearerAuth('access-token')
@@ -187,5 +196,11 @@ export class UsersController {
   @ApiResponse({ status: 400, description: 'Invalid student info' })
   async updateStudentInfo(@Body() updateStudentInfoDto: UpdateStudentInfoDto, @Req() req) {
     return await this.usersService.updateStudentInfo(req.user.userId, updateStudentInfoDto);
+  }
+
+  @Get('ranking')
+  @ApiOkResponse({ type: ResponseItem<RankingResponseDto> })
+  async getRanking(@Req() req): Promise<ResponseItem<RankingResponseDto>> {
+    return await this.usersService.getRanking(req.user.userId);
   }
 }
