@@ -108,7 +108,7 @@ export class MentorsService {
             createdAt: true,
           },
           orderBy: {
-            createdAt: 'desc',
+            createdAt: Order.DESC,
           },
           skip: queries.skip,
           take: queries.take,
@@ -732,7 +732,7 @@ export class MentorsService {
     }
   }
 
-  async searchBookingByParams(dto: GetBookingByMentorRequestDto): Promise<ResponsePaginate<MentorBookingResponseDto>> {
+  async getBookingByMentor(dto: GetBookingByMentorRequestDto): Promise<ResponsePaginate<MentorBookingResponseDto>> {
     try {
       const mentor = await this.prisma.mentor.findUnique({
         where: { id: dto.mentorId },
@@ -772,7 +772,7 @@ export class MentorsService {
             createdAt: true,
             updatedAt: true,
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: Order.DESC },
           skip: dto.skip,
           take: dto.take,
         }),
