@@ -104,7 +104,7 @@ export class MentorsService {
               select: {
                 bookings: {
                   where: {
-                    status: 'COMPLETED',
+                    status: MentorBookingStatus.COMPLETED,
                   },
                 },
               },
