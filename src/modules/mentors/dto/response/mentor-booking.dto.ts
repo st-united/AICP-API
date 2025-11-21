@@ -5,10 +5,13 @@ export class MentorDto {
   id: string;
 
   @Expose()
-  fullName: string;
+  fullName?: string;
 
   @Expose()
-  email: string;
+  email?: string;
+
+  @Expose()
+  phoneNumber?: string;
 
   @Expose()
   avatarUrl?: string | null;
@@ -24,6 +27,9 @@ export class MentorDto {
 
   @Expose()
   isActive: boolean;
+
+  @Expose()
+  createdAt: Date;
 }
 
 export class MentorBookingResponseDto {
