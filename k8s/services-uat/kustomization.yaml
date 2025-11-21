@@ -3,12 +3,12 @@ namespace: devplus-aicp-uat
 resources:
   - ../base
 
-# secretGenerator:
-#   - name: aicp-api-env
-#     envs:
-#       - .env.uat
-#     options:
-#       disableNameSuffixHash: true
+secretGenerator:
+  - name: aicp-api-env
+    envs:
+      - .env.uat
+    options:
+      disableNameSuffixHash: true
 
 #   - name: firebase-service-key
 #     files:

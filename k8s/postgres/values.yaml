@@ -1,22 +1,36 @@
-auth:
-  enablePostgresUser: true
-  postgresPassword: +c2QWpz6KnPOt045zQoDeA==
-  username: postgres
-  password: +c2QWpz6KnPOt045zQoDeA==
-  database: aicp
+postgresql:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql
+    tag: '16.3.0-debian-12-r6'
 
-primary:
-  persistence:
-    enabled: true
-    size: 8Gi
+  auth:
+    enablePostgresUser: true
+    existingSecret: aicp-api-env
+    secretKeys:
+      adminPasswordKey: POSTGRES_PASSWORD
+      userPasswordKey: POSTGRES_PASSWORD
+    username: postgres
+    database: aicp
 
-  resources:
-    requests:
-      memory: 2Gi
-      cpu: 1
-    limits:
-      memory: 4Gi
-      cpu: 2
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1
+      limits:
+        memory: 4Gi
+        cpu: 2
+
+# Add service configuration for template
+service:
+  port: 5432
+  type: ClusterIP
 
 backup:
   enabled: true

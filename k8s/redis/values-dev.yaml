@@ -1,7 +1,15 @@
 ## Redis configuration for Development
+image:
+  registry: docker.io
+  repository: bitnamilegacy/redis
+  tag: 7.2.3-debian-11-r1
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
 auth:
   enabled: true
-  password: 'rb4eyAH97hFimV4SVg1zDQ--'
+  existingSecret: aicp-api-env
+  existingSecretPasswordKey: REDIS_PASSWORD
 
 ## Architecture
 architecture: standalone
@@ -49,7 +57,7 @@ redis:
 
 ## Monitoring
 metrics:
-  enabled: true
+  enabled: false
   serviceMonitor:
     enabled: false
 
