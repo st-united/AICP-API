@@ -199,10 +199,8 @@ export class UsersController {
   }
 
   @Get('ranking')
-  @ApiOkResponse({ type: ResponseItem })
+  @ApiOkResponse({ type: ResponseItem<RankingResponseDto> })
   async getRanking(@Req() req): Promise<ResponseItem<RankingResponseDto>> {
-    const data = await this.usersService.getRanking(req.user.userId);
-
-    return new ResponseItem<RankingResponseDto>(data);
+    return await this.usersService.getRanking(req.user.userId);
   }
 }

@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   PayloadTooLargeException,
   UnauthorizedException,
@@ -22,7 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
 import { EmailService } from '@app/modules/email/email.service';
-import { UserProviderEnum, UserRoleEnum } from '@Constant/index';
+import { CACHE_TTL_SECONDS, LEADERBOARD_KEY, TOTAL_USERS_KEY, UserProviderEnum, UserRoleEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
@@ -49,6 +50,8 @@ import { RankingResponseDto } from './dto/response/ranking-response.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
@@ -57,10 +60,6 @@ export class UsersService {
     private readonly googleCloudStorageService: GoogleCloudStorageService,
     private readonly redisService: RedisService
   ) {}
-
-  private readonly LEADERBOARD_KEY = 'LEADERBOARD:USER_ROLE';
-  private readonly TOTAL_USERS_KEY = 'LEADERBOARD:TOTAL_USERS';
-  private readonly CACHE_TTL_SECONDS = 300;
 
   async create(params: CreateUserDto): Promise<UserResponseDto> {
     const emailExisted = await this.prisma.user.findUnique({
@@ -800,12 +799,13 @@ export class UsersService {
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
   }
 
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async handleRankingRefresh() {
     try {
       await this.refreshRankingData();
+      this.logger.log('Leaderboard refreshed successfully');
     } catch (error) {
-      throw error;
+      this.logger.error('Failed to refresh leaderboard', error.stack);
     }
   }
 
@@ -817,6 +817,7 @@ export class UsersService {
         },
       },
       select: { id: true, fullName: true, avatarUrl: true },
+      take: 10,
     });
 
     const totalUsers = users.length;
@@ -827,26 +828,31 @@ export class UsersService {
       .map((u, idx) => ({ rank: idx + 1, ...u }));
 
     await Promise.all([
-      this.redisService.setValue(this.LEADERBOARD_KEY, JSON.stringify(rankedUsers), this.CACHE_TTL_SECONDS),
-      this.redisService.setValue(this.TOTAL_USERS_KEY, totalUsers.toString(), this.CACHE_TTL_SECONDS),
+      this.redisService.setValue(LEADERBOARD_KEY, JSON.stringify(rankedUsers), CACHE_TTL_SECONDS),
+      this.redisService.setValue(TOTAL_USERS_KEY, totalUsers.toString(), CACHE_TTL_SECONDS),
     ]);
 
     return { topRanking: rankedUsers, totalUsers };
   }
 
-  async getRanking(currentUserId: string): Promise<RankingResponseDto> {
+  async getRanking(currentUserId: string): Promise<ResponseItem<RankingResponseDto>> {
     const [cachedLeaderboard, cachedTotal] = await Promise.all([
-      this.redisService.getValue(this.LEADERBOARD_KEY),
-      this.redisService.getValue(this.TOTAL_USERS_KEY),
+      this.redisService.getValue(LEADERBOARD_KEY),
+      this.redisService.getValue(TOTAL_USERS_KEY),
     ]);
 
-    let topRanking: any[];
+    let topRanking: RankingUserDto[];
     let totalUsers: number;
 
-    if (cachedLeaderboard && cachedTotal) {
-      topRanking = JSON.parse(cachedLeaderboard);
-      totalUsers = parseInt(cachedTotal, 10);
-    } else {
+    try {
+      if (cachedLeaderboard && cachedTotal) {
+        topRanking = JSON.parse(cachedLeaderboard) as RankingUserDto[];
+        totalUsers = parseInt(cachedTotal, 10);
+      } else {
+        throw new Error('Cache missing');
+      }
+    } catch (err) {
+      this.logger.warn('Redis cache corrupted or missing, regenerating leaderboard', err.stack);
       const fresh = await this.refreshRankingData();
       topRanking = fresh.topRanking;
       totalUsers = fresh.totalUsers;
@@ -854,6 +860,12 @@ export class UsersService {
 
     const currentUser = topRanking.find((u) => u.id === currentUserId) || null;
 
-    return { totalUsers, topRanking, currentUser };
+    const payload: RankingResponseDto = {
+      totalUsers,
+      topRanking,
+      currentUser,
+    };
+
+    return new ResponseItem<RankingResponseDto>(payload);
   }
 }
