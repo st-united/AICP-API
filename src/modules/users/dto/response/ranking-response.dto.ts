@@ -6,7 +6,7 @@ export class RankingResponseDto {
   totalUsers: number;
 
   @ApiProperty({
-    description: 'Danh sách top 100 user có điểm cao nhất',
+    description: 'Danh sách top user có điểm cao nhất',
     type: [RankingUserDto],
   })
   topRanking: RankingUserDto[];
