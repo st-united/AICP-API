@@ -18,6 +18,12 @@ export class MentorDto {
 
   @Expose()
   experience?: number;
+
+  @Expose()
+  totalBookingsCompleted?: number;
+
+  @Expose()
+  isActive: boolean;
 }
 
 export class MentorBookingResponseDto {
