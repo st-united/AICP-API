@@ -32,6 +32,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { RequestCustom } from '@app/common/interfaces';
+import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -61,6 +62,14 @@ export class MentorsController {
   @UseGuards(JwtAccessTokenGuard)
   async getMentorsByParams(@Query() dto: SearchMentorRequestDto): Promise<ResponsePaginate<MentorDto>> {
     return this.mentorsService.getMentorsByParams(dto);
+  }
+
+  @Get('bookings-by-mentor')
+  @UseGuards(JwtAccessTokenGuard)
+  async getUserInterviewUpcoming(
+    @Query() dto: GetBookingByMentorRequestDto
+  ): Promise<ResponsePaginate<MentorBookingResponseDto>> {
+    return this.mentorsService.searchBookingByParams(dto);
   }
 
   @UseGuards(JwtAccessTokenGuard)
