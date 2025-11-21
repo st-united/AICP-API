@@ -58,6 +58,12 @@ export class ProfileDto {
 
   @Expose()
   studentCode?: string;
+
+  @Expose()
+  zaloVerified?: boolean;
+
+  @Expose()
+  profileCompleted?: boolean;
 }
 
 export class UniversityDto {

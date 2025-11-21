@@ -41,10 +41,11 @@ import {
   validateDeletedFiles,
 } from '@app/validations/portfolio-validation';
 import { Response } from 'express';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 import { CurrentUserRankingDto, RankingUserDto } from './dto/ranking-user.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { calculateProfileCompleted } from '@app/helpers/checkProfileCompleted';
 
 @Injectable()
 export class UsersService {
@@ -315,7 +316,9 @@ export class UsersService {
         : null,
     };
 
-    return new ResponseItem(mappedUser, 'Thành công', ProfileDto);
+    const profileCompleted = calculateProfileCompleted(mappedUser);
+
+    return new ResponseItem({ ...mappedUser, profileCompleted }, 'Thành công', ProfileDto);
   }
 
   async updateProfile(id: string, updateUserDto: UpdateProfileUserDto): Promise<ResponseItem<UserDto>> {
@@ -571,6 +574,8 @@ export class UsersService {
       portfolioDto.deleted_experiences,
       portfolioDto.linkedInUrl,
       portfolioDto.githubUrl,
+      portfolioDto.portfolioUrl,
+      portfolioDto.developmentFocusAnswer,
       portfolioDto.isStudent
     );
 
@@ -591,6 +596,8 @@ export class UsersService {
           data: {
             linkedInUrl: portfolioDto.linkedInUrl,
             githubUrl: portfolioDto.githubUrl,
+            portfolioUrl: portfolioDto.portfolioUrl,
+            developmentFocusAnswer: portfolioDto.developmentFocusAnswer,
             certificateFiles,
             experienceFiles,
             userId,
@@ -681,6 +688,8 @@ export class UsersService {
         data: {
           linkedInUrl: portfolioDto.linkedInUrl,
           githubUrl: portfolioDto.githubUrl,
+          portfolioUrl: portfolioDto.portfolioUrl,
+          developmentFocusAnswer: portfolioDto.developmentFocusAnswer,
           certificateFiles,
           experienceFiles,
         },

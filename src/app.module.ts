@@ -22,6 +22,7 @@ import { ExportModule } from './modules/export/export.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { UniversityModule } from './modules/universities/universities.module';
 import { InterviewReminderModule } from './modules/interview-reminder/interview-reminder.module';
+import { AspectsModule } from './modules/aspects/aspects.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { InterviewReminderModule } from './modules/interview-reminder/interview-
     ImportsModule,
     UniversityModule,
     InterviewReminderModule,
+    AspectsModule,
   ],
   providers: [
     {

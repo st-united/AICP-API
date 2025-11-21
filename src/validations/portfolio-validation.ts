@@ -1,6 +1,7 @@
 import { BadRequestException, PayloadTooLargeException, UnsupportedMediaTypeException } from '@nestjs/common';
 import { Express } from 'express';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { getFileExtension, isValidFileExtension, validateFileExtension } from './file-validation';
 
 // File type constants
 export const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'] as const;
@@ -19,15 +20,6 @@ export const FILE_LIMITS = {
   maxCountPerCategory: 20,
   maxTotalFiles: 40,
 } as const;
-
-const getFileExtension = (filename: string): string => {
-  return filename.split('.').pop()?.toLowerCase() || '';
-};
-
-const isValidFileExtension = (filename: string): boolean => {
-  const ext = getFileExtension(filename);
-  return ALLOWED_EXTENSIONS.includes(ext as any);
-};
 
 const isValidFileSize = (size: number): boolean => {
   return size > 0 && size <= FILE_LIMITS.fileSize;
@@ -76,7 +68,7 @@ export const validatePortfolioFiles = (
       throw new BadRequestException(`File object không hợp lệ: ${file?.originalname || 'unknown'}`);
     }
 
-    if (!isValidFileExtension(file.originalname)) {
+    if (!isValidFileExtension(file.originalname, ALLOWED_EXTENSIONS)) {
       invalidFiles.push(file.originalname);
     }
     if (!isValidFileSize(file.size)) {
@@ -95,15 +87,6 @@ export const validatePortfolioFiles = (
   }
 };
 
-export const validateFileExtension = (file: Express.Multer.File): boolean => {
-  if (!isValidFileExtension(file.originalname)) {
-    throw new BadRequestException(
-      `Định dạng file ${getFileExtension(file.originalname)} không được hỗ trợ. Định dạng được phép: ${ALLOWED_EXTENSIONS.join(', ')}`
-    );
-  }
-  return true;
-};
-
 export const validateFileCount = (files: Express.Multer.File[]): boolean => {
   if (files.length > FILE_LIMITS.maxTotalFiles) {
     throw new BadRequestException(`Tối đa ${FILE_LIMITS.maxTotalFiles} file được phép`);
@@ -119,7 +102,7 @@ export const PORTFOLIO_FILE_INTERCEPTOR = FileFieldsInterceptor(
   {
     fileFilter: (req, file: Express.Multer.File, callback) => {
       try {
-        validateFileExtension(file);
+        validateFileExtension(file, ALLOWED_EXTENSIONS);
         callback(null, true);
       } catch (error) {
         callback(error, false);
@@ -135,14 +118,17 @@ export const validatePortfolioRequest = (
   deletedExperiences?: string[],
   linkedInUrl?: string,
   githubUrl?: string,
+  portfolioUrl?: string,
+  developmentFocusAnswer?: string,
   isStudent?: string
 ): void => {
   const hasFiles = (certificateFiles?.length || 0) + (experienceFiles?.length || 0) > 0;
   const hasDeletions = (deletedCertifications?.length || 0) + (deletedExperiences?.length || 0) > 0;
-  const hasUrlUpdates = linkedInUrl !== undefined || githubUrl !== undefined;
+  const hasUrl = linkedInUrl !== undefined || githubUrl !== undefined || portfolioUrl !== undefined;
+  const hasText = developmentFocusAnswer !== undefined;
 
-  if (!hasFiles && !hasDeletions && !hasUrlUpdates && isStudent === undefined) {
-    throw new BadRequestException('Yêu cầu phải chứa ít nhất một thay đổi: file mới, xóa file, hoặc cập nhật URL');
+  if (!hasFiles && !hasDeletions && !hasUrl && !hasText && isStudent === undefined) {
+    throw new BadRequestException('Yêu cầu điền thông tin đầy đủ vào các trường');
   }
 };
 
