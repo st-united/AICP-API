@@ -811,16 +811,14 @@ export class UsersService {
 
   private async refreshRankingData(): Promise<{ topRanking: RankingUserDto[]; totalUsers: number }> {
     const users = await this.prisma.user.findMany({
-      where: {
-        roles: {
-          some: { role: { name: UserRoleEnum.USER } },
-        },
-      },
+      where: { roles: { some: { role: { name: UserRoleEnum.USER } } } },
       select: { id: true, fullName: true, avatarUrl: true },
       take: 10,
     });
 
-    const totalUsers = users.length;
+    const totalUsers = await this.prisma.user.count({
+      where: { roles: { some: { role: { name: UserRoleEnum.USER } } } },
+    });
 
     const rankedUsers = users
       .map((u) => ({ ...u, score: Math.floor(Math.random() * 1000) + 100 }))
@@ -866,16 +864,30 @@ export class UsersService {
     }
 
     const userInBoard = topRanking.find((u) => u.id === currentUserId);
-    const currentUser: CurrentUserRankingDto | null = userInBoard
-      ? { userId: userInBoard.id, rank: userInBoard.rank, score: userInBoard.score }
-      : null;
 
-    const payload: RankingResponseDto = {
+    let currentUser: CurrentUserRankingDto;
+
+    if (userInBoard) {
+      currentUser = {
+        userId: userInBoard.id,
+        rank: userInBoard.rank,
+        score: userInBoard.score,
+      };
+    } else {
+      const lastScore = topRanking[topRanking.length - 1]?.score ?? 0;
+      const fakeScore = Math.max(lastScore - 1, 0);
+
+      currentUser = {
+        userId: currentUserId,
+        rank: topRanking.length + 1,
+        score: fakeScore,
+      };
+    }
+
+    return new ResponseItem<RankingResponseDto>({
       totalUsers,
       topRanking,
       currentUser,
-    };
-
-    return new ResponseItem<RankingResponseDto>(payload);
+    });
   }
 }
