@@ -62,12 +62,12 @@ export class MentorsController {
     return this.mentorsService.getMentorsByParams(dto);
   }
 
-  @Get('bookings-by-mentor')
+  @Get('bookings')
   @UseGuards(JwtAccessTokenGuard)
-  async getUserInterviewUpcoming(
+  async getBookingByMentor(
     @Query() dto: GetBookingByMentorRequestDto
   ): Promise<ResponsePaginate<MentorBookingResponseDto>> {
-    return this.mentorsService.searchBookingByParams(dto);
+    return this.mentorsService.getBookingByMentor(dto);
   }
 
   @UseGuards(JwtAccessTokenGuard)
