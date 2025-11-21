@@ -96,6 +96,7 @@ export class MentorsService {
                 id: true,
                 email: true,
                 fullName: true,
+                phoneNumber: true,
               },
             },
             isActive: true,
@@ -124,9 +125,11 @@ export class MentorsService {
       const mentors: MentorDto[] = results.map((mentor) => ({
         id: mentor.id,
         fullName: mentor.user.fullName,
+        phoneNumber: mentor.user.phoneNumber,
         email: mentor.user.email,
         isActive: mentor.isActive,
         totalBookingsCompleted: mentor._count.bookings,
+        createdAt: mentor.createdAt,
       }));
 
       const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
