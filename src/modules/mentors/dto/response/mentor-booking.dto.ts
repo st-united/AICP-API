@@ -23,7 +23,10 @@ export class MentorDto {
   experience?: number;
 
   @Expose()
-  totalBookingsCompleted?: number;
+  totalCompleted?: number;
+
+  @Expose()
+  totalUpcoming?: number;
 
   @Expose()
   isActive: boolean;
@@ -35,6 +38,15 @@ export class MentorDto {
 export class MentorBookingResponseDto {
   @Expose()
   id: string;
+
+  @Expose()
+  fullName?: string;
+
+  @Expose()
+  email?: string;
+
+  @Expose()
+  interviewDate?: Date;
 
   @Expose()
   examId: string;
