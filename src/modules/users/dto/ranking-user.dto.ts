@@ -11,7 +11,7 @@ export class RankingUserDto extends PickType(ProfileDto, ['id', 'fullName', 'ava
 
 export class CurrentUserRankingDto {
   @ApiProperty({ description: 'ID của user hiện tại' })
-  userId: string;
+  userId?: string;
 
   @ApiProperty({ description: 'Vị trí xếp hạng của user', example: 42, nullable: true })
   rank: number | null;
