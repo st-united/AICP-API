@@ -1,7 +1,7 @@
 import { UsersService } from '@UsersModule/users.service';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, Res } from '@nestjs/common';
 import {
   ExamLevelEnum,
   ExamStatus,
@@ -21,7 +21,7 @@ import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto'
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
-import { MentorBookingResponseDto as MentorBookingResponseV1 } from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto as MentorBookingResponseV1, MentorDto } from './dto/response/mentor-booking.dto';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 
@@ -30,6 +30,7 @@ import { GoogleCalendarService } from '@app/helpers/google-calendar.service';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 
 @Injectable()
 export class MentorsService {
@@ -69,6 +70,70 @@ export class MentorsService {
       return new ResponseItem(mentor, 'Tạo mentor thành công', MentorResponseDto);
     } catch (error) {
       throw new BadRequestException('Lỗi khi tạo mentor');
+    }
+  }
+
+  async getMentorsByParams(queries: SearchMentorRequestDto): Promise<ResponsePaginate<MentorDto>> {
+    try {
+      const where: Prisma.MentorWhereInput = {
+        ...(queries.search && {
+          user: {
+            fullName: {
+              contains: queries.search,
+              mode: 'insensitive',
+            },
+          },
+        }),
+      };
+
+      const [results, total] = await this.prisma.$transaction([
+        this.prisma.mentor.findMany({
+          where,
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                fullName: true,
+              },
+            },
+            isActive: true,
+            createdAt: true,
+            _count: {
+              select: {
+                bookings: {
+                  where: {
+                    status: 'COMPLETED',
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          skip: queries.skip,
+          take: queries.take,
+        }),
+        this.prisma.mentor.count({
+          where,
+        }),
+      ]);
+
+      const mentors: MentorDto[] = results.map((mentor) => ({
+        id: mentor.id,
+        fullName: mentor.user.fullName,
+        email: mentor.user.email,
+        isActive: mentor.isActive,
+        totalBookingsCompleted: mentor._count.bookings,
+      }));
+
+      const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
+
+      return new ResponsePaginate<MentorDto>(mentors, pageMetaDto, 'Lấy danh sách mentor thành công');
+    } catch (error) {
+      throw new BadRequestException('Lỗi khi lấy danh sách mentor');
     }
   }
 
@@ -392,6 +457,12 @@ export class MentorsService {
     dto: FilterMentorBookingDto,
     mentorId: string
   ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    const where: Prisma.MentorWhereInput = {
+      user: {
+        id: mentorId,
+      },
+    };
+
     const { page = 1, take = 10 } = dto;
     const skip = (page - 1) * take;
 
