@@ -349,8 +349,8 @@ export class MentorsService {
     dto: FilterMentorBookingDto,
     mentorId: string
   ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
-    const { page = 1, limit = 10 } = dto;
-    const skip = (page - 1) * limit;
+    const { page = 1, take = 10 } = dto;
+    const skip = (page - 1) * take;
 
     try {
       const mentor = await this.prisma.mentor.findUnique({
@@ -386,7 +386,7 @@ export class MentorsService {
           },
           orderBy: { createdAt: Order.DESC },
           skip,
-          take: limit,
+          take: take,
         }),
 
         this.prisma.mentorBooking.count({ where }),
@@ -434,8 +434,8 @@ export class MentorsService {
           }),
           total,
           page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+          limit: take,
+          totalPages: Math.ceil(total / take),
           stats,
           levels: levelList.map((lvl) => lvl.examLevel),
           statuses: Object.values(MentorBookingStatus),
