@@ -836,20 +836,27 @@ export class UsersService {
   }
 
   async getRanking(currentUserId: string): Promise<ResponseItem<RankingResponseDto>> {
-    const [cachedLeaderboard, cachedTotal] = await Promise.all([
-      this.redisService.getValue(LEADERBOARD_KEY),
-      this.redisService.getValue(TOTAL_USERS_KEY),
-    ]);
+    let cachedLeaderboard: string | null = null;
+    let cachedTotal: string | null = null;
 
-    let topRanking: RankingUserDto[];
-    let totalUsers: number;
+    try {
+      [cachedLeaderboard, cachedTotal] = await Promise.all([
+        this.redisService.getValue(LEADERBOARD_KEY),
+        this.redisService.getValue(TOTAL_USERS_KEY),
+      ]);
+    } catch (err) {
+      this.logger.warn('Failed to fetch leaderboard from Redis, regenerating', err.stack);
+    }
+
+    let topRanking: RankingUserDto[] = [];
+    let totalUsers = 0;
 
     try {
       if (cachedLeaderboard && cachedTotal) {
         topRanking = JSON.parse(cachedLeaderboard) as RankingUserDto[];
         totalUsers = parseInt(cachedTotal, 10);
       } else {
-        throw new Error('Cache missing');
+        throw new Error('Cache missing or incomplete');
       }
     } catch (err) {
       this.logger.warn('Redis cache corrupted or missing, regenerating leaderboard', err.stack);
@@ -858,7 +865,10 @@ export class UsersService {
       totalUsers = fresh.totalUsers;
     }
 
-    const currentUser = topRanking.find((u) => u.id === currentUserId) || null;
+    const userInBoard = topRanking.find((u) => u.id === currentUserId);
+    const currentUser: CurrentUserRankingDto | null = userInBoard
+      ? { userId: userInBoard.id, rank: userInBoard.rank, score: userInBoard.score }
+      : null;
 
     const payload: RankingResponseDto = {
       totalUsers,
