@@ -29,6 +29,7 @@ import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
+import { RequestCustom } from '@app/common/interfaces';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -48,7 +49,7 @@ export class MentorsController {
   @Get()
   @UseGuards(JwtAccessTokenGuard)
   async getFilteredBookings(
-    @Req() req: any,
+    @Req() req: RequestCustom,
     @Query() dto: FilterMentorBookingDto
   ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
     return this.mentorsService.getFilteredBookings(dto, req.user.userId);
@@ -56,10 +57,7 @@ export class MentorsController {
 
   @Get('v2')
   @UseGuards(JwtAccessTokenGuard)
-  async getMentorsByParams(
-    @Req() req: any,
-    @Query() dto: SearchMentorRequestDto
-  ): Promise<ResponsePaginate<MentorDto>> {
+  async getMentorsByParams(@Query() dto: SearchMentorRequestDto): Promise<ResponsePaginate<MentorDto>> {
     return this.mentorsService.getMentorsByParams(dto);
   }
 
