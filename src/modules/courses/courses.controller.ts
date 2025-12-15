@@ -5,22 +5,16 @@ import { CourseResponseDto } from './dto/response/course-response.dto';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
-  @Post(':id/register')
-  registerCourse(@Param('id', ParseUUIDPipe) courseId: string, @Req() req: any) {
-    const userId = req.user.userId;
-
-    const dto: RegisterCourseDto = {
-      userId,
-      courseId,
-    };
-
-    return this.coursesService.registerCourse(dto);
+  @Get('paging')
+  async searchCoursesPaining(@Query() request: PaginatedSearchCourseDto) {
+    return this.coursesService.searchCoursesPaining(request);
   }
 
   @Get()
@@ -33,5 +27,17 @@ export class CoursesController {
   async findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req: any): Promise<ResponseItem<CourseResponseDto>> {
     const userId = req.user.userId;
     return this.coursesService.findOne(id, userId);
+  }
+
+  @Post(':id/register')
+  registerCourse(@Param('id', ParseUUIDPipe) courseId: string, @Req() req: any) {
+    const userId = req.user.userId;
+
+    const dto: RegisterCourseDto = {
+      userId,
+      courseId,
+    };
+
+    return this.coursesService.registerCourse(dto);
   }
 }
