@@ -523,22 +523,24 @@ model UserLearningProgress {
 }
 
 model Portfolio {
-  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String            @unique @map("user_id") @db.Uuid
-  linkedInUrl      String?           @map("linked_in_url")
-  githubUrl        String?           @map("github_url")
-  sfiaLevelClaimed SFIALevel?        @map("sfia_level_claimed")
-  isVerified       Boolean           @default(false) @map("is_verified")
-  verifiedBy       String?           @map("verified_by") @db.Uuid
-  verifiedAt       DateTime?         @map("verified_at")
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  certificateFiles String[]          @default([])
-  experienceFiles  String[]          @default([])
-  pillarId         String?           @map("pillar_id") @db.Uuid
-  pillar           CompetencyPillar? @relation(fields: [pillarId], references: [id])
-  user             User              @relation("UserPortfolio", fields: [userId], references: [id])
-  verifier         User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String            @unique @map("user_id") @db.Uuid
+  linkedInUrl            String?           @map("linked_in_url")
+  githubUrl              String?           @map("github_url")
+  portfolioUrl           String?           @map("portfolio_url")
+  developmentFocusAnswer String?           @map("development_focus_answer") @db.Text
+  sfiaLevelClaimed       SFIALevel?        @map("sfia_level_claimed")
+  isVerified             Boolean           @default(false) @map("is_verified")
+  verifiedBy             String?           @map("verified_by") @db.Uuid
+  verifiedAt             DateTime?         @map("verified_at")
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  certificateFiles       String[]          @default([])
+  experienceFiles        String[]          @default([])
+  pillarId               String?           @map("pillar_id") @db.Uuid
+  pillar                 CompetencyPillar? @relation(fields: [pillarId], references: [id])
+  user                   User              @relation("UserPortfolio", fields: [userId], references: [id])
+  verifier               User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
 }
 
 model OrganizationalMetrics {
