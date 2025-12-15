@@ -49,10 +49,16 @@ export async function seedMentorBookings(
 
       if (!userId || !examId) continue;
 
-      const interviewRequest = await prisma.interviewRequest.upsert({
-        where: { examId },
-        update: {},
-        create: {
+      const exitsInterviewRequest = await prisma.interviewRequest.findFirst({
+        where: {
+          examId,
+        },
+      });
+
+      if (exitsInterviewRequest) continue;
+
+      const interviewRequest = await prisma.interviewRequest.create({
+        data: {
           examId,
           interviewDate: randomFutureDate(),
           timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
