@@ -39,6 +39,16 @@ export class UpdatePortfolioDto {
   @IsUrl({ require_protocol: true })
   githubUrl?: string;
 
+  @ApiProperty({ description: 'Portfolio URL', required: false })
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  portfolioUrl?: string;
+
+  @ApiProperty({ description: 'Development focus answer', required: false })
+  @IsOptional()
+  @IsString()
+  developmentFocusAnswer?: string;
+
   @ApiProperty({
     description: 'Certifications',
     required: false,
