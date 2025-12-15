@@ -1,21 +1,41 @@
 import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '@UsersModule/users.service';
 import { EmailService } from '../email/email.service';
 import { generateSecurePassword } from '@app/helpers/randomPassword';
-import { ExamStatus, MentorBookingStatus, Prisma, TimeSlotBooking } from '@prisma/client';
+import {
+  ExamStatus,
+  ExamLevelEnum,
+  InterviewRequestStatus,
+  MentorBookingStatus,
+  Prisma,
+  SFIALevel,
+  TimeSlotBooking,
+} from '@prisma/client';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
-import { InterviewShift } from '@Constant/enums';
+import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { plainToInstance } from 'class-transformer';
+import {
+  MentorBookingResponseDto,
+  MentorBookingResponseDto as MentorBookingResponseV1,
+  MentorDto,
+} from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
+import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
+import { AssignMentorDto } from './dto/response/assign-mentor.dto';
+import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
+import { InterviewShift, Order } from '@Constant/enums';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-
+import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
+import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
 @Injectable()
 export class MentorsService {
   private readonly logger = new Logger(MentorsService.name);
@@ -54,6 +74,94 @@ export class MentorsService {
       return new ResponseItem(mentor, 'Tạo mentor thành công', MentorResponseDto);
     } catch (error) {
       throw new BadRequestException('Lỗi khi tạo mentor');
+    }
+  }
+
+  async getMentorsByParams(queries: SearchMentorRequestDto): Promise<ResponsePaginate<MentorDto>> {
+    try {
+      const where: Prisma.MentorWhereInput = {
+        ...(queries.search && {
+          user: {
+            fullName: {
+              contains: queries.search,
+              mode: 'insensitive',
+            },
+          },
+        }),
+        isActive: queries.status,
+      };
+
+      const [results, total] = await this.prisma.$transaction([
+        this.prisma.mentor.findMany({
+          where,
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                fullName: true,
+                phoneNumber: true,
+              },
+            },
+            isActive: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: Order.DESC,
+          },
+          skip: queries.skip,
+          take: queries.take,
+        }),
+        this.prisma.mentor.count({
+          where,
+        }),
+      ]);
+
+      const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: queries });
+
+      if (!results || results.length === 0) {
+        return new ResponsePaginate<MentorDto>([], pageMetaDto, 'Lấy danh sách mentor thành công');
+      }
+
+      const mentorIds = results.map((m) => m.id);
+
+      const upcomingCounts = await this.prisma.mentorBooking.groupBy({
+        by: ['mentorId'],
+        where: {
+          mentorId: { in: mentorIds },
+          status: MentorBookingStatus.UPCOMING,
+        },
+        _count: { mentorId: true },
+      });
+
+      const completedCounts = await this.prisma.mentorBooking.groupBy({
+        by: ['mentorId'],
+        where: {
+          mentorId: { in: mentorIds },
+          status: MentorBookingStatus.COMPLETED,
+        },
+        _count: { mentorId: true },
+      });
+
+      const upcomingMap = Object.fromEntries(upcomingCounts.map((x) => [x.mentorId, x._count.mentorId]));
+
+      const completedMap = Object.fromEntries(completedCounts.map((x) => [x.mentorId, x._count.mentorId]));
+
+      const mentors: MentorDto[] = results.map((mentor) => ({
+        id: mentor.id,
+        fullName: mentor.user.fullName,
+        phoneNumber: mentor.user.phoneNumber,
+        email: mentor.user.email,
+        isActive: mentor.isActive,
+        totalUpcoming: upcomingMap[mentor.id] ?? 0,
+        totalCompleted: completedMap[mentor.id] ?? 0,
+        createdAt: mentor.createdAt,
+      }));
+
+      return new ResponsePaginate<MentorDto>(mentors, pageMetaDto, 'Lấy danh sách mentor thành công');
+    } catch (error) {
+      throw new BadRequestException('Lỗi khi lấy danh sách mentor');
     }
   }
 
@@ -149,7 +257,7 @@ export class MentorsService {
             bookings: {
               where: {
                 status: {
-                  in: [MentorBookingStatus.PENDING, MentorBookingStatus.ACCEPTED],
+                  in: [MentorBookingStatus.UPCOMING],
                 },
               },
             },
@@ -205,7 +313,7 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseDto>> {
+  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
     try {
       const existingBooking = await this.prisma.interviewRequest.findFirst({
         where: { examId: dto.examId },
@@ -330,6 +438,257 @@ export class MentorsService {
     }
   }
 
+  async getFilteredBookings(
+    dto: FilterMentorBookingDto,
+    mentorId: string
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    const where: Prisma.MentorWhereInput = {
+      user: {
+        id: mentorId,
+      },
+    };
+
+    const { page = 1, take = 10 } = dto;
+    const skip = (page - 1) * take;
+
+    try {
+      const mentor = await this.prisma.mentor.findUnique({
+        where: { userId: mentorId },
+        select: { id: true },
+      });
+
+      if (!mentor) {
+        throw new NotFoundException('Không tìm thấy mentor');
+      }
+
+      const where = this.buildWhereClause({ ...dto, mentorId: mentor.id });
+
+      const whereForStats: Prisma.MentorBookingWhereInput = {
+        mentorId: mentor.id,
+      };
+
+      const [records, total, statsTotal, upcoming, completed, notJoined, levelList] = await this.prisma.$transaction([
+        this.prisma.mentorBooking.findMany({
+          where,
+          include: {
+            interviewRequest: {
+              include: {
+                exam: {
+                  include: {
+                    examLevel: true,
+                    user: true,
+                    examSet: { select: { name: true } },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: Order.DESC },
+          skip,
+          take: take,
+        }),
+
+        this.prisma.mentorBooking.count({ where }),
+
+        this.prisma.mentorBooking.count({ where: whereForStats }),
+        this.prisma.mentorBooking.count({
+          where: { ...whereForStats, status: MentorBookingStatus.UPCOMING },
+        }),
+        this.prisma.mentorBooking.count({
+          where: { ...whereForStats, status: MentorBookingStatus.COMPLETED },
+        }),
+        this.prisma.mentorBooking.count({
+          where: { ...whereForStats, status: MentorBookingStatus.NOT_JOINED },
+        }),
+
+        this.prisma.examLevel.findMany({
+          select: { id: true, examLevel: true },
+          orderBy: { examLevel: Order.ASC },
+        }),
+      ]);
+
+      const stats = {
+        total: statsTotal,
+        upcoming,
+        completed,
+        notJoined,
+      };
+
+      const data: MentorBookingResponseV2[] = records.map((booking) => ({
+        id: booking.id,
+        fullName: booking.interviewRequest.exam.user.fullName,
+        email: booking.interviewRequest.exam.user.email,
+        phoneNumber: booking.interviewRequest.exam.user.phoneNumber,
+        timeSlot: booking.interviewRequest.timeSlot,
+        interviewDate: booking.interviewRequest.interviewDate,
+        nameExamSet: booking.interviewRequest.exam?.examSet?.name,
+        level: booking.interviewRequest.exam?.examLevel?.examLevel,
+        status: booking.status,
+      }));
+
+      return new ResponseItem(
+        {
+          data: plainToInstance(MentorBookingResponseV2, data, {
+            excludeExtraneousValues: true,
+          }),
+          total,
+          page,
+          limit: take,
+          totalPages: Math.ceil(total / take),
+          stats,
+          levels: levelList.map((lvl) => lvl.examLevel),
+          statuses: Object.values(MentorBookingStatus),
+        },
+        'Lấy danh sách lịch phỏng vấn thành công'
+      );
+    } catch (error) {
+      this.logger.error(`Lỗi khi lấy danh sách lịch phỏng vấn: ${error.message}`);
+      throw new BadRequestException('Có lỗi xảy ra khi lấy danh sách lịch phỏng vấn');
+    }
+  }
+
+  private buildWhereClause(filter: {
+    mentorId: string;
+    statuses?: MentorBookingStatus[];
+    levels?: ExamLevelEnum[];
+    dateStart?: Date | string;
+    dateEnd?: Date | string;
+    keyword?: string;
+  }): Prisma.MentorBookingWhereInput {
+    const { mentorId, statuses, levels, dateStart, dateEnd, keyword } = filter;
+
+    const where: Prisma.MentorBookingWhereInput = {
+      mentorId,
+      ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
+      interviewRequest: {
+        ...(levels &&
+          levels.length > 0 && {
+            exam: {
+              examLevel: { examLevel: { in: levels as ExamLevelEnum[] } },
+            },
+          }),
+        ...(dateStart || dateEnd
+          ? {
+              interviewDate: {
+                ...(dateStart && { gte: new Date(dateStart) }),
+                ...(dateEnd && { lte: new Date(dateEnd) }),
+              },
+            }
+          : {}),
+        ...(keyword && {
+          OR: [
+            {
+              exam: {
+                user: { fullName: { contains: keyword, mode: 'insensitive' } },
+              },
+            },
+            {
+              exam: {
+                user: { email: { contains: keyword, mode: 'insensitive' } },
+              },
+            },
+            {
+              exam: {
+                user: { phoneNumber: { contains: keyword, mode: 'insensitive' } },
+              },
+            },
+          ],
+        }),
+      },
+    };
+
+    return where;
+  }
+
+  async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
+    const { interviewRequestIds } = dto;
+
+    const mentor = await this.prisma.mentor.findUnique({
+      where: { userId },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
+    const validRequests = await this.prisma.interviewRequest.findMany({
+      where: {
+        id: { in: interviewRequestIds },
+      },
+      select: { id: true },
+    });
+
+    const validRequestIds = validRequests.map((r) => r.id);
+    const invalidRequestIds = interviewRequestIds.filter((id) => !validRequestIds.includes(id));
+    if (invalidRequestIds.length > 0) {
+      throw new BadRequestException(`interviewRequestIds không hợp lệ: ${invalidRequestIds.join(', ')}`);
+    }
+
+    const existingBookings = await this.prisma.mentorBooking.findMany({
+      where: {
+        mentorId: mentor.id,
+        interviewRequestId: { in: validRequestIds },
+      },
+      select: { interviewRequestId: true },
+    });
+
+    const alreadyAssignedIds = new Set(existingBookings.map((b) => b.interviewRequestId));
+
+    const toCreate = validRequestIds.filter((id) => !alreadyAssignedIds.has(id));
+
+    if (toCreate.length === 0) {
+      return {
+        message: 'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.',
+        data: {
+          bookings: [],
+        },
+      };
+    }
+
+    const transactionOps = [
+      ...toCreate.map((requestId) =>
+        this.prisma.mentorBooking.create({
+          data: {
+            mentorId: mentor.id,
+            interviewRequestId: requestId,
+          },
+          select: {
+            id: true,
+            interviewRequestId: true,
+            mentorId: true,
+            status: true,
+            createdAt: true,
+          },
+        })
+      ),
+      this.prisma.interviewRequest.updateMany({
+        where: {
+          id: { in: toCreate },
+        },
+        data: {
+          status: InterviewRequestStatus.ASSIGNED,
+        },
+      }),
+    ];
+
+    const results = await this.prisma.$transaction(transactionOps);
+
+    const bookings = results.slice(0, -1) as {
+      id: string;
+      interviewRequestId: string;
+      mentorId: string;
+      status: string;
+      createdAt: Date;
+    }[];
+
+    return {
+      message: 'Yêu cầu phỏng vấn đã được nhận',
+      data: {
+        bookings,
+      },
+    };
+  }
+
   async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     try {
       if (!examId) {
@@ -346,7 +705,7 @@ export class MentorsService {
           examId: true,
         },
         orderBy: {
-          createdAt: 'desc',
+          createdAt: Order.DESC,
         },
       });
 
@@ -370,6 +729,75 @@ export class MentorsService {
     } catch (error) {
       this.logger.error('Error checking user interview request:', error);
       throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
+    }
+  }
+
+  async getBookingByMentor(dto: GetBookingByMentorRequestDto): Promise<ResponsePaginate<MentorBookingResponseDto>> {
+    try {
+      const mentor = await this.prisma.mentor.findUnique({
+        where: { id: dto.mentorId },
+      });
+
+      if (!mentor) {
+        throw new NotFoundException('Không tìm thấy mentor');
+      }
+
+      const where: Prisma.MentorBookingWhereInput = {
+        mentorId: mentor.id,
+        ...(dto.status && { status: { in: dto.status } }),
+      };
+
+      const [results, total] = await this.prisma.$transaction([
+        this.prisma.mentorBooking.findMany({
+          where,
+          select: {
+            id: true,
+            interviewRequest: {
+              select: {
+                exam: {
+                  select: {
+                    id: true,
+                    user: {
+                      select: {
+                        fullName: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+                interviewDate: true,
+                timeSlot: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: { createdAt: Order.DESC },
+          skip: dto.skip,
+          take: dto.take,
+        }),
+
+        this.prisma.mentorBooking.count({ where }),
+      ]);
+
+      const interviewRequests: MentorBookingResponseDto[] = results.map((booking) => ({
+        id: booking.id,
+        fullName: booking.interviewRequest.exam.user.fullName,
+        email: booking.interviewRequest.exam.user.email,
+        interviewDate: booking.interviewRequest.interviewDate,
+        timeSlot: booking.interviewRequest.timeSlot,
+        examId: booking.interviewRequest.exam.id,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt,
+      }));
+
+      return new ResponsePaginate<MentorBookingResponseDto>(
+        interviewRequests,
+        new PageMetaDto({ itemCount: total, pageOptionsDto: dto }),
+        'Lấy danh sách lịch phỏng vấn sắp tới của cố vấn thành công'
+      );
+    } catch (error) {
+      throw new BadRequestException('Lỗi khi lấy danh sách lịch phỏng vấn sắp tới của cố vấn');
     }
   }
 }
