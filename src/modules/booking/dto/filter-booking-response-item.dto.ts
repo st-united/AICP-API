@@ -7,7 +7,7 @@ export class FilterBookingResponseItemDto {
 
   @IsOptional()
   @IsString()
-  timeSlost?: string;
+  timeSlots?: string;
 
   @IsOptional()
   @IsString()
