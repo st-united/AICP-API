@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { CourseResponseDto } from './dto/response/course-response.dto';
 import { Prisma } from '@prisma/client';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
@@ -19,7 +19,8 @@ import { pathNameCommon } from '@Constant/url';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import { GoogleCloudStorageService } from '@app/modules/google-cloud/google-cloud-storage.service';
-
+import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
+import { title } from 'process';
 @Injectable()
 export class CoursesService {
   private readonly logger = new Logger(CoursesService.name);
@@ -217,5 +218,46 @@ export class CoursesService {
     } catch (error) {
       throw new BadRequestException('Lỗi khi tạo mới chương trình học');
     }
+  }
+
+  async searchCoursesPaining(request: PaginatedSearchCourseDto): Promise<ResponsePaginate<CourseResponseDto>> {
+    const { search, domains, status } = request;
+
+    const where: Prisma.CourseWhereInput = {
+      ...(search && { title: { contains: search, mode: 'insensitive' } }),
+      ...(domains && { domainId: { in: domains } }),
+      isActive: status,
+    };
+
+    const [result, total] = await this.prisma.$transaction([
+      this.prisma.course.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          overview: true,
+          description: true,
+          courseInformation: true,
+          contactInformation: true,
+          applicableObjects: true,
+          provider: true,
+          url: true,
+          linkImage: true,
+          isActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: request.take,
+        skip: request.skip,
+      }),
+      this.prisma.course.count({ where }),
+    ]);
+
+    const courseDtos = plainToInstance(CourseResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
+
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
+
+    return new ResponsePaginate(courseDtos, pageMetaDto, 'Tim kiếm khóa học thành công');
   }
 }
