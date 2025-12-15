@@ -1,12 +1,14 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
-import { ResponseItem } from '@app/common/dtos';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { CourseResponseDto } from './dto/response/course-response.dto';
 import { Prisma } from '@prisma/client';
 import { RegisterCourseDto } from './dto/request/register-course.dto';
 import { UserLearningProgressResponseDto } from './dto/response/user-learning-progress-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
+import { title } from 'process';
 
 @Injectable()
 export class CoursesService {
@@ -131,5 +133,46 @@ export class CoursesService {
       this.logger.error('Error getting course by id:', error);
       throw new BadRequestException('Lỗi khi lấy thông tin khóa học');
     }
+  }
+
+  async searchCoursesPaining(request: PaginatedSearchCourseDto): Promise<ResponsePaginate<CourseResponseDto>> {
+    const { search, domains, status } = request;
+
+    const where: Prisma.CourseWhereInput = {
+      ...(search && { title: { contains: search, mode: 'insensitive' } }),
+      ...(domains && { domainId: { in: domains } }),
+      isActive: status,
+    };
+
+    const [result, total] = await this.prisma.$transaction([
+      this.prisma.course.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          overview: true,
+          description: true,
+          courseInformation: true,
+          contactInformation: true,
+          applicableObjects: true,
+          provider: true,
+          url: true,
+          linkImage: true,
+          isActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: request.take,
+        skip: request.skip,
+      }),
+      this.prisma.course.count({ where }),
+    ]);
+
+    const courseDtos = plainToInstance(CourseResponseDto, result, {
+      excludeExtraneousValues: true,
+    });
+
+    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
+
+    return new ResponsePaginate(courseDtos, pageMetaDto, 'Tim kiếm khóa học thành công');
   }
 }
