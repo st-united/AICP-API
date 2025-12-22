@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   PayloadTooLargeException,
   UnauthorizedException,
@@ -22,7 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserResponseDto } from './dto/response/user-response.dto';
 import { JwtPayload } from '@Constant/types';
 import { EmailService } from '@app/modules/email/email.service';
-import { UserProviderEnum, UserRoleEnum } from '@Constant/index';
+import { CACHE_TTL_SECONDS, LEADERBOARD_KEY, TOTAL_USERS_KEY, UserProviderEnum, UserRoleEnum } from '@Constant/index';
 import { UpdateProfileUserDto } from './dto/update-profile-user.dto';
 import { UpdateForgotPasswordUserDto } from './dto/update-forgot-password';
 import { TokenService } from '@app/modules/auth/services/token.service';
@@ -43,9 +44,14 @@ import {
 import { Response } from 'express';
 import * as sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
+import { CurrentUserRankingDto, RankingUserDto } from './dto/ranking-user.dto';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { RankingResponseDto } from './dto/response/ranking-response.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
@@ -797,5 +803,97 @@ export class UsersService {
       },
     });
     return new ResponseItem(updatedUser, 'Cập nhật thông tin thành công');
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async handleRankingRefresh() {
+    try {
+      await this.refreshRankingData();
+      this.logger.log('Leaderboard refreshed successfully');
+    } catch (error) {
+      this.logger.error('Failed to refresh leaderboard', error.stack);
+    }
+  }
+
+  private async refreshRankingData(): Promise<{ topRanking: RankingUserDto[]; totalUsers: number }> {
+    const users = await this.prisma.user.findMany({
+      where: { roles: { some: { role: { name: UserRoleEnum.USER } } } },
+      select: { id: true, fullName: true, avatarUrl: true },
+      take: 10,
+    });
+
+    const totalUsers = await this.prisma.user.count({
+      where: { roles: { some: { role: { name: UserRoleEnum.USER } } } },
+    });
+
+    const rankedUsers = users
+      .map((u) => ({ ...u, score: Math.floor(Math.random() * 1000) + 100 }))
+      .sort((a, b) => b.score - a.score)
+      .map((u, idx) => ({ rank: idx + 1, ...u }));
+
+    await Promise.all([
+      this.redisService.setValue(LEADERBOARD_KEY, JSON.stringify(rankedUsers), CACHE_TTL_SECONDS),
+      this.redisService.setValue(TOTAL_USERS_KEY, totalUsers.toString(), CACHE_TTL_SECONDS),
+    ]);
+
+    return { topRanking: rankedUsers, totalUsers };
+  }
+
+  async getRanking(currentUserId: string): Promise<ResponseItem<RankingResponseDto>> {
+    let cachedLeaderboard: string | null = null;
+    let cachedTotal: string | null = null;
+
+    try {
+      [cachedLeaderboard, cachedTotal] = await Promise.all([
+        this.redisService.getValue(LEADERBOARD_KEY),
+        this.redisService.getValue(TOTAL_USERS_KEY),
+      ]);
+    } catch (err) {
+      this.logger.warn('Failed to fetch leaderboard from Redis, regenerating', err.stack);
+    }
+
+    let topRanking: RankingUserDto[] = [];
+    let totalUsers = 0;
+
+    try {
+      if (cachedLeaderboard && cachedTotal) {
+        topRanking = JSON.parse(cachedLeaderboard) as RankingUserDto[];
+        totalUsers = parseInt(cachedTotal, 10);
+      } else {
+        throw new Error('Cache missing or incomplete');
+      }
+    } catch (err) {
+      this.logger.warn('Redis cache corrupted or missing, regenerating leaderboard', err.stack);
+      const fresh = await this.refreshRankingData();
+      topRanking = fresh.topRanking;
+      totalUsers = fresh.totalUsers;
+    }
+
+    const userInBoard = topRanking.find((u) => u.id === currentUserId);
+
+    let currentUser: CurrentUserRankingDto;
+
+    if (userInBoard) {
+      currentUser = {
+        userId: userInBoard.id,
+        rank: userInBoard.rank,
+        score: userInBoard.score,
+      };
+    } else {
+      const lastScore = topRanking[topRanking.length - 1]?.score ?? 0;
+      const fakeScore = Math.max(lastScore - 1, 0);
+
+      currentUser = {
+        userId: currentUserId,
+        rank: topRanking.length + 1,
+        score: fakeScore,
+      };
+    }
+
+    return new ResponseItem<RankingResponseDto>({
+      totalUsers,
+      topRanking,
+      currentUser,
+    });
   }
 }
