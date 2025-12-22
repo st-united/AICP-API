@@ -149,7 +149,6 @@ model Course {
   courseType         String?     @default("ONLINE") @map("course_type") @db.VarChar
   durationHours      Int?        @map("duration_hours") @db.SmallInt
   difficultyLevel    SFIALevel?  @map("difficulty_level")
-  aspectId           String      @map("aspect_id") @db.Uuid
   domainId           String?     @db.Uuid
   sfiaLevels         SFIALevel[] @map("sfia_level")
   isActive           Boolean     @default(true) @map("is_active") @db.Boolean
@@ -158,8 +157,8 @@ model Course {
 
   learningPathCourse LearningPathCourse[]
   userProgress       UserLearningProgress[]
-  competencyAspect   CompetencyAspect       @relation(fields: [aspectId], references: [id], onDelete: Cascade)
   domain             Domain?                @relation(fields: [domainId], references: [id])
+  courseAspects CourseAspect[]
 }
 
 model AnswerOption {
@@ -236,8 +235,8 @@ model CompetencyAspect {
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   competencyPillar      CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
   competencySkill       CompetencySkill[]
-  courses               Course[]
   examAspectSnapshot    ExamAspectSnapshot[]
+  courseAspects CourseAspect[]
 }
 
 model ExamSet {
@@ -335,17 +334,18 @@ model MentorCompetency {
 }
 
 model MentorBooking {
-  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  mentorId           String              @map("mentor_id") @db.Uuid
-  status             MentorBookingStatus @default(PENDING)
-  notes              String?
-  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-  pillarFocus        String?             @map("competency_focus") @db.Uuid
-  interviewRequestId String?             @map("interview_request_id") @db.Uuid
-  competencyPillar   CompetencyPillar?   @relation(fields: [pillarFocus], references: [id])
-  interviewRequest   InterviewRequest?   @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
-  mentor             Mentor              @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interviewRequestId String?       @map("interview_request_id") @db.Uuid
+  mentorId    String              @map("mentor_id") @db.Uuid
+  status      MentorBookingStatus @default(UPCOMING)
+  notes       String?             @db.Text
+  pillarFocus String?             @map("competency_focus") @db.Uuid
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  interviewRequest InterviewRequest? @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
+  competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
 
 model MentorSchedule {
@@ -399,7 +399,8 @@ model InterviewRequest {
   mentorTimeSpotId String?          @unique @map("mentor_time_spot_id") @db.Uuid
 
   mentorTimeSpot MentorTimeSpot? @relation("SpotInterview", fields: [mentorTimeSpotId], references: [id], onDelete: SetNull)
-
+  
+  status        InterviewRequestStatus   @default(PENDING)
   createdAt     DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   exam          Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
@@ -628,6 +629,19 @@ model ExamLevel {
   exams Exam[]
 }
 
+model CourseAspect {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId  String           @map("course_id") @db.Uuid
+  aspectId  String           @map("aspect_id") @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  aspect    CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, aspectId])
+}
+
 enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_CHOICE
@@ -636,11 +650,9 @@ enum QuestionType {
 }
 
 enum MentorBookingStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  CANCELLED
-  COMPLETED
+  UPCOMING 
+  COMPLETED 
+  NOT_JOINED 
 }
 
 enum CognitiveLoad {
@@ -748,6 +760,11 @@ enum ExamSetStatus {
   ARCHIVED
 }
 
+enum InterviewRequestStatus {
+  PENDING
+  ASSIGNED
+}
+
 enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
@@ -759,4 +776,10 @@ enum MentorSpotStatus {
   HELD
   BOOKED
   CANCELLED
+}
+
+enum CourseTypes {
+  ONLINE
+  OFFLINE
+  ONLINE_OFFLINE
 }

@@ -29,7 +29,7 @@ spec:
             - -c
             - |
               echo "Checking database connection..."
-              until nc -z postgres-aicp-postgresql.devplus-aicp-dev.svc.cluster.local 5432; do
+              until nc -z postgres-aicp-postgresql.devplus-aicp.svc.cluster.local 5432; do
                 echo "Waiting for database to be ready..."
                 sleep 5
               done
