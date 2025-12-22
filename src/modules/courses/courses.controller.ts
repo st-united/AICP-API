@@ -30,12 +30,6 @@ import { RolesGuard } from '@app/modules/auth/guards/roles.guard';
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
-  @Get()
-  async findAll(@Req() req: any, @Query('excludeId') excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
-    const userId = req.user.userId;
-    return this.coursesService.findAll(userId, excludeId);
-  }
-
   @Post()
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   @ApiBody({ type: CreateCourseDto })
@@ -46,6 +40,12 @@ export class CoursesController {
       ...body,
       thumbnailImage,
     });
+  }
+
+  @Get()
+  async findAll(@Req() req: any, @Query('excludeId') excludeId?: string): Promise<ResponseItem<CourseResponseDto[]>> {
+    const userId = req.user.userId;
+    return this.coursesService.findAll(userId, excludeId);
   }
 
   @Get('paging')
