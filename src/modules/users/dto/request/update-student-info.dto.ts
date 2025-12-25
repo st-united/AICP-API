@@ -1,4 +1,5 @@
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { UniversityDto } from '../profile.dto';
 
 export class UpdateStudentInfoDto {
   @IsNotEmpty()
@@ -7,7 +8,7 @@ export class UpdateStudentInfoDto {
 
   @IsString()
   @IsOptional()
-  university: string;
+  university: UniversityDto;
 
   @IsString()
   @IsOptional()

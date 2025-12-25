@@ -76,12 +76,16 @@ export class UpdateProfileUserDto {
   @IsBoolean()
   isStudent?: boolean;
 
-  @ApiProperty({ description: 'university', example: 'University of Technology' })
+  @ApiProperty({
+    description: 'University ID the user belongs to',
+    example: 'uuid-university-1',
+  })
+  @ApiProperty({ description: 'universityId', example: 'University of Technology' })
   @Expose()
   @ValidateIf((o) => o.isStudent === true)
-  @IsString()
-  @IsNotEmpty({ message: 'University must not be empty when isStudent is true' })
-  university?: string;
+  @IsUUID()
+  @IsNotEmpty({ message: 'University ID must not be empty when isStudent is true' })
+  universityId?: string;
 
   @ApiProperty({ description: 'studentCode', example: 'UST-123456' })
   @Expose()

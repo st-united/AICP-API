@@ -1,6 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsOptional, IsString, IsUrl } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { UniversityDto } from './profile.dto';
+import { University } from '@prisma/client';
 
 const transformArray = ({ value }) => {
   if (typeof value === 'string') {
@@ -22,7 +24,7 @@ export class UpdatePortfolioDto {
   @ApiProperty({ description: 'user university', required: false })
   @IsOptional()
   @IsString()
-  university?: string;
+  university?: University;
 
   @ApiProperty({ description: 'stundent code', required: false })
   @IsOptional()

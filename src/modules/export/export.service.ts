@@ -36,6 +36,7 @@ export class ExportService {
           take: 1,
         },
         userPortfolio: true,
+        university: true,
       },
     });
 
@@ -79,7 +80,7 @@ export class ExportService {
         interviewDate: interview?.interviewDate ? dayjs(interview.interviewDate).format('DD/MM/YYYY') : '',
         interviewSlot: interview?.timeSlot || '',
         studentCode: user.studentCode || '',
-        university: user.university || '',
+        university: user.university?.name || '',
         linkedIn: user.userPortfolio?.linkedInUrl || '',
         github: user.userPortfolio?.githubUrl || '',
         portfolioFiles: user.userPortfolio?.experienceFiles?.join('\n') || '',

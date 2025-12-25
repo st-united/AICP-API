@@ -32,7 +32,8 @@ model User {
   refreshToken String?   @unique @map("refresh_token") @db.VarChar
 
   isStudent   Boolean? @map("is_student") @db.Boolean
-  university  String?  @db.VarChar
+  universityId  String?        @map("university_id") @db.Uuid
+  university    University? @relation(fields: [universityId], references: [id]) 
   studentCode String?  @map("student_code") @db.VarChar
 
   job                Domain[]               @relation("UserDomain")
@@ -47,6 +48,14 @@ model User {
   userPortfolio      Portfolio?             @relation("UserPortfolio")
   verifierPortfolio  Portfolio[]            @relation("VerifierPortfolio")
   userProgress       UserLearningProgress[]
+}
+
+model University {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code      String   @unique @db.VarChar 
+  name      String   @db.VarChar 
+  users     User[]   
+  @@index([code, name]) 
 }
 
 model Role {

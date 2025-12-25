@@ -1,4 +1,4 @@
-import { Domain } from '@prisma/client';
+import { Domain, University } from '@prisma/client';
 import { Expose } from 'class-transformer';
 
 export class ProfileDto {
@@ -54,10 +54,27 @@ export class ProfileDto {
   isStudent?: boolean;
 
   @Expose()
-  university?: string;
+  university?: University;
 
   @Expose()
   studentCode?: string;
+
+  @Expose()
+  zaloVerified?: boolean;
+
+  @Expose()
+  profileCompleted?: boolean;
+}
+
+export class UniversityDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  code: string;
+
+  @Expose()
+  name: string;
 }
 
 class RoleDto {
