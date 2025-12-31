@@ -4,6 +4,7 @@ import { ResponseItem } from '@app/common/dtos';
 import { DomainNamesDto } from './dto/domain-names.dto';
 import { CreateDomainDto } from './dto/request/create-domain.dto';
 import { DomainDto } from './dto/response/domain.dto';
+import { convertStringToEnglish } from '@app/common/utils';
 
 @Injectable()
 export class DomainService {
@@ -41,6 +42,7 @@ export class DomainService {
         data: {
           name: params.name,
           description: params.description,
+          searchText: convertStringToEnglish(params.name, true),
         },
         select: {
           id: true,

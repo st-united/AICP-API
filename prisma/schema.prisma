@@ -214,6 +214,7 @@ model Domain {
   description String?  @db.Text
   version     String   @default("1.0") @db.VarChar
   isActice    Boolean  @default(true) @map("is_active") @db.Boolean
+  searchText  String   @default("") @map("search_text") @db.VarChar
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
