@@ -9,6 +9,7 @@ import { CreateDomainDto } from '@app/modules/domain/dto/request/create-domain.d
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
 import { Roles } from '@app/modules/auth/guards/decorator/roles.decorator';
 import { UserRoleEnum } from '@Constant/enums';
+import { UpdateDomainDto } from './dto/request/update-domain.dto';
 
 @ApiTags('domain')
 @ApiBearerAuth('access-token')
@@ -24,6 +25,15 @@ export class DomainController {
   @ApiResponse({ status: 200, description: 'Create domain successfully' })
   async create(@Body() params: CreateDomainDto): Promise<ResponseItem<DomainDto>> {
     return await this.domainService.create(params);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update domain' })
+  @ApiBody({ type: UpdateDomainDto })
+  @Roles(UserRoleEnum.ADMIN)
+  @ApiResponse({ status: 200, description: 'Update domain successfully' })
+  async update(@Param('id') id: string, @Body() params: UpdateDomainDto): Promise<ResponseItem<DomainDto>> {
+    return await this.domainService.update(id, params);
   }
 
   @Get('names')
