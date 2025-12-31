@@ -6,6 +6,7 @@ import { CreateDomainDto } from '@app/modules/domain/dto/request/create-domain.d
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
 import { UpdateDomainDto } from './dto/request/update-domain.dto';
 import { Prisma } from '@prisma/client';
+import { convertStringToEnglish } from '@app/common/utils';
 
 @Injectable()
 export class DomainService {
@@ -43,6 +44,7 @@ export class DomainService {
         data: {
           name: params.name,
           description: params.description,
+          searchText: convertStringToEnglish(params.name, true),
         },
         select: {
           id: true,
@@ -83,6 +85,7 @@ export class DomainService {
         where: { id },
         data: {
           name: params.name,
+          searchText: convertStringToEnglish(params.name, true),
           ...(params.description !== undefined ? { description: params.description } : {}),
         },
         select: {
