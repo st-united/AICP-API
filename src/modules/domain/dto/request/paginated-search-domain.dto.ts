@@ -1,6 +1,6 @@
 import { PageOptionsDto } from '@app/common/dtos';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, IsArray } from 'class-validator';
+import { IsOptional } from 'class-validator';
 
 export class PaginatedSearchDomainDto extends PageOptionsDto {
   @IsOptional()
