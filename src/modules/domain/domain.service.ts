@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ResponseItem } from '@app/common/dtos';
 import { DomainNamesDto } from './dto/domain-names.dto';
@@ -9,9 +9,12 @@ import { Prisma } from '@prisma/client';
 import { convertStringToEnglish, sanitizeString } from '@app/common/utils';
 import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
 import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
+import { UpdateDomainStatusDto } from '@app/modules/domain/dto/request/update-domain-status.dto';
 
 @Injectable()
 export class DomainService {
+  private readonly logger = new Logger(DomainService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async searchPaging(request: PaginatedSearchDomainDto): Promise<ResponsePaginate<DomainDto>> {
@@ -48,6 +51,7 @@ export class DomainService {
       const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
       return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách lĩnh vực thành công');
     } catch (error) {
+      this.logger.error(error);
       throw new BadRequestException('Không thể tìm kiếm lĩnh vực');
     }
   }
@@ -70,16 +74,15 @@ export class DomainService {
   }
 
   async create(params: CreateDomainDto): Promise<ResponseItem<DomainDto>> {
-    const existed = await this.prisma.domain.findFirst({
-      where: { name: { equals: params.name, mode: 'insensitive' } },
-      select: { id: true },
-    });
-
-    if (existed) {
-      throw new BadRequestException('Lĩnh vực đã tồn tại');
-    }
-
     try {
+      const existed = await this.prisma.domain.findFirst({
+        where: { name: { equals: params.name, mode: 'insensitive' } },
+        select: { id: true },
+      });
+
+      if (existed) {
+        throw new BadRequestException('Lĩnh vực đã tồn tại');
+      }
       const created = await this.prisma.domain.create({
         data: {
           name: params.name,
@@ -103,24 +106,25 @@ export class DomainService {
 
       return new ResponseItem(result, 'Tạo mới lĩnh vực thành công', DomainDto);
     } catch (error) {
+      this.logger.error(error);
+      if (error instanceof BadRequestException) throw error;
       throw new BadRequestException('Không thể tạo mới lĩnh vực');
     }
   }
 
   async update(id: string, params: UpdateDomainDto): Promise<ResponseItem<DomainDto>> {
-    const existedByName = await this.prisma.domain.findFirst({
-      where: {
-        name: { equals: params.name, mode: 'insensitive' },
-        NOT: { id },
-      },
-      select: { id: true },
-    });
-
-    if (existedByName) {
-      throw new BadRequestException('Lĩnh vực đã tồn tại');
-    }
-
     try {
+      const existedByName = await this.prisma.domain.findFirst({
+        where: {
+          name: { equals: params.name, mode: 'insensitive' },
+          NOT: { id },
+        },
+        select: { id: true },
+      });
+
+      if (existedByName) {
+        throw new BadRequestException('Lĩnh vực đã tồn tại');
+      }
       const updated = await this.prisma.domain.update({
         where: { id },
         data: {
@@ -145,13 +149,82 @@ export class DomainService {
 
       return new ResponseItem(result, 'Cập nhật lĩnh vực thành công', DomainDto);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      this.logger.error(error);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
+      throw new BadRequestException('Không thể cập nhật lĩnh vực');
+    }
+  }
+
+  async updateStatus(id: string, params: UpdateDomainStatusDto): Promise<ResponseItem<DomainDto>> {
+    try {
+      const domain = await this.prisma.domain.findFirst({
+        where: { id },
+        select: {
+          id: true,
+          isActice: true,
+        },
+      });
+      if (!domain) {
         throw new NotFoundException('Lĩnh vực không tồn tại');
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new BadRequestException('Lĩnh vực đã tồn tại');
+
+      if (domain.isActice === params.status) {
+        throw new BadRequestException('Lĩnh vực đã ở trạng thái này');
       }
-      throw new BadRequestException('Không thể cập nhật lĩnh vực');
+      const updated = await this.prisma.domain.update({
+        where: { id },
+        data: { isActice: params.status },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          isActice: true,
+        },
+      });
+
+      const result: DomainDto = {
+        id: updated.id,
+        name: updated.name,
+        description: updated.description ?? undefined,
+        status: updated.isActice,
+      };
+
+      return new ResponseItem(result, 'Cập nhật trạng thái lĩnh vực thành công', DomainDto);
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Không thể cập nhật trạng thái lĩnh vực');
+    }
+  }
+
+  async findById(id: string): Promise<ResponseItem<DomainDto>> {
+    try {
+      const domain = await this.prisma.domain.findFirst({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          isActice: true,
+        },
+      });
+
+      if (!domain) {
+        throw new NotFoundException('Lĩnh vực không tồn tại');
+      }
+
+      const result: DomainDto = {
+        id: domain.id,
+        name: domain.name,
+        description: domain.description,
+        status: domain.isActice,
+      };
+
+      return new ResponseItem(result, 'Lấy thông tin lĩnh vực thành công', DomainDto);
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Không thể lấy thông tin lĩnh vực');
     }
   }
 }
