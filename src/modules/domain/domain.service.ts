@@ -10,6 +10,7 @@ import { convertStringToEnglish, sanitizeString } from '@app/common/utils';
 import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
 import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
 import { UpdateDomainStatusDto } from '@app/modules/domain/dto/request/update-domain-status.dto';
+import e from 'express';
 
 @Injectable()
 export class DomainService {
@@ -44,8 +45,8 @@ export class DomainService {
       const result: DomainDto[] = domains.map((domain) => ({
         id: domain.id,
         name: domain.name,
-        description: domain.description ?? undefined,
-        status: domain.isActice,
+        description: domain.description,
+        isActive: domain.isActice,
       }));
 
       const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
@@ -67,9 +68,9 @@ export class DomainService {
         },
       });
 
-      return new ResponseItem(domains, 'Lấy danh sách domain thành công', DomainNamesDto);
+      return new ResponseItem(domains, 'Lấy danh sách lĩnh vực thành công', DomainNamesDto);
     } catch (error) {
-      throw new BadRequestException('Không thể lấy danh sách tên domain');
+      throw new BadRequestException('Không thể lấy danh sách tên lĩnh vực');
     }
   }
 
@@ -101,7 +102,7 @@ export class DomainService {
         id: created.id,
         name: created.name,
         description: created.description,
-        status: created.isActice,
+        isActive: created.isActice,
       };
 
       return new ResponseItem(result, 'Tạo mới lĩnh vực thành công', DomainDto);
@@ -144,7 +145,7 @@ export class DomainService {
         id: updated.id,
         name: updated.name,
         description: updated.description,
-        status: updated.isActice,
+        isActive: updated.isActice,
       };
 
       return new ResponseItem(result, 'Cập nhật lĩnh vực thành công', DomainDto);
@@ -168,12 +169,12 @@ export class DomainService {
         throw new NotFoundException('Lĩnh vực không tồn tại');
       }
 
-      if (domain.isActice === params.status) {
+      if (domain.isActice === params.isActive) {
         throw new BadRequestException('Lĩnh vực đã ở trạng thái này');
       }
       const updated = await this.prisma.domain.update({
         where: { id },
-        data: { isActice: params.status },
+        data: { isActice: params.isActive },
         select: {
           id: true,
           name: true,
@@ -185,14 +186,14 @@ export class DomainService {
       const result: DomainDto = {
         id: updated.id,
         name: updated.name,
-        description: updated.description ?? undefined,
-        status: updated.isActice,
+        description: updated.description,
+        isActive: updated.isActice,
       };
 
       return new ResponseItem(result, 'Cập nhật trạng thái lĩnh vực thành công', DomainDto);
     } catch (error) {
       this.logger.error(error);
-      if (error instanceof NotFoundException) throw error;
+      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
       throw new BadRequestException('Không thể cập nhật trạng thái lĩnh vực');
     }
   }
@@ -217,7 +218,7 @@ export class DomainService {
         id: domain.id,
         name: domain.name,
         description: domain.description,
-        status: domain.isActice,
+        isActive: domain.isActice,
       };
 
       return new ResponseItem(result, 'Lấy thông tin lĩnh vực thành công', DomainDto);

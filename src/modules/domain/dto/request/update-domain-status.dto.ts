@@ -10,5 +10,5 @@ export class UpdateDomainStatusDto {
     return value;
   })
   @IsBoolean()
-  status: boolean;
+  isActive: boolean;
 }
