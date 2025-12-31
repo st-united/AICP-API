@@ -101,7 +101,7 @@ export class DomainService {
         id: created.id,
         name: created.name,
         description: created.description,
-        status: created.isActice,
+        isActive: created.isActice,
       };
 
       return new ResponseItem(result, 'Tạo mới lĩnh vực thành công', DomainDto);
@@ -144,7 +144,7 @@ export class DomainService {
         id: updated.id,
         name: updated.name,
         description: updated.description,
-        status: updated.isActice,
+        isActive: updated.isActice,
       };
 
       return new ResponseItem(result, 'Cập nhật lĩnh vực thành công', DomainDto);
@@ -168,12 +168,12 @@ export class DomainService {
         throw new NotFoundException('Lĩnh vực không tồn tại');
       }
 
-      if (domain.isActice === params.status) {
+      if (domain.isActice === params.isActive) {
         throw new BadRequestException('Lĩnh vực đã ở trạng thái này');
       }
       const updated = await this.prisma.domain.update({
         where: { id },
-        data: { isActice: params.status },
+        data: { isActice: params.isActive },
         select: {
           id: true,
           name: true,
@@ -186,7 +186,7 @@ export class DomainService {
         id: updated.id,
         name: updated.name,
         description: updated.description ?? undefined,
-        status: updated.isActice,
+        isActive: updated.isActice,
       };
 
       return new ResponseItem(result, 'Cập nhật trạng thái lĩnh vực thành công', DomainDto);
@@ -217,7 +217,7 @@ export class DomainService {
         id: domain.id,
         name: domain.name,
         description: domain.description,
-        status: domain.isActice,
+        isActive: domain.isActice,
       };
 
       return new ResponseItem(result, 'Lấy thông tin lĩnh vực thành công', DomainDto);

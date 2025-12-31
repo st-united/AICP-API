@@ -21,5 +21,5 @@ export class DomainDto {
   @Expose()
   @ApiProperty({ description: 'Domain status' })
   @IsBoolean()
-  status?: boolean;
+  isActive?: boolean;
 }
