@@ -4,13 +4,53 @@ import { ResponseItem } from '@app/common/dtos';
 import { DomainNamesDto } from './dto/domain-names.dto';
 import { CreateDomainDto } from '@app/modules/domain/dto/request/create-domain.dto';
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
-import { UpdateDomainDto } from './dto/request/update-domain.dto';
+import { UpdateDomainDto } from '@app/modules/domain/dto/request/update-domain.dto';
 import { Prisma } from '@prisma/client';
-import { convertStringToEnglish } from '@app/common/utils';
+import { convertStringToEnglish, sanitizeString } from '@app/common/utils';
+import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
+import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
 
 @Injectable()
 export class DomainService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async searchPaging(request: PaginatedSearchDomainDto): Promise<ResponsePaginate<DomainDto>> {
+    try {
+      const { search, status } = request;
+
+      const where: Prisma.DomainWhereInput = {
+        ...(search && search.trim() && { searchText: { contains: convertStringToEnglish(search, true) } }),
+        isActice: status,
+      };
+      const [domains, total] = await this.prisma.$transaction([
+        this.prisma.domain.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            isActice: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          skip: request.skip,
+          take: request.take,
+        }),
+        this.prisma.domain.count({ where }),
+      ]);
+
+      const result: DomainDto[] = domains.map((domain) => ({
+        id: domain.id,
+        name: domain.name,
+        description: domain.description ?? undefined,
+        status: domain.isActice,
+      }));
+
+      const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
+      return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách lĩnh vực thành công');
+    } catch (error) {
+      throw new BadRequestException('Không thể tìm kiếm lĩnh vực');
+    }
+  }
 
   async findNames(): Promise<ResponseItem<DomainNamesDto>> {
     try {
