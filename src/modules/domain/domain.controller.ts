@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, ParseUUIDPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { Public } from '../auth/guards/decorator/public.decorator';
@@ -20,6 +20,14 @@ import { UpdateDomainStatusDto } from './dto/request/update-domain-status.dto';
 export class DomainController {
   constructor(private readonly domainService: DomainService) {}
 
+  @Get('names')
+  @Public()
+  @ApiOperation({ summary: 'Get all domains' })
+  @ApiResponse({ status: 200, description: 'Get all domains successfully' })
+  async findNames(): Promise<ResponseItem<DomainNamesDto>> {
+    return await this.domainService.findNames();
+  }
+
   @Get()
   @Roles(UserRoleEnum.ADMIN)
   @ApiOperation({ summary: 'Search domains by params' })
@@ -37,11 +45,23 @@ export class DomainController {
     return await this.domainService.create(params);
   }
 
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Activate/Deactivate domain' })
+  @ApiBody({ type: UpdateDomainStatusDto })
+  @Roles(UserRoleEnum.ADMIN)
+  @ApiResponse({ status: 200, description: 'Update domain status successfully' })
+  async updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() params: UpdateDomainStatusDto
+  ): Promise<ResponseItem<DomainDto>> {
+    return await this.domainService.updateStatus(id, params);
+  }
+
   @Get(':id')
   @Roles(UserRoleEnum.ADMIN)
   @ApiOperation({ summary: 'Get domain by id' })
   @ApiResponse({ status: 200, description: 'Get domain successfully' })
-  async findOne(@Param('id') id: string): Promise<ResponseItem<DomainDto>> {
+  async findById(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<DomainDto>> {
     return await this.domainService.findById(id);
   }
 
@@ -50,24 +70,10 @@ export class DomainController {
   @ApiBody({ type: UpdateDomainDto })
   @Roles(UserRoleEnum.ADMIN)
   @ApiResponse({ status: 200, description: 'Update domain successfully' })
-  async update(@Param('id') id: string, @Body() params: UpdateDomainDto): Promise<ResponseItem<DomainDto>> {
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() params: UpdateDomainDto
+  ): Promise<ResponseItem<DomainDto>> {
     return await this.domainService.update(id, params);
-  }
-
-  @Patch(':id/status')
-  @ApiOperation({ summary: 'Activate/Deactivate domain' })
-  @ApiBody({ type: UpdateDomainStatusDto })
-  @Roles(UserRoleEnum.ADMIN)
-  @ApiResponse({ status: 200, description: 'Update domain status successfully' })
-  async updateStatus(@Param('id') id: string, @Body() params: UpdateDomainStatusDto): Promise<ResponseItem<DomainDto>> {
-    return await this.domainService.updateStatus(id, params);
-  }
-
-  @Get('names')
-  @Public()
-  @ApiOperation({ summary: 'Get all domains' })
-  @ApiResponse({ status: 200, description: 'Get all domains successfully' })
-  async findNames(): Promise<ResponseItem<DomainNamesDto>> {
-    return await this.domainService.findNames();
   }
 }
