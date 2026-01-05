@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { convertStringToEnglish } from '../../src/common/utils/stringUtils';
 
 export async function seedDomains(prisma: PrismaClient) {
   const domainsData = [
@@ -37,10 +38,12 @@ export async function seedDomains(prisma: PrismaClient) {
   ];
 
   for (const domainData of domainsData) {
+    const searchText = convertStringToEnglish(domainData.name, true);
+
     await prisma.domain.upsert({
       where: { name: domainData.name },
-      update: {},
-      create: domainData,
+      update: { description: domainData.description, searchText },
+      create: { ...domainData, searchText },
     });
   }
 }
