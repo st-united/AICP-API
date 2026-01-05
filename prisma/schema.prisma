@@ -329,10 +329,7 @@ model Exam {
   examPillarSnapshot   ExamPillarSnapshot[]
   InterviewRequest     InterviewRequest[]
   userAnswer           UserAnswer[]
-
-  assessmentMethod AssessmentMethod? @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+  assessmentMethod     AssessmentMethod?      @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model ExamSetQuestion {

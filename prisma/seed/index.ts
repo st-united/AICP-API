@@ -83,7 +83,6 @@ async function main() {
   await seedAssessmentMethods(prisma);
   const assessmentMethods = await prisma.assessmentMethod.findMany();
 
-  await prisma.assessmentMethod.findMany();
   // 14.5 Competency Aspect Assessment Method
   await seedCompetencyAspectAssessmentMethod(prisma, aspects, assessmentMethods);
 

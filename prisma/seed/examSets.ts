@@ -1,4 +1,5 @@
 import { PrismaClient, Question, CompetencyFramework, AssessmentMethod } from '@prisma/client';
+import { AssessmentMethodSeedEnum } from './constant/assessmentMethodSeedEnum';
 
 export async function seedExamSets(
   prisma: PrismaClient,
@@ -69,9 +70,11 @@ export async function seedExamSets(
 
   await Promise.all(
     examSetsData.map(async (examSetData) => {
-      const getAssessmentID = assessmentMethods.find((am) => am.name === 'Self Assessment')?.id;
+      const getAssessmentID = assessmentMethods.find((am) => am.name === AssessmentMethodSeedEnum.TEST_ONLINE)?.id;
       if (!getAssessmentID) {
-        throw new Error('Assessment method "Self Assessment" not found. Ensure seedAssessmentMethods runs first.');
+        throw new Error(
+          `Assessment method ${AssessmentMethodSeedEnum.TEST_ONLINE} not found. Ensure seedAssessmentMethods runs first.`
+        );
       }
       const examSet = await prisma.examSet.create({
         data: {
