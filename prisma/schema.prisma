@@ -239,26 +239,40 @@ model CompetencyAspect {
   courseAspects CourseAspect[]
 }
 
-model ExamSet {
-  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String         @db.VarChar
-  urlImage         String?        @map("url_image") @db.VarChar(255)
-  startDate        DateTime?      @map("start_date") @db.Timestamptz(6)
-  endDate          DateTime?      @map("end_date") @db.Timestamptz(6)
-  status           ExamSetStatus  @default(DRAFT)
-  description      String?        @db.Text
-  frameworkId      String         @map("framework_id") @db.Uuid
-  assessmentType   AssessmentType @default(SELF_ASSESSMENT) @map("assessment_type")
-  timeLimitMinutes Int?           @map("time_limit_minutes") @db.SmallInt
-  passingScore     Decimal?       @default(4) @map("passing_score") @db.Decimal(3, 2)
-  isAdaptive       Boolean        @default(false) @map("is_adaptive") @db.Boolean
-  isActive         Boolean        @default(true) @map("is_active") @db.Boolean
-  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+model AssessmentMethod {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String   @unique @db.VarChar
+  description      String?  @db.Text
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  exam        Exam[]
-  setQuestion ExamSetQuestion[]
-  framework   CompetencyFramework? @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  examSet          ExamSet[]
+  exam             Exam[]
+  competencyAssessment CompetencyAssessment[]
+}
+
+model ExamSet {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String                @db.VarChar
+  urlImage             String?               @map("url_image") @db.VarChar(255)
+  startDate            DateTime?             @map("start_date") @db.Timestamptz(6)
+  endDate              DateTime?             @map("end_date") @db.Timestamptz(6)
+  status               ExamSetStatus         @default(DRAFT)
+  description          String?               @db.Text
+  frameworkId          String                @map("framework_id") @db.Uuid
+  assessmentMethodId   String?               @map("assessment_method_id") @db.Uuid 
+  timeLimitMinutes     Int?                  @map("time_limit_minutes") @db.SmallInt
+  passingScore         Decimal?              @default(4) @map("passing_score") @db.Decimal(3, 2)
+  isAdaptive           Boolean               @default(false) @map("is_adaptive") @db.Boolean
+  isActive             Boolean               @default(true) @map("is_active") @db.Boolean
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  exam               Exam[]
+  setQuestion        ExamSetQuestion[]
+  framework          CompetencyFramework?    @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  assessmentMethod   AssessmentMethod?       @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model Exam {
@@ -269,7 +283,7 @@ model Exam {
   finishedAt           DateTime?              @map("finished_at") @db.Timestamptz(6)
   createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
-  assessmentType       AssessmentType         @default(SELF_ASSESSMENT) @map("assessment_type")
+  assessmentMethodId   String?                @map("assessment_method_id") @db.Uuid
   completionPercent    Decimal?               @default(0) @map("completion_percent") @db.Decimal(3, 2)
   overallScore         Decimal?               @map("overall_score") @db.Decimal(3, 2)
   readyToWorkTier      ReadyToWorkTier?       @map("ready_to_work_tier")
@@ -288,6 +302,7 @@ model Exam {
   examPillarSnapshot   ExamPillarSnapshot[]
   InterviewRequest     InterviewRequest[]
   userAnswer           UserAnswer[]
+  assessmentMethod     AssessmentMethod?      @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model ExamSetQuestion {
@@ -408,6 +423,7 @@ model CompetencyAssessment {
   frameworkId       String              @map("framework_id") @db.Uuid
   examId            String?             @map("exam_id") @db.Uuid
   assessorId        String?             @map("assessor_id") @db.Uuid
+  assessmentMethodId String              @map("assessment_method_id") @db.Uuid
   mindsetScore      Decimal             @map("mindset_score") @db.Decimal(3, 2)
   skillsetScore     Decimal             @map("skillset_score") @db.Decimal(3, 2)
   toolsetScore      Decimal             @map("toolset_score") @db.Decimal(3, 2)
@@ -416,7 +432,6 @@ model CompetencyAssessment {
   readyToWorkTier   ReadyToWorkTier?    @map("ready_to_work_tier")
   certificationDate DateTime?           @map("certification_date")
   expiryDate        DateTime?           @map("expiry_date")
-  assessmentType    AssessmentType      @map("assessment_type")
   isCurrent         Boolean             @default(true) @map("is_current")
   createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -425,6 +440,7 @@ model CompetencyAssessment {
   framework         CompetencyFramework @relation(fields: [frameworkId], references: [id])
   user              User                @relation("UserAssessment", fields: [userId], references: [id], onDelete: Cascade)
   score             CompetencyScore[]
+  assessmentMethod  AssessmentMethod    @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model CompetencyScore {
@@ -622,15 +638,6 @@ enum ExamStatus {
   INTERVIEW_SCHEDULED
   INTERVIEW_COMPLETED
   RESULT_EVALUATED
-}
-
-enum AssessmentType {
-  SELF_ASSESSMENT
-  PEER_REVIEW
-  MANAGER_REVIEW
-  PRACTICAL_SKILLS
-  PORTFOLIO_REVIEW
-  COMPREHENSIVE
 }
 
 enum SFIALevel {
