@@ -1,36 +1,22 @@
 import { convertStringToEnglish } from '../../src/common/utils/stringUtils';
 import { PrismaClient } from '@prisma/client';
+import { AssessmentMethodSeedEnum } from './constant/assessmentMethodSeedEnum';
 
 export async function seedAssessmentMethods(prisma: PrismaClient) {
   const assessmentMethods = [
     {
-      name: 'Self Assessment',
-      description: 'Individual self-evaluation of competencies and skills',
+      name: AssessmentMethodSeedEnum.TEST_ONLINE,
+      description: 'Online test to assess individual competencies and skills',
       isActive: true,
     },
     {
-      name: 'Peer Review',
-      description: 'Evaluation by colleagues or peers',
+      name: AssessmentMethodSeedEnum.EVIDENCE,
+      description: 'Assessment based on submitted evidence such as work samples, certificates, or portfolios',
       isActive: true,
     },
     {
-      name: 'Manager Review',
-      description: 'Evaluation by direct manager or supervisor',
-      isActive: true,
-    },
-    {
-      name: 'Practical Skills Test',
-      description: 'Hands-on assessment of practical abilities',
-      isActive: true,
-    },
-    {
-      name: 'Portfolio Review',
-      description: 'Assessment based on portfolio of work and evidence',
-      isActive: true,
-    },
-    {
-      name: 'Comprehensive Assessment',
-      description: 'Comprehensive evaluation combining multiple methods',
+      name: AssessmentMethodSeedEnum.INTERVIEW,
+      description: 'Competency assessment conducted through a structured interview with an expert or evaluator',
       isActive: true,
     },
   ];
