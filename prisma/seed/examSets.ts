@@ -4,8 +4,7 @@ import { AssessmentMethodSeedEnum } from './constant/assessmentMethodSeedEnum';
 export async function seedExamSets(
   prisma: PrismaClient,
   questions: Question[],
-  competencyFrameworks: CompetencyFramework[],
-  assessmentMethods: AssessmentMethod[]
+  competencyFrameworks: CompetencyFramework[]
 ) {
   const competencyFrameworkMap = Object.fromEntries(competencyFrameworks.map((c) => [c.version, c]));
 
@@ -70,12 +69,6 @@ export async function seedExamSets(
 
   await Promise.all(
     examSetsData.map(async (examSetData) => {
-      const getAssessmentID = assessmentMethods.find((am) => am.name === AssessmentMethodSeedEnum.TEST_ONLINE)?.id;
-      if (!getAssessmentID) {
-        throw new Error(
-          `Assessment method ${AssessmentMethodSeedEnum.TEST_ONLINE} not found. Ensure seedAssessmentMethods runs first.`
-        );
-      }
       const examSet = await prisma.examSet.create({
         data: {
           name: examSetData.name,
@@ -86,7 +79,6 @@ export async function seedExamSets(
           timeLimitMinutes: 15,
           passingScore: 3,
           frameworkId: competencyFrameworkMap[examSetData.frameworkVersion].id,
-          assessmentMethodId: getAssessmentID,
         },
       });
 

@@ -262,8 +262,6 @@ model AssessmentMethod {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  examSet              ExamSet[]
-  exam                 Exam[]
   competencyAssessment CompetencyAssessment[]
   competencyAspects    CompetencyAspectAssessmentMethod[]
 }
@@ -280,26 +278,24 @@ model CompetencyAspectAssessmentMethod {
 }
 
 model ExamSet {
-  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name               String        @db.VarChar
-  urlImage           String?       @map("url_image") @db.VarChar(255)
-  startDate          DateTime?     @map("start_date") @db.Timestamptz(6)
-  endDate            DateTime?     @map("end_date") @db.Timestamptz(6)
-  status             ExamSetStatus @default(DRAFT)
-  description        String?       @db.Text
-  frameworkId        String        @map("framework_id") @db.Uuid
-  assessmentMethodId String?       @map("assessment_method_id") @db.Uuid
-  timeLimitMinutes   Int?          @map("time_limit_minutes") @db.SmallInt
-  passingScore       Decimal?      @default(4) @map("passing_score") @db.Decimal(3, 2)
-  isAdaptive         Boolean       @default(false) @map("is_adaptive") @db.Boolean
-  isActive           Boolean       @default(true) @map("is_active") @db.Boolean
-  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String        @db.VarChar
+  urlImage         String?       @map("url_image") @db.VarChar(255)
+  startDate        DateTime?     @map("start_date") @db.Timestamptz(6)
+  endDate          DateTime?     @map("end_date") @db.Timestamptz(6)
+  status           ExamSetStatus @default(DRAFT)
+  description      String?       @db.Text
+  frameworkId      String        @map("framework_id") @db.Uuid
+  timeLimitMinutes Int?          @map("time_limit_minutes") @db.SmallInt
+  passingScore     Decimal?      @default(4) @map("passing_score") @db.Decimal(3, 2)
+  isAdaptive       Boolean       @default(false) @map("is_adaptive") @db.Boolean
+  isActive         Boolean       @default(true) @map("is_active") @db.Boolean
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   exam             Exam[]
   setQuestion      ExamSetQuestion[]
   framework        CompetencyFramework? @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  assessmentMethod AssessmentMethod?    @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model Exam {
@@ -310,7 +306,6 @@ model Exam {
   finishedAt           DateTime?              @map("finished_at") @db.Timestamptz(6)
   createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
-  assessmentMethodId   String?                @map("assessment_method_id") @db.Uuid
   completionPercent    Decimal?               @default(0) @map("completion_percent") @db.Decimal(3, 2)
   overallScore         Decimal?               @map("overall_score") @db.Decimal(3, 2)
   readyToWorkTier      ReadyToWorkTier?       @map("ready_to_work_tier")
@@ -329,7 +324,6 @@ model Exam {
   examPillarSnapshot   ExamPillarSnapshot[]
   InterviewRequest     InterviewRequest[]
   userAnswer           UserAnswer[]
-  assessmentMethod     AssessmentMethod?      @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model ExamSetQuestion {
