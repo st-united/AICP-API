@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, NotFoundException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MutateAssessmentMethodDto } from './dto/request/mutate-assessment-method.dto';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
@@ -7,8 +8,6 @@ import { AssessmentMethodsQueries } from './assessment-methods.queries';
 import { AssessmentMethodRaw } from './interface/AssessmentMethodRaw';
 import { ResponseAssessmentMethodDto } from './dto/response/response-assessment-method.dto';
 import { plainToInstance } from 'class-transformer';
-import { convertStringToEnglish } from '@app/common/utils';
-import { ConflictException } from '@nestjs/common';
 
 @Injectable()
 export class AssessmentMethodsService {
@@ -66,5 +65,33 @@ export class AssessmentMethodsService {
       }),
       'Tạo phương thức đánh giá thành công'
     );
+  }
+  async update(id: string, dto: MutateAssessmentMethodDto): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    try {
+      const method = await this.prisma.assessmentMethod.update({
+        where: { id },
+        data: {
+          name: dto.name,
+          description: dto.description,
+        },
+      });
+
+      return new ResponseItem(
+        plainToInstance(ResponseAssessmentMethodDto, method, {
+          excludeExtraneousValues: true,
+        }),
+        'Cập nhật phương thức đánh giá thành công'
+      );
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        if (e.code === 'P2025') {
+          throw new NotFoundException('Không tìm thấy phương thức đánh giá');
+        }
+        if (e.code === 'P2002') {
+          throw new ConflictException('Tên phương thức đánh giá đã tồn tại.');
+        }
+      }
+      throw e;
+    }
   }
 }
