@@ -400,7 +400,14 @@ export class MentorsService {
           examStatus: ExamStatus.INTERVIEW_SCHEDULED,
         },
       });
-
+      const currentUser = await this.userService.findById(userId);
+      await this.emailService.sendEmailInterviewScheduleToUser({
+        email: currentUser.email,
+        fullName: currentUser.fullName,
+        interviewDate: booking.interviewDate,
+        timeSlot: booking.timeSlot,
+        meetLink: 'https://meet.google.com/abc-defg-hij',
+      });
       return new ResponseItem(booking, 'Đặt lịch thành công!');
     } catch (error) {
       if (error instanceof ConflictException || error instanceof BadRequestException) {
