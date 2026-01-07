@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AssessmentMethodsService } from './assessment-methods.service';
 import { RequestListAssessmentMethodDto } from './dto/request/request-list-assessment-method.dto';
@@ -55,5 +55,30 @@ export class AssessmentMethodsController {
   @Post()
   async create(@Body() dto: MutateAssessmentMethodDto): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
     return this.assessmentMethodsService.create(dto);
+  }
+
+  /** Update assessment method */
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update assessment method' })
+  @ApiParam({ name: 'id', description: 'Assessment method ID' })
+  @ApiBody({ type: MutateAssessmentMethodDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Assessment method updated successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Assessment method not found',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @Patch(':id')
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: MutateAssessmentMethodDto
+  ): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    return this.assessmentMethodsService.update(id, dto);
   }
 }
