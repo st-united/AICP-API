@@ -7,6 +7,7 @@ import { RequestListAssessmentMethodDto } from './dto/request/request-list-asses
 import { plainToInstance } from 'class-transformer';
 import { convertStringToEnglish } from '@app/common/utils';
 import { ResponseAssessmentMethodDto } from './dto/response/response-assessment-method.dto';
+import { RequestChangeStatusDto } from './dto/request/request-change-status';
 
 @Injectable()
 export class AssessmentMethodsService {
@@ -94,5 +95,33 @@ export class AssessmentMethodsService {
       }
       throw e;
     }
+  }
+
+  async setStatus(id: string, dto: RequestChangeStatusDto): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    const existing = await this.prisma.assessmentMethod.findUnique({
+      where: { id },
+      select: { id: true, isActive: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Không tìm thấy phương thức đánh giá');
+    }
+
+    if (existing.isActive === dto.isActive) {
+      return new ResponseItem(
+        plainToInstance(ResponseAssessmentMethodDto, existing, { excludeExtraneousValues: true }),
+        'Trạng thái không thay đổi'
+      );
+    }
+    const method = await this.prisma.assessmentMethod.update({
+      where: { id },
+      data: { isActive: dto.isActive },
+    });
+    return new ResponseItem(
+      plainToInstance(ResponseAssessmentMethodDto, method, {
+        excludeExtraneousValues: true,
+      }),
+      'Cập nhật trạng thái phương thức đánh giá thành công'
+    );
   }
 }
