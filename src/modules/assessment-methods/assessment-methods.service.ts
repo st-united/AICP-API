@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ResponseAssessmentMethodDto } from './dto/response/response-assessment-method.dto';
-import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
+import { MutateAssessmentMethodDto } from './dto/request/mutate-assessment-method.dto';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { RequestListAssessmentMethodDto } from './dto/request/request-list-assessment-method.dto';
 import { plainToInstance } from 'class-transformer';
 import { convertStringToEnglish } from '@app/common/utils';
+import { ResponseAssessmentMethodDto } from './dto/response/response-assessment-method.dto';
 
 @Injectable()
 export class AssessmentMethodsService {
@@ -39,6 +40,30 @@ export class AssessmentMethodsService {
       methodsData,
       pageMetaDto,
       'Lấy danh sách phương thức đánh giá thành công'
+    );
+  }
+
+  async create(dto: MutateAssessmentMethodDto): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    const existingMethod = await this.prisma.assessmentMethod.findUnique({
+      where: { name: dto.name },
+    });
+
+    if (existingMethod) {
+      throw new BadRequestException('Phương thức đánh giá đã tồn tại.');
+    }
+
+    const method = await this.prisma.assessmentMethod.create({
+      data: {
+        name: dto.name,
+        description: dto.description || null,
+        searchText: convertStringToEnglish(dto.name, true),
+      },
+    });
+    return new ResponseItem(
+      plainToInstance(ResponseAssessmentMethodDto, method, {
+        excludeExtraneousValues: true,
+      }),
+      'Tạo phương thức đánh giá thành công'
     );
   }
 }
