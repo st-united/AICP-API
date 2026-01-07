@@ -10,6 +10,7 @@ import { convertStringToEnglish, sanitizeString } from '@app/common/utils';
 import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
 import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
 import { UpdateDomainStatusDto } from '@app/modules/domain/dto/request/update-domain-status.dto';
+import { Order } from '@Constant/enums';
 
 @Injectable()
 export class DomainService {
@@ -23,7 +24,7 @@ export class DomainService {
 
       const where: Prisma.DomainWhereInput = {
         ...(search && search.trim() && { searchText: { contains: convertStringToEnglish(search, true) } }),
-        isActice: status,
+        isActive: status,
       };
       const [domains, total] = await this.prisma.$transaction([
         this.prisma.domain.findMany({
@@ -32,7 +33,7 @@ export class DomainService {
             id: true,
             name: true,
             description: true,
-            isActice: true,
+            isActive: true,
           },
           orderBy: { createdAt: 'desc' },
           skip: request.skip,
@@ -45,7 +46,7 @@ export class DomainService {
         id: domain.id,
         name: domain.name,
         description: domain.description,
-        isActive: domain.isActice,
+        isActive: domain.isActive,
       }));
 
       const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
@@ -59,8 +60,8 @@ export class DomainService {
   async findNames(): Promise<ResponseItem<DomainNamesDto>> {
     try {
       const domains = await this.prisma.domain.findMany({
-        where: { isActice: true },
-        orderBy: { createdAt: 'desc' },
+        where: { isActive: true },
+        orderBy: { createdAt: Order.DESC },
         select: {
           id: true,
           name: true,
@@ -93,7 +94,7 @@ export class DomainService {
           id: true,
           name: true,
           description: true,
-          isActice: true,
+          isActive: true,
         },
       });
 
@@ -101,7 +102,7 @@ export class DomainService {
         id: created.id,
         name: created.name,
         description: created.description,
-        isActive: created.isActice,
+        isActive: created.isActive,
       };
 
       return new ResponseItem(result, 'Tạo mới lĩnh vực thành công', DomainDto);
@@ -136,7 +137,7 @@ export class DomainService {
           id: true,
           name: true,
           description: true,
-          isActice: true,
+          isActive: true,
         },
       });
 
@@ -144,7 +145,7 @@ export class DomainService {
         id: updated.id,
         name: updated.name,
         description: updated.description,
-        isActive: updated.isActice,
+        isActive: updated.isActive,
       };
 
       return new ResponseItem(result, 'Cập nhật lĩnh vực thành công', DomainDto);
@@ -161,24 +162,24 @@ export class DomainService {
         where: { id },
         select: {
           id: true,
-          isActice: true,
+          isActive: true,
         },
       });
       if (!domain) {
         throw new NotFoundException('Lĩnh vực không tồn tại');
       }
 
-      if (domain.isActice === params.isActive) {
+      if (domain.isActive === params.isActive) {
         throw new BadRequestException('Lĩnh vực đã ở trạng thái này');
       }
       const updated = await this.prisma.domain.update({
         where: { id },
-        data: { isActice: params.isActive },
+        data: { isActive: params.isActive },
         select: {
           id: true,
           name: true,
           description: true,
-          isActice: true,
+          isActive: true,
         },
       });
 
@@ -186,7 +187,7 @@ export class DomainService {
         id: updated.id,
         name: updated.name,
         description: updated.description,
-        isActive: updated.isActice,
+        isActive: updated.isActive,
       };
 
       return new ResponseItem(result, 'Cập nhật trạng thái lĩnh vực thành công', DomainDto);
@@ -205,7 +206,7 @@ export class DomainService {
           id: true,
           name: true,
           description: true,
-          isActice: true,
+          isActive: true,
         },
       });
 
@@ -217,7 +218,7 @@ export class DomainService {
         id: domain.id,
         name: domain.name,
         description: domain.description,
-        isActive: domain.isActice,
+        isActive: domain.isActive,
       };
 
       return new ResponseItem(result, 'Lấy thông tin lĩnh vực thành công', DomainDto);

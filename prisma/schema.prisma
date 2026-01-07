@@ -167,7 +167,7 @@ model Course {
   learningPathCourse LearningPathCourse[]
   userProgress       UserLearningProgress[]
   domain             Domain?                @relation(fields: [domainId], references: [id])
-  courseAspects CourseAspect[]
+  courseAspects      CourseAspect[]
 }
 
 model AnswerOption {
@@ -222,8 +222,8 @@ model Domain {
   name        String   @unique @db.VarChar
   description String?  @db.Text
   version     String   @default("1.0") @db.VarChar
-  isActice    Boolean  @default(true) @map("is_active") @db.Boolean
   searchText  String   @default("") @map("search_text") @db.VarChar
+  isActive    Boolean  @default(true) @map("is_active") @db.Boolean
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -234,19 +234,19 @@ model Domain {
 }
 
 model CompetencyAspect {
-  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String              @map("pillar_id") @db.Uuid
-  name                  String              @unique @db.VarChar
-  represent             String              @default("") @db.VarChar
-  description           String              @db.Text
-  weightWithinDimension Decimal             @map("weight_within_dimension") @db.Decimal(3, 2)
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pillarId              String               @map("pillar_id") @db.Uuid
+  name                  String               @unique @db.VarChar
+  represent             String               @default("") @db.VarChar
+  description           String               @db.Text
+  weightWithinDimension Decimal              @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
   createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   competencyPillar      CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
   competencySkill       CompetencySkill[]
   examAspectSnapshot    ExamAspectSnapshot[]
-  courseAspects CourseAspect[]
+  courseAspects         CourseAspect[]
 }
 
 model ExamSet {
@@ -298,6 +298,8 @@ model Exam {
   examPillarSnapshot   ExamPillarSnapshot[]
   InterviewRequest     InterviewRequest[]
   userAnswer           UserAnswer[]
+
+  @@index([userId])
 }
 
 model ExamSetQuestion {
@@ -325,6 +327,8 @@ model Mentor {
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookings         MentorBooking[]
   mentorCompetency MentorCompetency[]
+
+  timeSpots MentorTimeSpot[] @relation("MentorSpots")
 }
 
 model MentorCompetency {
@@ -345,25 +349,54 @@ model MentorBooking {
   status             MentorBookingStatus @default(UPCOMING)
   notes              String?             @db.Text
   pillarFocus        String?             @map("competency_focus") @db.Uuid
-  meetingUrl         String?             @map("meeting_url")
   createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   mentor           Mentor            @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  interviewRequest InterviewRequest? @relation(fields: [interviewRequestId], references: [id], onDelete: Cascade)
+  interviewRequest InterviewRequest? @relation("InterviewRequestBookings", fields: [interviewRequestId], references: [id], onDelete: Cascade)
   competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
 
+
+model MentorTimeSpot {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mentorId String @map("mentor_id") @db.Uuid
+
+  startAt         DateTime @map("start_at")
+  endAt           DateTime @map("end_at")
+  durationMinutes Int      @map("duration_minutes")
+
+  status   MentorSpotStatus @default(AVAILABLE)
+  timezone String
+
+  meetUrl String? @map("meet_url") @db.Text
+  calendarEventId String? @map("calendar_event_id") @db.Text
+
+  mentor Mentor          @relation("MentorSpots", fields: [mentorId], references: [id])
+
+  interviewRequest InterviewRequest? @relation("SpotInterview")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([mentorId, startAt])
+  @@index([mentorId, startAt])
+  @@index([status, startAt])
+}
+
 model InterviewRequest {
-  id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  examId        String                   @unique @map("exam_id") @db.Uuid
-  interviewDate DateTime                 @map("interview_date") @db.Timestamptz(6)
-  timeSlot      TimeSlotBooking          @map("time_slot")
-  status        InterviewRequestStatus   @default(PENDING)
-  createdAt     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  exam          Exam                     @relation(fields: [examId], references: [id], onDelete: Cascade)
-  MentorBooking MentorBooking[]
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examId String @unique @map("exam_id") @db.Uuid
+
+  currentSpotId String?         @unique @map("current_spot_id") @db.Uuid
+  currentSpot   MentorTimeSpot? @relation("SpotInterview", fields: [currentSpotId], references: [id], onDelete: SetNull)
+
+  status    InterviewRequestStatus @default(PENDING)
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  mentorBookings MentorBooking[] @relation("InterviewRequestBookings")
+  exam           Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
 }
 
 model CompetencyFramework {
@@ -548,7 +581,7 @@ model Portfolio {
 model OrganizationalMetrics {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   domainId         String   @map("domain_id") @db.Uuid
-  metricDate       DateTime @map("metricDate") @db.Timestamptz(6)
+  metricDate       DateTime @map("metric_date") @db.Timestamptz(6)
   totalUsers       Int      @map("total_users") @db.SmallInt
   assessedUsers    Int      @map("assessed_users") @db.SmallInt
   avgOverallScore  Decimal? @map("avg_overall_score") @db.Decimal(3, 2)
@@ -591,14 +624,14 @@ model ExamLevel {
 }
 
 model CourseAspect {
-  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  courseId  String           @map("course_id") @db.Uuid
-  aspectId  String           @map("aspect_id") @db.Uuid
-  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId  String   @map("course_id") @db.Uuid
+  aspectId  String   @map("aspect_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  aspect    CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+  course Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  aspect CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, aspectId])
 }
@@ -616,11 +649,6 @@ enum ExamSetStatus {
   ACTIVE
   INACTIVE
   ARCHIVED
-}
-
-enum InterviewRequestStatus {
-  PENDING
-  ASSIGNED
 }
 
 enum MentorBookingStatus {
@@ -686,17 +714,6 @@ enum ReadyToWorkTier {
   NOT_READY
 }
 
-enum TimeSlotBooking {
-  AM_08_09
-  AM_09_10
-  AM_10_11
-  AM_11_12
-  PM_02_03
-  PM_03_04
-  PM_04_05
-  PM_05_06
-}
-
 enum CompetencyDimension {
   MINDSET
   SKILLSET
@@ -726,14 +743,30 @@ enum TestTrackingStatus {
   RESULT_EVALUATED
 }
 
-enum SlotStatus {
+
+enum InterviewRequestStatus {
+  PENDING
+  ASSIGNED
+  RESCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum MentorSpotStatus {
   AVAILABLE
-  ALMOST_FULL
-  FULL
+  HELD
+  BOOKED
+  CANCELLED
 }
 
 enum CourseTypes {
   ONLINE
   OFFLINE
   ONLINE_OFFLINE
+}
+
+enum SlotStatus {
+  AVAILABLE
+  ALMOST_FULL
+  FULL
 }

@@ -23,6 +23,7 @@ import { ImportsModule } from './modules/imports/imports.module';
 import { UniversityModule } from './modules/universities/universities.module';
 import { InterviewReminderModule } from './modules/interview-reminder/interview-reminder.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
+import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { AspectsModule } from './modules/aspects/aspects.module';
     UniversityModule,
     InterviewReminderModule,
     AspectsModule,
+    MentorSlotsModule,
   ],
   providers: [
     {

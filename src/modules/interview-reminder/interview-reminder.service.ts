@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { GoogleCalendarService } from '@app/helpers/google-calendar.service';
+import { GoogleCalendarService } from '@app/common/helpers/google-calendar.service';
 
 @Injectable()
 export class InterviewReminderService {
@@ -22,18 +22,21 @@ export class InterviewReminderService {
 
       const upcomingInterviews = await this.prismaService.interviewRequest.findMany({
         where: {
-          interviewDate: {
-            gte: tomorrow,
-            lt: dayAfterTomorrow,
+          currentSpot: {
+            startAt: {
+              gte: tomorrow,
+              lt: dayAfterTomorrow,
+            },
           },
         },
         include: {
+          currentSpot: true,
           exam: {
             include: {
               user: true,
             },
           },
-          MentorBooking: {
+          mentorBookings: {
             include: {
               mentor: {
                 include: {
@@ -48,22 +51,24 @@ export class InterviewReminderService {
       for (const interview of upcomingInterviews) {
         try {
           const user = interview.exam.user;
-          const mentor = interview.MentorBooking?.[0]?.mentor;
+          const mentor = interview.mentorBookings?.[0]?.mentor;
+          const spot = interview.currentSpot;
 
-          if (user && user.email) {
-            const meetLink = await GoogleCalendarService.createInterviewEvent(
-              user.email,
-              mentor?.user?.email,
-              interview.interviewDate,
-              interview.timeSlot
-            );
+          if (user && user.email && spot) {
+            const mentorEmail = mentor?.user?.email ?? user.email;
+            const eventInfo = await GoogleCalendarService.createInterviewEvent(user.email, mentorEmail, {
+              startAt: spot.startAt,
+              endAt: spot.endAt,
+              timezone: spot.timezone,
+              meetUrl: spot.meetUrl,
+            });
 
             await this.emailService.sendInterviewReminderEmail(
               user.fullName || user.email,
               user.email,
-              interview.interviewDate,
-              interview.timeSlot,
-              meetLink
+              spot.startAt,
+              this.getTimeSlotLabel(spot.startAt, spot.endAt),
+              eventInfo.meetUrl
             );
           }
         } catch (error) {
@@ -85,20 +90,23 @@ export class InterviewReminderService {
     endDate.setDate(endDate.getDate() + 1);
     endDate.setHours(0, 0, 0, 0);
 
-    return this.prismaService.interviewRequest.findMany({
+    const upcomingInterviews = await this.prismaService.interviewRequest.findMany({
       where: {
-        interviewDate: {
-          gte: startDate,
-          lt: endDate,
+        currentSpot: {
+          startAt: {
+            gte: startDate,
+            lt: endDate,
+          },
         },
       },
       include: {
+        currentSpot: true,
         exam: {
           include: {
             user: true,
           },
         },
-        MentorBooking: {
+        mentorBookings: {
           include: {
             mentor: {
               include: {
@@ -109,5 +117,25 @@ export class InterviewReminderService {
         },
       },
     });
+
+    return upcomingInterviews.map((interview) => {
+      const spot = interview.currentSpot;
+      return {
+        ...interview,
+        interviewDate: spot?.startAt,
+        timeSlot: spot ? this.getTimeSlotLabel(spot.startAt, spot.endAt) : '',
+        MentorBooking: interview.mentorBookings,
+      };
+    });
+  }
+
+  private getTimeSlotLabel(startAt: Date, endAt: Date): string {
+    return `${this.formatTime(startAt)}-${this.formatTime(endAt)}`;
+  }
+
+  private formatTime(value: Date): string {
+    const hours = value.getHours().toString().padStart(2, '0');
+    const minutes = value.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   }
 }
