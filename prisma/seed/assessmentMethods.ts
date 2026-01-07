@@ -1,3 +1,4 @@
+import { convertStringToEnglish } from '../../src/common/utils/stringUtils';
 import { PrismaClient } from '@prisma/client';
 
 export async function seedAssessmentMethods(prisma: PrismaClient) {
@@ -42,9 +43,11 @@ export async function seedAssessmentMethods(prisma: PrismaClient) {
     });
 
     if (!existingMethod) {
+      const searchText = convertStringToEnglish(method.name, true);
       await prisma.assessmentMethod.create({
         data: {
           name: method.name,
+          searchText: searchText,
           description: method.description,
           isActive: method.isActive,
         },

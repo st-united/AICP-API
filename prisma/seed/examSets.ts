@@ -70,6 +70,9 @@ export async function seedExamSets(
   await Promise.all(
     examSetsData.map(async (examSetData) => {
       const getAssessmentID = assessmentMethods.find((am) => am.name === 'Self Assessment')?.id;
+      if (!getAssessmentID) {
+        throw new Error('Assessment method "Self Assessment" not found. Ensure seedAssessmentMethods runs first.');
+      }
       const examSet = await prisma.examSet.create({
         data: {
           name: examSetData.name,

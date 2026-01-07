@@ -11,15 +11,15 @@
 */
 -- AlterTable
 ALTER TABLE "public"."CompetencyAssessment" DROP COLUMN "assessment_type",
-ADD COLUMN     "assessment_method_id" UUID NOT NULL;
+ADD COLUMN     "assessment_method_id" UUID;
 
 -- AlterTable
 ALTER TABLE "public"."Exam" DROP COLUMN "assessment_type",
-ADD COLUMN     "assessment_method_id" UUID NOT NULL;
+ADD COLUMN     "assessment_method_id" UUID;
 
 -- AlterTable
 ALTER TABLE "public"."ExamSet" DROP COLUMN "assessment_type",
-ADD COLUMN     "assessment_method_id" UUID NOT NULL;
+ADD COLUMN     "assessment_method_id" UUID;
 
 -- DropEnum
 DROP TYPE "public"."AssessmentType";
