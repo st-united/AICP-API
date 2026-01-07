@@ -377,10 +377,10 @@ connect-postgres-uat:
 	kubectl port-forward -n $(UAT_NAMESPACE) svc/postgres-aicp-postgresql 5432:5432
 
 connect-redis-uat:
-	kubectl port-forward -n $(UAT_NAMESPACE) svc/redis-aicp 6379:6379
+	kubectl port-forward -n $(UAT_NAMESPACE) pod/redis-aicp-master-0 6379:6379
 
 connect-redis-dev:
-	kubectl port-forward -n $(DEV_NAMESPACE) svc/redis-aicp 6379:6379
+	kubectl port-forward -n $(DEV_NAMESPACE) pod/redis-aicp-master-0 6379:6379
 
 connect-redis-prod:
 	kubectl port-forward -n $(PROD_NAMESPACE) svc/redis-aicp 6379:6379
