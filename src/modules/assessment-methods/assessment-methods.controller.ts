@@ -6,6 +6,7 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { ResponseAssessmentMethodDto } from './dto/response/response-assessment-method.dto';
 import { MutateAssessmentMethodDto } from './dto/request/mutate-assessment-method.dto';
+import { RequestChangeStatusDto } from './dto/request/request-change-status';
 
 @ApiTags('Assessment Methods')
 @Controller('assessment-methods')
@@ -71,5 +72,28 @@ export class AssessmentMethodsController {
     @Body() dto: MutateAssessmentMethodDto
   ): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
     return this.assessmentMethodsService.update(id, dto);
+  }
+
+  /** Toggle status assessment method */
+  @ApiOperation({ summary: 'Toggle status assessment method' })
+  @ApiParam({ name: 'id', description: 'Assessment method ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Assessment method toggle status successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Assessment method not found',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @Patch(':id/status')
+  async activate(
+    @Param('id') id: string,
+    @Body() dto: RequestChangeStatusDto
+  ): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    return this.assessmentMethodsService.setStatus(id, dto);
   }
 }
