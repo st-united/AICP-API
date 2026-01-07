@@ -1,5 +1,44 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+
+class InterviewRequestDetailDto {
+  @Expose()
+  @ApiProperty({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: '123e4567-e89b-12d3-a456-426614174001',
+  })
+  examId: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Interview start time (ISO 8601)',
+    example: '2025-08-07T08:00:00+07:00',
+    required: false,
+  })
+  @Type(() => Date)
+  startAt?: Date;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Interview end time (ISO 8601)',
+    example: '2025-08-07T09:00:00+07:00',
+    required: false,
+  })
+  @Type(() => Date)
+  endAt?: Date;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Interview request status',
+    example: 'ASSIGNED',
+  })
+  status: string;
+}
 
 export class CheckInterviewRequestResponseDto {
   @Expose()
@@ -12,18 +51,8 @@ export class CheckInterviewRequestResponseDto {
   @Expose()
   @ApiProperty({
     description: 'Interview request details if exists',
-    example: {
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      interviewDate: '2024-01-15T10:00:00Z',
-      timeSlot: 'AM_09_10',
-      examId: '123e4567-e89b-12d3-a456-426614174001',
-    },
+    type: InterviewRequestDetailDto,
     required: false,
   })
-  interviewRequest?: {
-    id: string;
-    interviewDate: Date;
-    timeSlot: string;
-    examId: string;
-  };
+  interviewRequest?: InterviewRequestDetailDto;
 }

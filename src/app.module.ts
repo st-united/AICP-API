@@ -19,8 +19,8 @@ import { DomainModule } from './modules/domain/domain.module';
 import { CoursesModule } from './modules/courses/courses.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
-import { MentorSchedulingModule } from './modules/mentor-scheduling/mentor-scheduling.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
+import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 
 @Module({
   imports: [
@@ -65,8 +65,8 @@ import { AspectsModule } from './modules/aspects/aspects.module';
     CoursesModule,
     BookingModule,
     ExportModule,
-    MentorSchedulingModule,
     AspectsModule,
+    MentorSlotsModule,
   ],
   providers: [
     {
