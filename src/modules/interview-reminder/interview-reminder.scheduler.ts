@@ -6,7 +6,7 @@ import { InterviewReminderService } from '@app/modules/interview-reminder/interv
 export class InterviewReminderScheduler {
   constructor(private readonly interviewReminderService: InterviewReminderService) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS, {
+  @Cron(CronExpression.EVERY_DAY_AT_9AM, {
     name: 'interview-reminder',
     timeZone: 'Asia/Ho_Chi_Minh',
   })

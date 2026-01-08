@@ -317,6 +317,15 @@ export class MentorsService {
 
       const exam = await this.prisma.exam.findUnique({
         where: { id: dto.examId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              fullName: true,
+            },
+          },
+        },
       });
 
       if (!exam || exam.userId !== userId) {
@@ -378,6 +387,17 @@ export class MentorsService {
           },
         }),
       ]);
+      try {
+        await this.emailService.sendEmailInterviewScheduleToUser(
+          exam.user.fullName,
+          exam.user.email,
+          spot.startAt,
+          spot.endAt,
+          spot.meetUrl
+        );
+      } catch (err) {
+        console.error('Send email failed:', err);
+      }
 
       return new ResponseItem(null, 'Đặt lịch phỏng vấn thành công');
     } catch (error) {

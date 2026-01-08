@@ -85,7 +85,7 @@ export class InterviewReminderService {
             user.fullName,
             user.email,
             spot.startAt,
-            this.getTimeSlotLabel(spot.startAt, spot.endAt),
+            spot.endAt,
             eventInfo.meetUrl
           );
           sent += 1;
@@ -122,16 +122,6 @@ export class InterviewReminderService {
       return error.message;
     }
     return String(error);
-  }
-
-  private getTimeSlotLabel(startAt: Date, endAt: Date): string {
-    return `${this.formatTime(startAt)}-${this.formatTime(endAt)}`;
-  }
-
-  private formatTime(value: Date): string {
-    const hours = value.getHours().toString().padStart(2, '0');
-    const minutes = value.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
   }
 
   private getTomorrowRange(): { start: Date; end: Date } {
