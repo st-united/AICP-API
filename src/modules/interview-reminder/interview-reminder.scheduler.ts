@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { InterviewReminderService } from './interview-reminder.service';
+import { InterviewReminderService } from '@app/modules/interview-reminder/interview-reminder.service';
 
 @Injectable()
 export class InterviewReminderScheduler {
@@ -12,7 +12,8 @@ export class InterviewReminderScheduler {
   })
   async handleDailyInterviewReminder(): Promise<void> {
     try {
-      await this.interviewReminderService.sendInterviewReminders();
+      const result = await this.interviewReminderService.sendInterviewReminders();
+      console.log('Daily interview reminder job completed:', result);
     } catch (error) {
       console.error('Error in daily interview reminder job:', error);
     }

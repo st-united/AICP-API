@@ -1,3 +1,5 @@
+import { MentorSpotStatus as PrismaMentorSpotStatus } from '@prisma/client';
+
 export enum StatusEnum {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
@@ -50,3 +52,6 @@ export enum InterviewShift {
   MORNING = 'MORNING',
   AFTERNOON = 'AFTERNOON',
 }
+
+export const MentorSpotStatus = PrismaMentorSpotStatus;
+export type MentorSpotStatus = PrismaMentorSpotStatus;
