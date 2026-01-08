@@ -6,7 +6,7 @@ spec:
   tls:
     - hosts:
         - api.aicp.dev.devplus.edu.vn
-      secretName: devplus-aicp-dev-tls
+      secretName: devplus-dev-aicp-tls
   rules:
     - host: api.aicp.dev.devplus.edu.vn
       http:

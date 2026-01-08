@@ -29,9 +29,6 @@ export class CourseDto {
   @ApiProperty({ enum: SFIALevel, required: false })
   difficultyLevel?: SFIALevel;
 
-  @ApiProperty()
-  aspectId: string;
-
   @ApiProperty({ required: false })
   domainId?: string;
 

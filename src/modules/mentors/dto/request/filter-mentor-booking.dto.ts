@@ -2,12 +2,9 @@ import { IsOptional, IsString, IsEnum, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { MentorBookingStatus, ExamLevelEnum } from '@prisma/client';
 import { Transform } from 'class-transformer';
+import { PageOptionsDto } from '@app/common/dtos';
 
-export class FilterMentorBookingDto {
-  @IsOptional()
-  @IsString()
-  keyword?: string;
-
+export class FilterMentorBookingDto extends PageOptionsDto {
   @IsOptional()
   @IsArray()
   @IsEnum(ExamLevelEnum, { each: true })
@@ -27,12 +24,4 @@ export class FilterMentorBookingDto {
   @IsOptional()
   @Type(() => Date)
   dateEnd?: Date;
-
-  @IsOptional()
-  @Type(() => Number)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number = 10;
 }

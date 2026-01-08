@@ -14,11 +14,11 @@ import {
 import { MentorsService } from './mentors.service';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
-import { ResponseItem } from '@app/common/dtos';
+import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
-import { MentorBookingResponseDto } from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto, MentorDto } from '@app/modules/mentors/dto/response/mentor-booking.dto';
 import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
@@ -27,11 +27,13 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ApiBearerAuth } from '@nestjs/swagger';
 import { GetExamResultDto } from './dto/response/get-exam-result.dto';
 import { AspectExvaluationDto } from './dto/response/aspect-exvaluation.dto';
 import { SubmitAspectExvaluationRequestDto } from './dto/request/submit-aspect-evalution-request.dto';
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
+import { RequestCustom } from '@app/common/interfaces';
+import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -46,6 +48,29 @@ export class MentorsController {
   async create(@Body() createMentorDto: CreateMentorDto, @Req() req): Promise<ResponseItem<MentorResponseDto>> {
     const url = req.headers.origin;
     return await this.mentorsService.create(createMentorDto, url);
+  }
+
+  @Get()
+  @UseGuards(JwtAccessTokenGuard)
+  async getFilteredBookings(
+    @Req() req: RequestCustom,
+    @Query() dto: FilterMentorBookingDto
+  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
+    return this.mentorsService.getFilteredBookings(dto, req.user.userId);
+  }
+
+  @Get('v2')
+  @UseGuards(JwtAccessTokenGuard)
+  async getMentorsByParams(@Query() dto: SearchMentorRequestDto): Promise<ResponsePaginate<MentorDto>> {
+    return this.mentorsService.getMentorsByParams(dto);
+  }
+
+  @Get('bookings')
+  @UseGuards(JwtAccessTokenGuard)
+  async getBookingByMentor(
+    @Query() dto: GetBookingByMentorRequestDto
+  ): Promise<ResponsePaginate<MentorBookingResponseDto>> {
+    return this.mentorsService.getBookingByMentor(dto);
   }
 
   @UseGuards(JwtAccessTokenGuard)
@@ -89,15 +114,6 @@ export class MentorsController {
   async deactivateMentorAccount(@Param('id', ParseUUIDPipe) id: string, @Req() req): Promise<ResponseItem<null>> {
     const url = req.headers.origin;
     return await this.mentorsService.deactivateMentorAccount(id, url);
-  }
-
-  @UseGuards(JwtAccessTokenGuard)
-  @Get()
-  async getFilteredBookings(
-    @Req() req: any,
-    @Query() dto: FilterMentorBookingDto
-  ): Promise<ResponseItem<PaginatedMentorBookingResponseDto>> {
-    return this.mentorsService.getFilteredBookings(dto, req.user.userId);
   }
 
   @Post('assign')

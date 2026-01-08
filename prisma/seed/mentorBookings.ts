@@ -47,26 +47,21 @@ export async function seedMentorBookings(
       const examId = examMap[userId]?.id;
       if (!userId || !examId) continue;
 
-      let interviewRequest;
-      try {
-        interviewRequest = await prisma.interviewRequest.create({
-          data: {
-            examId,
-            interviewDate: randomFutureDate(),
-            timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
-          },
-        });
-      } catch (error: any) {
-        if (error.code === 'P2002') {
-          interviewRequest = await prisma.interviewRequest.findUnique({
-            where: { examId },
-          });
-        } else {
-          throw error;
-        }
-      }
+      const exitsInterviewRequest = await prisma.interviewRequest.findFirst({
+        where: {
+          examId,
+        },
+      });
 
-      if (!interviewRequest) continue;
+      if (exitsInterviewRequest) continue;
+
+      const interviewRequest = await prisma.interviewRequest.create({
+        data: {
+          examId,
+          interviewDate: randomFutureDate(),
+          timeSlot: timeSlots[Math.floor(Math.random() * timeSlots.length)],
+        },
+      });
 
       await prisma.mentorBooking.create({
         data: {

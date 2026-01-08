@@ -159,7 +159,6 @@ model Course {
   courseType         String?     @default("ONLINE") @map("course_type") @db.VarChar
   durationHours      Int?        @map("duration_hours") @db.SmallInt
   difficultyLevel    SFIALevel?  @map("difficulty_level")
-  aspectId           String      @map("aspect_id") @db.Uuid
   domainId           String?     @db.Uuid
   sfiaLevels         SFIALevel[] @map("sfia_level")
   isActive           Boolean     @default(true) @map("is_active") @db.Boolean
@@ -168,8 +167,8 @@ model Course {
 
   learningPathCourse LearningPathCourse[]
   userProgress       UserLearningProgress[]
-  competencyAspect   CompetencyAspect       @relation(fields: [aspectId], references: [id], onDelete: Cascade)
   domain             Domain?                @relation(fields: [domainId], references: [id])
+  courseAspects CourseAspect[]
 }
 
 model AnswerOption {
@@ -225,6 +224,7 @@ model Domain {
   description String?  @db.Text
   version     String   @default("1.0") @db.VarChar
   isActice    Boolean  @default(true) @map("is_active") @db.Boolean
+  searchText  String   @default("") @map("search_text") @db.VarChar
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -246,11 +246,10 @@ model CompetencyAspect {
   updatedAt             DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   competencyPillar      CompetencyPillar     @relation(fields: [pillarId], references: [id], onDelete: Cascade)
   competencySkill       CompetencySkill[]
-  courses               Course[]
   examAspectSnapshot    ExamAspectSnapshot[]
   suggestions           AspectSuggestion[]
   evaluationDetails     AspectEvaluationDetail[]
-
+  courseAspects CourseAspect[]
 }
 
 model ExamSet {
@@ -530,22 +529,24 @@ model UserLearningProgress {
 }
 
 model Portfolio {
-  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String            @unique @map("user_id") @db.Uuid
-  linkedInUrl      String?           @map("linked_in_url")
-  githubUrl        String?           @map("github_url")
-  sfiaLevelClaimed SFIALevel?        @map("sfia_level_claimed")
-  isVerified       Boolean           @default(false) @map("is_verified")
-  verifiedBy       String?           @map("verified_by") @db.Uuid
-  verifiedAt       DateTime?         @map("verified_at")
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  certificateFiles String[]          @default([])
-  experienceFiles  String[]          @default([])
-  pillarId         String?           @map("pillar_id") @db.Uuid
-  pillar           CompetencyPillar? @relation(fields: [pillarId], references: [id])
-  user             User              @relation("UserPortfolio", fields: [userId], references: [id])
-  verifier         User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String            @unique @map("user_id") @db.Uuid
+  linkedInUrl            String?           @map("linked_in_url")
+  githubUrl              String?           @map("github_url")
+  portfolioUrl           String?           @map("portfolio_url")
+  developmentFocusAnswer String?           @map("development_focus_answer") @db.Text
+  sfiaLevelClaimed       SFIALevel?        @map("sfia_level_claimed")
+  isVerified             Boolean           @default(false) @map("is_verified")
+  verifiedBy             String?           @map("verified_by") @db.Uuid
+  verifiedAt             DateTime?         @map("verified_at")
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  certificateFiles       String[]          @default([])
+  experienceFiles        String[]          @default([])
+  pillarId               String?           @map("pillar_id") @db.Uuid
+  pillar                 CompetencyPillar? @relation(fields: [pillarId], references: [id])
+  user                   User              @relation("UserPortfolio", fields: [userId], references: [id])
+  verifier               User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
 }
 
 model OrganizationalMetrics {
@@ -632,9 +633,18 @@ model AspectEvaluationDetail {
   aspectEvaluation   AspectEvaluation   @relation(fields: [aspectEvaluationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   aspect             CompetencyAspect   @relation(fields: [aspectId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
+model CourseAspect {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId  String           @map("course_id") @db.Uuid
+  aspectId  String           @map("aspect_id") @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  aspect    CompetencyAspect @relation(fields: [aspectId], references: [id], onDelete: Cascade)
 
-
+  @@unique([courseId, aspectId])
+}
 enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_CHOICE
@@ -767,4 +777,10 @@ enum SlotStatus {
 enum SuggestType {
   MINING_SUGGEST
   ASSESSMENT_GUIDED
+}
+
+enum CourseTypes {
+  ONLINE
+  OFFLINE
+  ONLINE_OFFLINE
 }
