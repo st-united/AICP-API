@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@app/modules/prisma/prisma.service';
-import { EmailService } from '@app/modules/email/email.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
+import { GoogleCalendarService } from '@app/common/helpers/google-calendar.service';
 import { InterviewRequestStatus, MentorBookingStatus } from '@prisma/client';
+import { MentorSpotStatus } from '@Constant/index';
+
 import {
   ReminderRunResult,
   ReminderFailure,
@@ -16,36 +19,33 @@ export class InterviewReminderService {
 
   async sendInterviewReminders(): Promise<ReminderRunResult> {
     try {
-      const { start: tomorrow, end: dayAfterTomorrow } = this.getTomorrowRange();
+      const { start: startDate, end: endDate } = this.getTomorrowRange();
 
-      const upcomingBookings = await this.prismaService.mentorBooking.findMany({
+      const upcomingInterviews = await this.prismaService.interviewRequest.findMany({
         where: {
-          status: MentorBookingStatus.UPCOMING,
-          interviewRequest: {
+          status: {
+            in: [InterviewRequestStatus.ASSIGNED, InterviewRequestStatus.RESCHEDULED],
+          },
+          currentSpot: {
+            isNot: null,
             is: {
-              interviewDate: {
-                gte: tomorrow,
-                lt: dayAfterTomorrow,
-              },
-              status: InterviewRequestStatus.ASSIGNED,
+              startAt: { gte: startDate, lt: endDate },
+              status: MentorSpotStatus.BOOKED,
             },
           },
         },
-        select: {
-          id: true,
-          interviewRequest: {
-            select: {
-              id: true,
-              interviewDate: true,
-              timeSlot: true,
-              exam: {
-                select: {
-                  user: {
-                    select: {
-                      email: true,
-                      fullName: true,
-                    },
-                  },
+        include: {
+          currentSpot: true,
+          exam: {
+            include: {
+              user: true,
+            },
+          },
+          mentorBookings: {
+            include: {
+              mentor: {
+                include: {
+                  user: true,
                 },
               },
             },
@@ -53,7 +53,7 @@ export class InterviewReminderService {
         },
       });
 
-      if (upcomingBookings.length === 0) {
+      if (upcomingInterviews.length === 0) {
         return { total: 0, sent: 0, skipped: 0, errors: 0, failedEmails: [] };
       }
 
@@ -62,46 +62,76 @@ export class InterviewReminderService {
       let errors = 0;
       const failedEmails: ReminderFailure[] = [];
 
-      for (const booking of upcomingBookings) {
-        const interview = booking.interviewRequest;
-        const user = interview?.exam.user;
+      for (const interview of upcomingInterviews) {
+        const user = interview.exam.user;
+        const mentor = interview.mentorBookings?.[0]?.mentor;
+        const spot = interview.currentSpot;
 
-        if (!interview || !user?.email) {
+        if (!user?.email || !spot) {
           skipped += 1;
           continue;
         }
 
         try {
+          const mentorEmail = mentor?.user?.email ?? user.email;
+          const eventInfo = await GoogleCalendarService.createInterviewEvent(user.email, mentorEmail, {
+            startAt: spot.startAt,
+            endAt: spot.endAt,
+            timezone: spot.timezone,
+            meetUrl: spot.meetUrl,
+          });
+
           await this.emailService.sendInterviewReminderEmail(
-            user.fullName || user.email,
+            user.fullName,
             user.email,
-            interview.interviewDate,
-            interview.timeSlot,
-            'https://www.youtube.com/watch?v=zeBkb1HwiBc&list=RDjZVcd4uT-2I&index=15'
+            spot.startAt,
+            this.getTimeSlotLabel(spot.startAt, spot.endAt),
+            eventInfo.meetUrl
           );
           sent += 1;
         } catch (error) {
           errors += 1;
           failedEmails.push({
             email: user.email,
-            bookingId: booking.id,
+            bookingId: interview.mentorBookings?.[0]?.id ?? '',
             interviewId: interview.id,
             reason: this.getErrorMessage(error),
           });
-          console.error(
-            `Failed to send interview reminder for booking ${booking.id} (interview ${interview.id}):`,
-            error
-          );
+          console.error(`Failed to send interview reminder for interview ${interview.id}:`, error);
         }
       }
+
       if (failedEmails.length > 0) {
         console.error('Failed interview reminder emails:', failedEmails);
       }
-      return { total: upcomingBookings.length, sent, skipped, errors, failedEmails };
+
+      return {
+        total: upcomingInterviews.length,
+        sent,
+        skipped,
+        errors,
+        failedEmails,
+      };
     } catch (error) {
       console.error('Error in sendInterviewReminders:', error);
       throw error;
     }
+  }
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return String(error);
+  }
+
+  private getTimeSlotLabel(startAt: Date, endAt: Date): string {
+    return `${this.formatTime(startAt)}-${this.formatTime(endAt)}`;
+  }
+
+  private formatTime(value: Date): string {
+    const hours = value.getHours().toString().padStart(2, '0');
+    const minutes = value.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
   }
 
   private getTomorrowRange(): { start: Date; end: Date } {
@@ -114,12 +144,5 @@ export class InterviewReminderService {
     end.setHours(0, 0, 0, 0);
 
     return { start, end };
-  }
-
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof Error && error.message) {
-      return error.message;
-    }
-    return String(error);
   }
 }

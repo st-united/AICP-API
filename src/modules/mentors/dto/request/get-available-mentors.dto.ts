@@ -1,6 +1,5 @@
 // src/mentors/dto/get-available-mentors.dto.ts
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
-import { TimeSlotBooking } from '@prisma/client';
+import { IsDateString, IsOptional, IsString, IsNumberString } from 'class-validator';
 
 export class GetAvailableMentorsDto {
   @IsOptional()
@@ -9,11 +8,19 @@ export class GetAvailableMentorsDto {
 
   @IsOptional()
   @IsDateString()
-  scheduledDate?: string; // yyyy-MM-dd (ISO format)
+  scheduledDate?: string;
 
   @IsOptional()
-  @IsEnum(TimeSlotBooking)
-  timeSlot?: TimeSlotBooking;
+  @IsString()
+  startTime?: string;
+
+  @IsOptional()
+  @IsString()
+  endTime?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  durationMinutes?: string;
 
   @IsString()
   take: string;

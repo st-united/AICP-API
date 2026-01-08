@@ -21,6 +21,7 @@ import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
 import { InterviewReminderModule } from './modules/interview-reminder/interview-reminder.module';
+import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { InterviewReminderModule } from './modules/interview-reminder/interview-
     ExportModule,
     AspectsModule,
     InterviewReminderModule,
+    MentorSlotsModule,
   ],
   providers: [
     {

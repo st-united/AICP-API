@@ -6,13 +6,14 @@ import { InterviewReminderService } from '@app/modules/interview-reminder/interv
 export class InterviewReminderScheduler {
   constructor(private readonly interviewReminderService: InterviewReminderService) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_9AM, {
+  @Cron(CronExpression.EVERY_10_SECONDS, {
     name: 'interview-reminder',
     timeZone: 'Asia/Ho_Chi_Minh',
   })
   async handleDailyInterviewReminder(): Promise<void> {
     try {
-      await this.interviewReminderService.sendInterviewReminders();
+      const result = await this.interviewReminderService.sendInterviewReminders();
+      console.log('Daily interview reminder job completed:', result);
     } catch (error) {
       console.error('Error in daily interview reminder job:', error);
     }
