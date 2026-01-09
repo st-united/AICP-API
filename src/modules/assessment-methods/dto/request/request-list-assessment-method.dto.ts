@@ -1,21 +1,12 @@
 import { PageOptionsDto } from '@app/common/dtos';
-import { IsOptional, IsString, IsBoolean } from 'class-validator';
+import { IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ParseBooleanLike } from '@app/common/decorator/transform/parseBooleanLike';
 
 export class RequestListAssessmentMethodDto extends PageOptionsDto {
   @ApiProperty({
-    description: 'Filter by assessment method name',
-    example: 'Self Assessment',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @ApiProperty({
-    description: 'Filter by status (active or inactive)',
-    example: 'active',
+    description: 'Filter by status true false',
+    example: 'true',
     required: false,
   })
   @IsOptional()
