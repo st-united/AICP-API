@@ -9,6 +9,9 @@ import {
   MentorBookingStatus,
   Prisma,
   TimeSlotBooking,
+  CompetencyDimension,
+  AspectEvaluation,
+  SuggestType,
 } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { TokenService } from '../auth/services/token.service';
@@ -34,6 +37,13 @@ import { GoogleCalendarService } from '@app/helpers/google-calendar.service';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { GetExamResultDto } from './dto/response/get-exam-result.dto';
+import { ExamServiceCommon } from '@app/common/services/exam.service';
+import { AspectExvaluationDto } from './dto/response/aspect-exvaluation.dto';
+import { calcElapsed, mapQuestionsWithAnswers } from '@app/common/utils/examUtils';
+import { isNullOrEmpty } from '@app/common/utils/stringUtils';
+import e from 'express';
+import { SubmitAspectExvaluationRequestDto } from './dto/request/submit-aspect-evalution-request.dto';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
 @Injectable()
@@ -44,7 +54,8 @@ export class MentorsService {
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
     private readonly redisService: RedisService,
-    private readonly tokenService: TokenService
+    private readonly tokenService: TokenService,
+    private readonly examServiceCommon: ExamServiceCommon
   ) {}
 
   async create(createMentorDto: CreateMentorDto, url: string): Promise<ResponseItem<MentorResponseDto>> {
@@ -840,17 +851,282 @@ export class MentorsService {
       }
     }
   }
+  async getExamResultByBooking(
+    mentorBookingId: string,
+    userCurrentId: string
+  ): Promise<ResponseItem<GetExamResultDto>> {
+    try {
+      const mentor = await this.prisma.mentor.findUnique({
+        where: { userId: userCurrentId },
+        select: { id: true },
+      });
+      if (!mentor) {
+        throw new NotFoundException('Không tìm thấy mentor');
+      }
+      const mentorBooking = await this.prisma.mentorBooking.findFirst({
+        where: {
+          id: mentorBookingId,
+          mentorId: mentor.id,
+        },
+        select: {
+          id: true,
+          status: true,
+          interviewRequest: {
+            select: {
+              examId: true,
+            },
+          },
+        },
+      });
+
+      if (!mentorBooking) {
+        throw new NotFoundException('Không tìm thấy lịch phỏng vấn');
+      }
+
+      const exam = await this.examServiceCommon.findExamById(mentorBooking.interviewRequest.examId);
+      if (!exam) {
+        throw new NotFoundException('Không tìm thấy bài thi');
+      }
+
+      const scores = await this.examServiceCommon.detectPillarScoresByAspect(
+        exam.examPillarSnapshot,
+        exam.examAspectSnapshot,
+        false
+      );
+
+      const elapsedTime = calcElapsed(exam.createdAt, exam.updatedAt);
+      let correctCount = 0;
+      let wrongCount = 0;
+      let skippedCount = 0;
+
+      const [examQuestions, userAnswers] = await Promise.all([
+        this.prisma.examSetQuestion.findMany({
+          where: { examSetId: exam.examSet.id },
+          include: { question: { include: { answerOptions: true } } },
+        }),
+        this.prisma.userAnswer.findMany({
+          where: { examId: mentorBooking.interviewRequest.examId },
+          include: { selections: true },
+        }),
+      ]);
+
+      const mapped = mapQuestionsWithAnswers(examQuestions, userAnswers);
+      correctCount = mapped.correctCount;
+      wrongCount = mapped.wrongCount;
+      skippedCount = mapped.skippedCount;
+
+      const response: GetExamResultDto = {
+        id: exam.id,
+        examSet: exam.examSet,
+        elapsedTime,
+        correctCount,
+        wrongCount,
+        skippedCount,
+        ...scores,
+        level: exam.examLevel.examLevel,
+        sfiaLevel: exam.sfiaLevel,
+        overallScore: Number(exam.overallScore),
+        userInfo: exam.user,
+      };
+
+      return new ResponseItem<GetExamResultDto>(response, 'Lấy kết quả bài thi');
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Lỗi khi lấy chi tiết bài thi');
+    }
+  }
+
+  async validateAccessAspectEvaluation(mentorBookingId: string, mentorId: string) {
+    const mentor = await this.prisma.mentor.findFirst({
+      where: { userId: mentorId },
+    });
+
+    if (!mentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
+
+    const mentorBooking = await this.prisma.mentorBooking.findFirst({
+      where: {
+        id: mentorBookingId,
+        mentorId: mentor.id,
+      },
+    });
+
+    if (!mentorBooking) {
+      throw new NotFoundException('Không tìm thấy lịch phỏng vấn');
+    }
+  }
+
+  async getPillarsWithAspects(): Promise<any> {
+    const pillars = await this.prisma.competencyPillar.findMany({
+      select: {
+        id: true,
+        name: true,
+        weightWithinDimension: true,
+        aspects: {
+          select: {
+            id: true,
+            name: true,
+            represent: true,
+            weightWithinDimension: true,
+            suggestions: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                priority: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return pillars;
+  }
+
+  async mappingAspectEvaluationToDto(aspectEvaluation: any, pillars: any): Promise<AspectExvaluationDto> {
+    const pillarsWithScores = pillars.map((pillar) => ({
+      id: pillar.id,
+      name: pillar.name,
+      weightWithinDimension: Number(pillar.weightWithinDimension),
+      aspects: pillar.aspects.map((aspect) => {
+        const match = aspectEvaluation.details.find((d) => d.aspectId === aspect.id);
+        if (!match) {
+          throw new NotFoundException(`Không tìm thấy chi tiết đánh giá cho khía cạnh: ${aspect.name}`);
+        }
+        const miningSuggests = (aspect?.suggestions || [])
+          .filter((suggest) => suggest.type === SuggestType.MINING_SUGGEST)
+          .map((suggest) => ({
+            id: suggest.id,
+            name: suggest.name,
+          }));
+        const assessmentGuide = (aspect?.suggestions || [])
+          .filter((suggest) => suggest.type === SuggestType.ASSESSMENT_GUIDED)
+          .sort((a, b) => a.sequence - b.sequence)
+          .map((suggest) => ({
+            id: suggest.id,
+            name: suggest.name,
+          }));
+        return {
+          id: aspect.id,
+          name: aspect.name,
+          represent: aspect.represent,
+          weightWithinDimension: Number(aspect.weightWithinDimension),
+          score: match ? Number(match.score) : 0,
+          note: isNullOrEmpty(match.note) ? null : JSON.parse(match.note),
+          miningSuggest: miningSuggests,
+          assessmentGuide: assessmentGuide,
+        };
+      }),
+    }));
+
+    const mindset = pillarsWithScores.find((p) => p.name.toUpperCase() === 'MINDSET') || null;
+    const skillset = pillarsWithScores.find((p) => p.name.toUpperCase() === 'SKILLSET') || null;
+    const toolset = pillarsWithScores.find((p) => p.name.toUpperCase() === 'TOOLSET') || null;
+
+    const response: AspectExvaluationDto = {
+      id: aspectEvaluation.id,
+      progress: Number(aspectEvaluation.progress),
+      isDraft: aspectEvaluation.isDraft,
+      mindset: mindset,
+      skillset: skillset,
+      toolset: toolset,
+    };
+
+    return response;
+  }
+
+  async generateAspectEvaluation(
+    mentorBookingId: string,
+    mentorId: string
+  ): Promise<ResponseItem<AspectExvaluationDto>> {
+    try {
+      await this.validateAccessAspectEvaluation(mentorBookingId, mentorId);
+
+      let aspectEvaluationIfExist = await this.prisma.aspectEvaluation.findUnique({
+        where: { mentorBookingId },
+        select: {
+          id: true,
+          progress: true,
+          isDraft: true,
+          details: true,
+        },
+      });
+
+      const pillars = await this.getPillarsWithAspects();
+
+      const allAspects = pillars.flatMap((p) => p.aspects);
+      if (!aspectEvaluationIfExist) {
+        aspectEvaluationIfExist = await this.prisma.aspectEvaluation.create({
+          data: {
+            assessor: { connect: { id: mentorId } },
+            mentorBooking: { connect: { id: mentorBookingId } },
+            progress: new Prisma.Decimal(0),
+            isDraft: true,
+            details: {
+              createMany: {
+                data: allAspects.map((aspect) => ({
+                  aspectId: aspect.id,
+                  score: new Prisma.Decimal(0),
+                })),
+              },
+            },
+          },
+          select: {
+            id: true,
+            progress: true,
+            isDraft: true,
+            details: true,
+          },
+        });
+      }
+
+      const response = await this.mappingAspectEvaluationToDto(aspectEvaluationIfExist, pillars);
+      return new ResponseItem(response, 'Tạo bài đánh giá thành công');
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi tạo bài đánh giá');
+    }
+  }
+
+  async getAspectEvaluation(evaluationId: string, userCurrentId: string): Promise<ResponseItem<AspectExvaluationDto>> {
+    try {
+      const aspectEvaluation = await this.prisma.aspectEvaluation.findUnique({
+        where: { id: evaluationId },
+        select: {
+          id: true,
+          mentorBookingId: true,
+          progress: true,
+          isDraft: true,
+          details: true,
+        },
+      });
+      if (!aspectEvaluation) {
+        throw new NotFoundException('Không tìm thấy bài đánh giá');
+      }
+      await this.validateAccessAspectEvaluation(aspectEvaluation.mentorBookingId, userCurrentId);
+
+      const pillars = await this.getPillarsWithAspects();
+
+      const response = await this.mappingAspectEvaluationToDto(aspectEvaluation, pillars);
+
+      return new ResponseItem(response, 'Lấy dữ liệu đánh giá thành công');
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi lấy kết quả đánh giá');
+    }
+  }
 
   async getBookingByMentor(dto: GetBookingByMentorRequestDto): Promise<ResponsePaginate<MentorBookingResponseDto>> {
     try {
       const mentor = await this.prisma.mentor.findUnique({
         where: { id: dto.mentorId },
       });
-
       if (!mentor) {
         throw new NotFoundException('Không tìm thấy mentor');
       }
-
       const where: Prisma.MentorBookingWhereInput = {
         mentorId: mentor.id,
         ...(dto.status && { status: { in: dto.status } }),

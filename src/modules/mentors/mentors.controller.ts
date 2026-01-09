@@ -27,6 +27,9 @@ import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
+import { GetExamResultDto } from './dto/response/get-exam-result.dto';
+import { AspectExvaluationDto } from './dto/response/aspect-exvaluation.dto';
+import { SubmitAspectExvaluationRequestDto } from './dto/request/submit-aspect-evalution-request.dto';
 import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { RequestCustom } from '@app/common/interfaces';
@@ -128,5 +131,53 @@ export class MentorsController {
     @Param('examId', ParseUUIDPipe) examId: string
   ): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
     return await this.mentorsService.checkUserInterviewRequest(examId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('exam-by-booking/:mentorBookingId/result')
+  @ApiOperation({ summary: 'Get exam result by mentor booking ID' })
+  @ApiResponse({ status: 200, description: 'Exam result retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Error retrieving exam result' })
+  async getExamResultByBooking(
+    @Param('mentorBookingId', ParseUUIDPipe) mentorBookingId: string,
+    @Req() userCurrent
+  ): Promise<ResponseItem<GetExamResultDto>> {
+    return await this.mentorsService.getExamResultByBooking(mentorBookingId, userCurrent.user.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('aspect-evaluation')
+  @ApiOperation({ summary: 'Generate aspect evaluation for a given mentor booking ID' })
+  @ApiResponse({ status: 200, description: 'Aspect evaluation generated successfully' })
+  @ApiResponse({ status: 400, description: 'Error generating aspect evaluation' })
+  async generateAspectEvaluation(
+    @Body('mentorBookingId', ParseUUIDPipe) mentorBookingId: string,
+    @Req() userCurrent
+  ): Promise<ResponseItem<AspectExvaluationDto>> {
+    return await this.mentorsService.generateAspectEvaluation(mentorBookingId, userCurrent.user.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Get('aspect-evaluation/:evaluationId')
+  @ApiOperation({ summary: 'Get aspect evaluation for a given evaluation ID' })
+  @ApiResponse({ status: 200, description: 'Aspect evaluation retrieved successfully' })
+  @ApiResponse({ status: 400, description: 'Error retrieving aspect evaluation' })
+  async getAspectEvaluation(
+    @Param('evaluationId', ParseUUIDPipe) evaluationId: string,
+    @Req() userCurrent
+  ): Promise<ResponseItem<AspectExvaluationDto>> {
+    return await this.mentorsService.getAspectEvaluation(evaluationId, userCurrent.userId);
+  }
+
+  @UseGuards(JwtAccessTokenGuard)
+  @Post('aspect-evaluation/:evaluationId/submit')
+  @ApiOperation({ summary: 'Submit aspect evaluation for a given evaluation ID' })
+  @ApiResponse({ status: 200, description: 'Aspect evaluation submitted successfully' })
+  @ApiResponse({ status: 400, description: 'Error submitting aspect evaluation' })
+  async submitAspectEvaluation(
+    @Param('evaluationId', ParseUUIDPipe) evaluationId: string,
+    @Body() request: SubmitAspectExvaluationRequestDto
+  ) {
+    return await this.mentorsService.submitAspectEvaluation(evaluationId, request);
   }
 }

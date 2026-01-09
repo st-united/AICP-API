@@ -41,15 +41,10 @@ export const concatSanitizedStrings = (firstString: string, secondString: string
   return combined;
 };
 
-/**
- * Converts Vietnamese text to an ASCII-friendly string by removing diacritics (accents).
- * @param {string} text - Input text (may contain Vietnamese diacritics)
- * @param {boolean} [lowKey=false] - Whether to return the result in lowercase
- * @returns {string} The converted string
- * @example
- * convertStringToEnglish("Lĩnh vực test 2", true) // returns "linh vuc test 2"
- * convertStringToEnglish("Đặng Văn Lâm", false) // returns "Dang Van Lam"
- */
+export const isNullOrEmpty = (str: string | null | undefined): boolean => {
+  return str === null || str === undefined || str.trim() === '';
+};
+
 export const convertStringToEnglish = (text: string, isLowerKey: boolean = false): string => {
   if (!text) return '';
   const normalized = text
