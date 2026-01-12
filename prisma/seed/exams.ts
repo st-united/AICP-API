@@ -176,6 +176,7 @@ export async function seedExams(
         examLevelId: examLevelMap[data.examLevelName].id,
         readyToWorkTier: ReadyToWorkTier.NOT_READY,
         sfiaLevel: sfiaLevels[Math.floor(Math.random() * sfiaLevels.length)],
+        assessmentMethodId: examSetMap[data.examSetName].assessmentMethodId,
       },
     })
   );
