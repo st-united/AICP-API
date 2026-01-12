@@ -6,7 +6,6 @@ import {
   UserAnswerStatus,
   ReadyToWorkTier,
   ExamLevelEnum,
-  AssessmentType,
   SFIALevel,
 } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
@@ -229,7 +228,7 @@ export class ImportsService {
   private async processOneRow(
     row: ParsedRow,
     ctx: {
-      examSet: { id: string; assessmentType: AssessmentType };
+      examSet: { id: string; assessmentMethodId: string | null };
       questions: any[];
       frameworkId: string | null | undefined;
       roleMap: Map<string, { id: string; name?: string }>;
@@ -260,7 +259,7 @@ export class ImportsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      const exam = await this.createExam(tx, user.id, ctx.examSet.id, ctx.examSet.assessmentType);
+      const exam = await this.createExam(tx, user.id, ctx.examSet.id, ctx.examSet.assessmentMethodId);
 
       const { gradable, nonGradable } = this.splitQuestions(ctx.questions);
       const gen = await this.createAnswersAndAggregate(tx, user.id, exam.id, gradable, nonGradable, ctx.scoring);
@@ -277,7 +276,7 @@ export class ImportsService {
         realMinutes,
         sfia,
         examLevelId,
-        ctx.examSet.assessmentType
+        ctx.examSet.assessmentMethodId
       );
 
       await this.refreshCompetencyAssessment(
@@ -373,13 +372,13 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     userId: string,
     examSetId: string,
-    assessmentType: AssessmentType
+    assessmentMethodId: string | null | undefined
   ) {
     return tx.exam.create({
       data: {
         userId,
         examSetId,
-        assessmentType,
+        assessmentMethodId,
         examStatus: ExamStatus.SUBMITTED,
         startedAt: new Date(Date.now() - 10 * 60 * 1000),
         finishedAt: new Date(),
@@ -530,7 +529,7 @@ export class ImportsService {
     timeSpentMinutes: number,
     sfia: SFIALevel,
     examLevelId: string | undefined,
-    assessmentType: AssessmentType
+    assessmentMethodId: string | null | undefined
   ) {
     await tx.exam.update({
       where: { id: examId },
@@ -543,7 +542,7 @@ export class ImportsService {
         readyToWorkTier: ReadyToWorkTier.NOT_READY,
         sfiaLevel: sfia,
         examLevelId: examLevelId ?? undefined,
-        assessmentType,
+        assessmentMethodId,
       },
     });
   }
@@ -555,7 +554,7 @@ export class ImportsService {
     examId: string,
     overall: number,
     sfia: SFIALevel,
-    examSet: { assessmentType: AssessmentType }
+    examSet: { assessmentMethodId: string | null }
   ) {
     await tx.competencyAssessment.updateMany({
       where: { userId, frameworkId, isCurrent: true },
@@ -578,7 +577,7 @@ export class ImportsService {
         overallScore: new Prisma.Decimal(overall ?? SCORE_MIN),
         sfiaLevel: sfia,
         readyToWorkTier: ReadyToWorkTier.NOT_READY,
-        assessmentType: examSet.assessmentType,
+        assessmentMethodId: examSet.assessmentMethodId ?? undefined,
         isCurrent: true,
         certificationDate: null,
         expiryDate: null,
