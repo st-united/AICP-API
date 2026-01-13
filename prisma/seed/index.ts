@@ -83,6 +83,7 @@ async function main() {
   const assessmentMethods = await prisma.assessmentMethod.findMany();
 
   await prisma.assessmentMethod.findMany();
+
   // 15. Exam Sets
   await seedExamSets(prisma, questions, competencyFrameworks, assessmentMethods);
   const examSets = await prisma.examSet.findMany();
