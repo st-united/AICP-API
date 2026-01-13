@@ -40,3 +40,18 @@ export const concatSanitizedStrings = (firstString: string, secondString: string
 
   return combined;
 };
+
+export const convertStringToEnglish = (text: string, isLowerKey: boolean = false): string => {
+  if (!text) return '';
+  const normalized = text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f\u1AB0-\u1AFF\u1DC0-\u1DFF]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+
+  return isLowerKey ? normalized.toLowerCase() : normalized;
+};
+
+export const isNullOrEmpty = (str: string | null | undefined): boolean => {
+  return !str || str.trim().length === 0;
+};
