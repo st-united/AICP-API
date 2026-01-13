@@ -235,21 +235,21 @@ model Domain {
 }
 
 model CompetencyAspect {
-  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  pillarId              String   @map("pillar_id") @db.Uuid
-  name                  String   @db.VarChar
-  represent             String   @default("") @db.VarChar
-  description           String   @db.Text
-  weightWithinDimension Decimal  @map("weight_within_dimension") @db.Decimal(3, 2)
+  id                    String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pillarId              String                             @map("pillar_id") @db.Uuid
+  name                  String                             @db.VarChar
+  represent             String                             @default("") @db.VarChar
+  description           String                             @db.Text
+  weightWithinDimension Decimal                            @map("weight_within_dimension") @db.Decimal(3, 2)
   dimension             CompetencyDimension
-  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-  competencyPillar      CompetencyPillar @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+  createdAt             DateTime                           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  competencyPillar      CompetencyPillar                   @relation(fields: [pillarId], references: [id], onDelete: Cascade)
   assessmentMethods     CompetencyAspectAssessmentMethod[]
   competencySkill       CompetencySkill[]
   examAspectSnapshot    ExamAspectSnapshot[]
   courseAspects         CourseAspect[]
-  
+
   @@unique([pillarId, name])
 }
 
@@ -269,12 +269,12 @@ model AssessmentMethod {
 }
 
 model CompetencyAspectAssessmentMethod {
-  competencyAspectId   String   @map("competency_aspect_id") @db.Uuid
-  assessmentMethodId   String   @map("assessment_method_id") @db.Uuid
+  competencyAspectId    String   @map("competency_aspect_id") @db.Uuid
+  assessmentMethodId    String   @map("assessment_method_id") @db.Uuid
   weightWithinDimension Decimal? @map("weight_within_dimension") @db.Decimal(3, 2)
 
-  competencyAspect     CompetencyAspect @relation(fields: [competencyAspectId], references: [id], onDelete: Cascade)
-  assessmentMethod     AssessmentMethod @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
+  competencyAspect CompetencyAspect @relation(fields: [competencyAspectId], references: [id], onDelete: Cascade)
+  assessmentMethod AssessmentMethod @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 
   @@id([competencyAspectId, assessmentMethodId])
   @@map("competency_aspect_assessment_method")
@@ -441,7 +441,7 @@ model CompetencyFramework {
   updatedAt    DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   description  String?
   name         String                 @db.VarChar
-  searchText   String?                 @map("search_text") @db.Text
+  searchText   String?                @map("search_text") @db.Text
   assessment   CompetencyAssessment[]
   domain       Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
   pillars      CompetencyPillar[]
