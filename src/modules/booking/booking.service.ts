@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { FilterBookingResponseItemDto } from './dto/filter-booking-response-item.dto';
-import { PrismaService } from '../prisma/prisma.service';
-import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { ResponseItem } from '@app/common/dtos';
+import { InterviewRequestStatus, SlotStatus } from '@prisma/client';
+import { MentorSpotStatus, Order } from '@Constant/enums';
+import { FilterBookingResponseItemDto } from './dto/filter-booking-response-item.dto';
+import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
-import { SlotStatus, TimeSlotBooking, InterviewRequestStatus } from '@prisma/client';
-import { Order } from '@app/common/constants';
 import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class BookingService {
@@ -18,43 +18,46 @@ export class BookingService {
 
     const take = Number(limit);
     const skip = (Number(page) - 1) * take;
-    const filters: any = {};
+
+    const where: any = {
+      status: InterviewRequestStatus.PENDING,
+    };
 
     if (dateStart || dateEnd) {
-      filters.interviewDate = {
-        ...(dateStart && { gte: new Date(dateStart) }),
-        ...(dateEnd && { lte: new Date(dateEnd) }),
+      where.currentSpot = {
+        startAt: {
+          ...(dateStart && { gte: new Date(dateStart) }),
+          ...(dateEnd && { lte: new Date(dateEnd) }),
+        },
       };
     }
 
     if (levels && levels.length > 0) {
-      filters.exam = {
+      where.exam = {
         examLevel: {
-          examLevel: {
-            in: levels,
-          },
+          examLevel: { in: levels },
         },
       };
     }
 
-    const keywordFilter = name
-      ? {
+    if (name) {
+      where.exam = {
+        ...where.exam,
+        user: {
           OR: [
-            { exam: { user: { fullName: { contains: name, mode: 'insensitive' } } } },
-            { exam: { user: { email: { contains: name, mode: 'insensitive' } } } },
-            { exam: { user: { phoneNumber: { contains: name, mode: 'insensitive' } } } },
+            { fullName: { contains: name, mode: 'insensitive' } },
+            { email: { contains: name, mode: 'insensitive' } },
+            { phoneNumber: { contains: name, mode: 'insensitive' } },
           ],
-        }
-      : {};
+        },
+      };
+    }
 
     const [records, total, levelList] = await this.prisma.$transaction([
       this.prisma.interviewRequest.findMany({
-        where: {
-          status: InterviewRequestStatus.PENDING,
-          ...filters,
-          ...keywordFilter,
-        },
+        where,
         include: {
+          currentSpot: true,
           exam: {
             include: {
               examLevel: true,
@@ -64,36 +67,31 @@ export class BookingService {
           },
         },
         orderBy: {
-          createdAt: Order.DESC,
+          currentSpot: {
+            startAt: Order.DESC,
+          },
         },
         skip,
         take,
       }),
-
-      this.prisma.interviewRequest.count({
-        where: {
-          status: InterviewRequestStatus.PENDING,
-          ...filters,
-          ...keywordFilter,
-        },
-      }),
-
+      this.prisma.interviewRequest.count({ where }),
       this.prisma.examLevel.findMany({
         distinct: ['examLevel'],
         select: { examLevel: true },
+        orderBy: { examLevel: Order.ASC },
       }),
     ]);
 
-    const data: FilterBookingResponseItemDto[] = records.map((booking) => ({
-      id: booking?.id || '',
-      timeSlots: booking?.timeSlot || '',
-      name: booking?.exam.user?.fullName || '',
-      email: booking?.exam.user?.email || '',
-      phone: booking?.exam.user?.phoneNumber || '',
-      nameExamSet: booking?.exam?.examSet?.name || '',
-      examId: booking?.examId || '',
-      level: booking?.exam?.examLevel.examLevel || '',
-      date: booking?.interviewDate.toISOString() || '',
+    const data: FilterBookingResponseItemDto[] = records.map((r) => ({
+      id: r.id,
+      timeSlots: r.currentSpot ? `${r.currentSpot.startAt.toISOString()} - ${r.currentSpot.endAt.toISOString()}` : '',
+      name: r.exam.user.fullName,
+      email: r.exam.user.email,
+      phone: r.exam.user.phoneNumber,
+      nameExamSet: r.exam.examSet?.name ?? '',
+      examId: r.examId,
+      level: r.exam.examLevel?.examLevel ?? '',
+      date: r.currentSpot?.startAt?.toISOString() ?? '',
     }));
 
     return {
@@ -110,7 +108,9 @@ export class BookingService {
   }
 
   async getAvailableSlotsByExamId(examId: string): Promise<ResponseItem<ExamSlotsReportDto>> {
-    const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+    });
 
     if (!exam?.finishedAt) {
       throw new BadRequestException('Không tìm thấy hoặc thiếu bài kiểm tra đã hoàn thành');
@@ -119,64 +119,41 @@ export class BookingService {
     const days = [2, 3, 4].map((offset) => {
       const date = new Date();
       date.setDate(date.getDate() + offset);
-      return date.toISOString().split('T')[0];
+      return date;
     });
-
-    const morningSlots: TimeSlotBooking[] = [
-      TimeSlotBooking.AM_08_09,
-      TimeSlotBooking.AM_09_10,
-      TimeSlotBooking.AM_10_11,
-      TimeSlotBooking.AM_11_12,
-    ];
-    const afternoonSlots: TimeSlotBooking[] = [
-      TimeSlotBooking.PM_02_03,
-      TimeSlotBooking.PM_03_04,
-      TimeSlotBooking.PM_04_05,
-      TimeSlotBooking.PM_05_06,
-    ];
 
     const totalMentors = await this.prisma.mentor.count();
     const dailyReports: DailyAvailabilityDto[] = [];
 
     for (const day of days) {
-      const morningTotal = totalMentors * morningSlots.length;
-      const afternoonTotal = totalMentors * afternoonSlots.length;
+      const startOfDay = new Date(day);
+      startOfDay.setHours(0, 0, 0, 0);
 
-      const startOfDay = new Date(`${day}T00:00:00.000Z`);
       const endOfDay = new Date(startOfDay);
       endOfDay.setDate(endOfDay.getDate() + 1);
-      const requests = await this.prisma.interviewRequest.findMany({
+
+      const spots = await this.prisma.mentorTimeSpot.findMany({
         where: {
-          interviewDate: {
+          startAt: {
             gte: startOfDay,
             lt: endOfDay,
           },
         },
-        select: {
-          timeSlot: true,
-          interviewDate: true,
-        },
       });
-      let usedMorning = 0;
-      let usedAfternoon = 0;
 
-      for (const req of requests) {
-        if (morningSlots.includes(req.timeSlot)) usedMorning++;
-        else if (afternoonSlots.includes(req.timeSlot)) usedAfternoon++;
-      }
-
-      const morningRemaining = Math.max(0, morningTotal - usedMorning);
-      const afternoonRemaining = Math.max(0, afternoonTotal - usedAfternoon);
+      const available = spots.filter((s) => s.status === MentorSpotStatus.AVAILABLE).length;
+      const booked = spots.filter((s) => s.status === MentorSpotStatus.BOOKED).length;
+      const total = spots.length || totalMentors * 8;
 
       dailyReports.push({
-        date: day,
+        date: startOfDay.toISOString().split('T')[0],
         morning: {
-          slot: morningRemaining,
-          status: this.getSlotStatus(morningRemaining, totalMentors),
+          slot: available,
+          status: this.getSlotStatus(available, total),
         },
         afternoon: {
-          slot: afternoonRemaining,
-          status: this.getSlotStatus(morningRemaining, totalMentors),
+          slot: Math.max(0, total - booked),
+          status: this.getSlotStatus(total - booked, total),
         },
       });
     }
@@ -188,8 +165,8 @@ export class BookingService {
   }
 
   private getSlotStatus(remaining: number, total: number): SlotStatus {
-    if (remaining === 0) return SlotStatus.FULL;
-    if (remaining <= total / 1) return SlotStatus.ALMOST_FULL;
+    if (remaining <= 0) return SlotStatus.FULL;
+    if (remaining <= total * 0.3) return SlotStatus.ALMOST_FULL;
     return SlotStatus.AVAILABLE;
   }
 
@@ -204,12 +181,12 @@ export class BookingService {
           timeSpentMinutes: true,
           examSetId: true,
           userId: true,
-          examLevel: {
-            select: { examLevel: true },
-          },
           overallScore: true,
           examStatus: true,
           createdAt: true,
+          examLevel: {
+            select: { examLevel: true },
+          },
           examSet: {
             select: { id: true, name: true },
           },
@@ -238,21 +215,27 @@ export class BookingService {
         throw new NotFoundException('Người dùng không tồn tại');
       }
 
-      const [examSet, examQuestions, userAnswers] = await Promise.all([
-        this.prisma.examSet.findUnique({ where: { id: exam.examSetId } }),
+      const interviewRequest = await this.prisma.interviewRequest.findUnique({
+        where: { examId },
+        include: {
+          currentSpot: true,
+        },
+      });
+
+      const [examQuestions, userAnswers] = await Promise.all([
         this.prisma.examSetQuestion.findMany({
           where: { examSetId: exam.examSetId },
-          include: { question: { include: { answerOptions: true } } },
+          include: {
+            question: {
+              include: { answerOptions: true },
+            },
+          },
         }),
         this.prisma.userAnswer.findMany({
           where: { userId: exam.userId, examId },
           include: { selections: true },
         }),
       ]);
-
-      if (!examSet) {
-        throw new NotFoundException('Bộ đề thi không tồn tại');
-      }
 
       const userAnswerMap: Record<string, string[]> = {};
       userAnswers.forEach((ua) => {
@@ -262,20 +245,20 @@ export class BookingService {
       let correctCount = 0;
       examQuestions.forEach((q) => {
         const correctAnswers = q.question.answerOptions.filter((opt) => opt.isCorrect).map((opt) => opt.id);
-        const userSelected = userAnswerMap[q.questionId] || [];
 
+        const userSelected = userAnswerMap[q.questionId] || [];
         if (userSelected.length === 0) return;
 
-        const allCorrectSelected =
+        const isCorrect =
           userSelected.every((ans) => correctAnswers.includes(ans)) && correctAnswers.length === userSelected.length;
 
-        if (allCorrectSelected) correctCount++;
+        if (isCorrect) correctCount++;
       });
 
       const pillarScores = exam.examPillarSnapshot.reduce(
         (acc, snapshot) => {
-          const name = snapshot.pillar.name.toUpperCase();
-          acc[name.toLowerCase() as keyof typeof acc] = Number(snapshot.score);
+          const key = snapshot.pillar.name.toLowerCase();
+          acc[key as keyof typeof acc] = Number(snapshot.score);
           return acc;
         },
         { mindset: 0, skillset: 0, toolset: 0 }
@@ -301,7 +284,7 @@ export class BookingService {
           email: user.email,
           phoneNumber: user.phoneNumber,
           province: user.province,
-          job: user.job.map((data) => data.name),
+          job: user.job.map((j) => j.name),
         },
         examResult: {
           sfiaLevel: exam.sfiaLevel,
@@ -318,6 +301,14 @@ export class BookingService {
           certificates: user.userPortfolio?.certificateFiles ?? null,
           experiences: user.userPortfolio?.experienceFiles ?? null,
         },
+        interview: interviewRequest?.currentSpot
+          ? {
+              startAt: interviewRequest.currentSpot.startAt,
+              endAt: interviewRequest.currentSpot.endAt,
+              timezone: interviewRequest.currentSpot.timezone,
+              status: interviewRequest.status,
+            }
+          : null,
       };
 
       return new ResponseItem<UserInterviewInfoDto>(response, 'Lấy thông tin người đăng ký phỏng vấn thành công');

@@ -23,6 +23,7 @@ import { ImportsModule } from './modules/imports/imports.module';
 import { UniversityModule } from './modules/universities/universities.module';
 import { InterviewReminderModule } from './modules/interview-reminder/interview-reminder.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
+import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 import { AssessmentMethodsModule } from './modules/assessment-methods/assessment-methods.module';
 
 @Module({
@@ -72,6 +73,7 @@ import { AssessmentMethodsModule } from './modules/assessment-methods/assessment
     UniversityModule,
     InterviewReminderModule,
     AspectsModule,
+    MentorSlotsModule,
     AssessmentMethodsModule,
   ],
   providers: [
