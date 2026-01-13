@@ -2,6 +2,7 @@ import { GoogleCalendarService } from '@app/common/helpers/google-calendar.servi
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MentorSpotStatus } from '@Constant/enums';
+import * as pLimit from 'p-limit';
 
 import { CreateMentorSlotsDto } from './dto/request/create-mentor-slots.dto';
 import { MentorCalendarResponseDto } from './dto/response/mentor-calendar-response.dto';
@@ -25,20 +26,24 @@ export class MentorSlotsService {
       defaultStatus = MentorSpotStatus.AVAILABLE,
       availabilities,
       conflictPolicy = 'SKIP',
+      deletedSlotIds,
     } = dto;
 
     const tz = tzInput || TZ_DEFAULT;
+    const normalizedDeletedSlotIds = Array.isArray(deletedSlotIds) ? Array.from(new Set(deletedSlotIds)) : [];
+    const hasAvailabilities = Array.isArray(availabilities) && availabilities.length > 0;
+    const hasDeletions = normalizedDeletedSlotIds.length > 0;
 
     if (!userId) {
       throw new BadRequestException('userId is required');
     }
 
-    if (!durationMin) {
-      throw new BadRequestException('durationMin is required');
+    if (!hasAvailabilities && !hasDeletions) {
+      throw new BadRequestException('availabilities or deletedSlotIds is required');
     }
 
-    if (!availabilities?.length) {
-      throw new BadRequestException('availabilities is required');
+    if (hasAvailabilities && !durationMin) {
+      throw new BadRequestException('durationMin is required');
     }
 
     const mentor = await this.prisma.mentor.findUnique({
@@ -58,6 +63,58 @@ export class MentorSlotsService {
     }
 
     const mentorEmail = mentor.user.email;
+    const rawCalendarConcurrency = Number(process.env.MENTOR_SLOTS_CALENDAR_CONCURRENCY ?? 5);
+    const calendarConcurrency = Number.isFinite(rawCalendarConcurrency)
+      ? Math.max(1, Math.min(20, Math.trunc(rawCalendarConcurrency)))
+      : 5;
+    const limitCalendar = pLimit(calendarConcurrency);
+    const safeDeleteCalendarEvents = async (eventIds: string[]) => {
+      if (!eventIds.length) return;
+
+      await Promise.all(
+        eventIds.map((eventId) =>
+          limitCalendar(async () => {
+            try {
+              await GoogleCalendarService.deleteEvent(eventId);
+            } catch (error) {
+              console.error(`Error deleting Google Calendar event ${eventId}:`, error);
+            }
+          })
+        )
+      );
+    };
+
+    let deletedCount = 0;
+
+    if (hasDeletions) {
+      const slotsToDelete = await this.prisma.mentorTimeSpot.findMany({
+        where: {
+          mentorId: mentor.id,
+          id: { in: normalizedDeletedSlotIds },
+        },
+        select: {
+          id: true,
+          status: true,
+          calendarEventId: true,
+        },
+      });
+
+      const bookedSlots = slotsToDelete.filter((slot) => slot.status === MentorSpotStatus.BOOKED);
+      if (bookedSlots.length) {
+        throw new BadRequestException(`Cannot delete booked slots: ${bookedSlots.map((slot) => slot.id).join(', ')}`);
+      }
+
+      await safeDeleteCalendarEvents(
+        slotsToDelete.map((slot) => slot.calendarEventId).filter((eventId): eventId is string => Boolean(eventId))
+      );
+
+      if (slotsToDelete.length) {
+        const deleteResult = await this.prisma.mentorTimeSpot.deleteMany({
+          where: { mentorId: mentor.id, id: { in: slotsToDelete.map((slot) => slot.id) } },
+        });
+        deletedCount = deleteResult.count;
+      }
+    }
 
     type SlotInput = {
       mentorId: string;
@@ -92,25 +149,27 @@ export class MentorSlotsService {
       }
     };
 
-    for (const availability of availabilities) {
-      const date = dayjs.tz(availability.date, 'YYYY-MM-DD', tz);
+    if (hasAvailabilities) {
+      for (const availability of availabilities!) {
+        const date = dayjs.tz(availability.date, 'YYYY-MM-DD', tz);
 
-      if (!date.isValid()) {
-        throw new BadRequestException(`date invalid. Expected YYYY-MM-DD: ${availability.date}`);
-      }
+        if (!date.isValid()) {
+          throw new BadRequestException(`date invalid. Expected YYYY-MM-DD: ${availability.date}`);
+        }
 
-      for (const r of availability.ranges) {
-        const rangeStart = dayjs.tz(`${availability.date} ${r.start}`, 'YYYY-MM-DD HH:mm', tz);
-        const rangeEnd = dayjs.tz(`${availability.date} ${r.end}`, 'YYYY-MM-DD HH:mm', tz);
+        for (const r of availability.ranges) {
+          const rangeStart = dayjs.tz(`${availability.date} ${r.start}`, 'YYYY-MM-DD HH:mm', tz);
+          const rangeEnd = dayjs.tz(`${availability.date} ${r.end}`, 'YYYY-MM-DD HH:mm', tz);
 
-        if (!rangeStart.isValid() || !rangeEnd.isValid()) continue;
-        if (!rangeEnd.isAfter(rangeStart)) continue;
+          if (!rangeStart.isValid() || !rangeEnd.isValid()) continue;
+          if (!rangeEnd.isAfter(rangeStart)) continue;
 
-        addSlotsForRange(rangeStart, rangeEnd);
+          addSlotsForRange(rangeStart, rangeEnd);
+        }
       }
     }
 
-    if (!slots.length) return { created: 0 };
+    if (!slots.length) return { created: 0, deleted: deletedCount };
 
     const uniqueSlotsMap = new Map<number, SlotInput>();
     for (const slot of slots) {
@@ -121,13 +180,13 @@ export class MentorSlotsService {
     }
 
     const uniqueSlots = Array.from(uniqueSlotsMap.values());
-    if (!uniqueSlots.length) return { created: 0 };
+    if (!uniqueSlots.length) return { created: 0, deleted: deletedCount };
 
     const startAts = uniqueSlots.map((s) => s.startAt);
 
     const existing = await this.prisma.mentorTimeSpot.findMany({
       where: { mentorId: mentor.id, startAt: { in: startAts } },
-      select: { startAt: true },
+      select: { id: true, startAt: true, calendarEventId: true },
     });
 
     if (existing.length && conflictPolicy === 'ERROR') {
@@ -139,37 +198,43 @@ export class MentorSlotsService {
     const slotsToCreate =
       conflictPolicy === 'SKIP' ? uniqueSlots.filter((slot) => !existingSet.has(slot.startAt.getTime())) : uniqueSlots;
 
-    if (!slotsToCreate.length) return { created: 0 };
+    if (!slotsToCreate.length) return { created: 0, deleted: deletedCount };
 
-    const slotsWithMeetUrl: Array<SlotInput & { meetUrl: string | null; calendarEventId: string | null }> = [];
+    const slotsWithMeetUrl = await Promise.all(
+      slotsToCreate.map((slot) =>
+        limitCalendar(async () => {
+          let meetUrl: string | null = null;
+          let calendarEventId: string | null = null;
 
-    for (const slot of slotsToCreate) {
-      let meetUrl: string | null = null;
-      let calendarEventId: string | null = null;
+          try {
+            const eventInfo = await GoogleCalendarService.createInterviewEvent(mentorEmail, mentorEmail, {
+              startAt: slot.startAt,
+              endAt: slot.endAt,
+              timezone: slot.timezone,
+              meetUrl: null,
+            });
+            meetUrl = eventInfo.meetUrl;
+            calendarEventId = eventInfo.eventId;
+          } catch (error) {
+            console.error('Error creating Google Calendar event for slot:', error);
+            meetUrl = 'https://meet.google.com/default-link';
+            calendarEventId = null;
+          }
 
-      try {
-        const eventInfo = await GoogleCalendarService.createInterviewEvent(mentorEmail, mentorEmail, {
-          startAt: slot.startAt,
-          endAt: slot.endAt,
-          timezone: slot.timezone,
-          meetUrl: null,
-        });
-        meetUrl = eventInfo.meetUrl;
-        calendarEventId = eventInfo.eventId;
-      } catch (error) {
-        console.error('Error creating Google Calendar event for slot:', error);
-        meetUrl = 'https://meet.google.com/default-link';
-        calendarEventId = null;
-      }
-
-      slotsWithMeetUrl.push({
-        ...slot,
-        meetUrl,
-        calendarEventId,
-      });
-    }
+          return {
+            ...slot,
+            meetUrl,
+            calendarEventId,
+          };
+        })
+      )
+    );
 
     if (conflictPolicy === 'REPLACE' && existing.length) {
+      await safeDeleteCalendarEvents(
+        existing.map((slot) => slot.calendarEventId).filter((eventId): eventId is string => Boolean(eventId))
+      );
+
       return await this.prisma.$transaction(async (tx) => {
         await tx.mentorTimeSpot.deleteMany({
           where: { mentorId: mentor.id, startAt: { in: existing.map((e) => e.startAt) } },
@@ -180,7 +245,7 @@ export class MentorSlotsService {
           skipDuplicates: true,
         });
 
-        return { created: result.count };
+        return { created: result.count, deleted: deletedCount };
       });
     }
 
@@ -189,7 +254,7 @@ export class MentorSlotsService {
       skipDuplicates: true,
     });
 
-    return { created: result.count };
+    return { created: result.count, deleted: deletedCount };
   }
 
   async getMentorCalendar(params: {
