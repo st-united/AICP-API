@@ -187,7 +187,7 @@ export class ZaloOtpService {
       const res = await axios.post('https://oauth.zaloapp.com/v4/oa/access_token', data, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          secret_key: process.env.ZALO_APP_SECRET,
+          secret_key: process.env.ZALO_APP_SECRET_KEY,
         },
       });
 
