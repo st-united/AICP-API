@@ -1,14 +1,5 @@
 import { AssessmentMethod, CompetencyAspect, PrismaClient } from '@prisma/client';
-
-// Shuffle array using Fisher-Yates algorithm
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
+import { AssessmentMethodSeedEnum } from './constant/assessmentMethodSeedEnum';
 
 export async function seedCompetencyAspectAssessmentMethod(
   prisma: PrismaClient,
@@ -16,20 +7,45 @@ export async function seedCompetencyAspectAssessmentMethod(
   assessmentMethods: AssessmentMethod[]
 ) {
   try {
-    for (const assessmentMethod of assessmentMethods) {
-      let randomCount: number;
+    // Mapping assessment methods với represent codes của aspects
+    const mappings: Record<string, string[]> = {
+      [AssessmentMethodSeedEnum.TEST_ONLINE]: ['A1', 'A3', 'A4', 'A5', 'B1', 'B2', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3'],
+      [AssessmentMethodSeedEnum.EVIDENCE]: [
+        'A1',
+        'A2',
+        'A3',
+        'B1',
+        'B2',
+        'B3',
+        'B4',
+        'B5',
+        'B6',
+        'C1',
+        'C2',
+        'C3',
+        'C4',
+      ],
+      [AssessmentMethodSeedEnum.INTERVIEW]: [], // Tất cả aspects
+    };
 
-      // Special case: Self Assessment cần 5-6 aspects
-      if (assessmentMethod.name === 'Self Assessment') {
-        randomCount = Math.floor(Math.random() * 2) + 5; // 5 hoặc 6
-      } else {
-        // Random số lượng aspects từ 1 đến toàn bộ
-        randomCount = Math.floor(Math.random() * aspects.length) + 1;
+    for (const assessmentMethod of assessmentMethods) {
+      const representCodes = mappings[assessmentMethod.name];
+
+      // Nếu không có mapping, bỏ qua
+      if (representCodes === undefined) {
+        console.warn(`No mapping found for assessment method: ${assessmentMethod.name}`);
+        continue;
       }
 
-      // Shuffle và chọn random aspects
-      const shuffledAspects = shuffleArray(aspects);
-      const selectedAspects = shuffledAspects.slice(0, randomCount);
+      let selectedAspects: CompetencyAspect[];
+
+      // Interview: lấy tất cả aspects
+      if (assessmentMethod.name === AssessmentMethodSeedEnum.INTERVIEW) {
+        selectedAspects = aspects;
+      } else {
+        // Test Online, Evidence: lọc theo represent code
+        selectedAspects = aspects.filter((aspect) => representCodes.includes(aspect.represent));
+      }
 
       for (const aspect of selectedAspects) {
         const existingMapping = await prisma.competencyAspectAssessmentMethod.findUnique({
