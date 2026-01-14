@@ -277,7 +277,6 @@ model CompetencyAspectAssessmentMethod {
   assessmentMethod     AssessmentMethod @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 
   @@id([competencyAspectId, assessmentMethodId])
-  @@map("competency_aspect_assessment_method")
 }
 
 model ExamSet {
