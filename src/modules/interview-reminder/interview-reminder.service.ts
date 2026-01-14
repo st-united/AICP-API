@@ -66,7 +66,6 @@ export class InterviewReminderService {
             await this.emailService.sendInterviewReminderEmail(
               user.fullName || user.email,
               user.email,
-              spot.startAt,
               this.getTimeSlotLabel(spot.startAt, spot.endAt),
               eventInfo.meetUrl
             );
