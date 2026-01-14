@@ -305,6 +305,8 @@ export class ZaloOtpService {
 
     let sendResult = await this.sendOtpToZalo(userId, phoneNumber, otp, accessToken);
 
+    this.logger.log('SendResult ZALO data: ', sendResult);
+
     if (sendResult?.error === 'access_token_expired') {
       this.logger.log('Access token expired, refreshing...');
       accessToken = await this.refreshAccessToken();
@@ -312,6 +314,9 @@ export class ZaloOtpService {
     }
 
     if (sendResult?.error) {
+      this.logger.log('Error: ', sendResult.error);
+      this.logger.log('Message error: ', sendResult.errorMessage);
+      this.logger.log('Error code: ', sendResult.error_code);
       if (ZaloErrorTranslator.isPhoneNumberError(sendResult.error)) {
         throw new BadRequestException(ZaloErrorTranslator.translate(sendResult.error));
       }
