@@ -24,6 +24,7 @@ import { UniversityModule } from './modules/universities/universities.module';
 import { InterviewReminderModule } from './modules/interview-reminder/interview-reminder.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
 import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
+import { AssessmentMethodsModule } from './modules/assessment-methods/assessment-methods.module';
 
 @Module({
   imports: [
@@ -74,6 +75,8 @@ import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
     AspectsModule,
     InterviewReminderModule,
     MentorSlotsModule,
+    MentorSlotsModule,
+    AssessmentMethodsModule,
   ],
   providers: [
     {

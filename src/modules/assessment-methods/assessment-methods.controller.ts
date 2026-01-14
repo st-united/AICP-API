@@ -1,0 +1,109 @@
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { AssessmentMethodsService } from './assessment-methods.service';
+import { RequestListAssessmentMethodDto } from './dto/request/request-list-assessment-method.dto';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { ResponseAssessmentMethodDto } from './dto/response/response-assessment-method.dto';
+import { MutateAssessmentMethodDto } from './dto/request/mutate-assessment-method.dto';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UserRoleEnum } from '@Constant/index';
+import { Roles } from '../auth/guards/decorator/roles.decorator';
+import { RequestChangeStatusDto } from './dto/request/request-change-status';
+
+@ApiTags('Assessment Methods')
+@Controller('assessment-methods')
+@ApiBearerAuth()
+@UseGuards(JwtAccessTokenGuard, RolesGuard)
+export class AssessmentMethodsController {
+  constructor(private readonly assessmentMethodsService: AssessmentMethodsService) {}
+
+  @ApiOperation({ summary: 'List all assessment methods with optional filters' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of assessment methods retrieved successfully',
+    type: ResponsePaginate,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @Get()
+  async list(@Query() dto: RequestListAssessmentMethodDto): Promise<ResponsePaginate<ResponseAssessmentMethodDto>> {
+    return this.assessmentMethodsService.list(dto);
+  }
+
+  /** Create a new assessment method */
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Create a new assessment method' })
+  @ApiBody({ type: MutateAssessmentMethodDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Assessment method created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request data',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Assessment method already exists',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @Post()
+  async create(@Body() dto: MutateAssessmentMethodDto): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    return this.assessmentMethodsService.create(dto);
+  }
+
+  /** Update assessment method */
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update assessment method' })
+  @ApiParam({ name: 'id', description: 'Assessment method ID' })
+  @ApiBody({ type: MutateAssessmentMethodDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Assessment method updated successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Assessment method not found',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @Patch(':id')
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: MutateAssessmentMethodDto
+  ): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    return this.assessmentMethodsService.update(id, dto);
+  }
+
+  /** Toggle status assessment method */
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Toggle status assessment method' })
+  @ApiParam({ name: 'id', description: 'Assessment method ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Assessment method toggle status successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Assessment method not found',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @Patch(':id/status')
+  async activate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RequestChangeStatusDto
+  ): Promise<ResponseItem<ResponseAssessmentMethodDto>> {
+    return this.assessmentMethodsService.setStatus(id, dto);
+  }
+}

@@ -1,4 +1,5 @@
-import { google, Auth } from 'googleapis';
+import { randomUUID } from 'crypto';
+import { google, Auth, calendar_v3 } from 'googleapis';
 import type { MentorTimeSpot } from '@prisma/client';
 
 type CalendarEventInfo = {
@@ -7,31 +8,47 @@ type CalendarEventInfo = {
 };
 
 export class GoogleCalendarService {
-  private static async getCalendarClient() {
-    const oauth2Client = new google.auth.OAuth2(
+  private static calendarClientPromise: Promise<calendar_v3.Calendar> | null = null;
+  private static oauth2Client: Auth.OAuth2Client | null = null;
+
+  private static getOauth2Client(): Auth.OAuth2Client {
+    if (this.oauth2Client) return this.oauth2Client;
+
+    this.oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID?.trim(),
       process.env.GOOGLE_CLIENT_SECRET?.trim(),
       process.env.GOOGLE_CALLBACK_URL?.trim()
     );
 
-    oauth2Client.setCredentials({
+    this.oauth2Client.setCredentials({
       refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
     });
 
-    const { token } = await oauth2Client.getAccessToken();
-    if (!token) {
-      throw new Error('Failed to obtain access token');
-    }
+    return this.oauth2Client;
+  }
 
-    oauth2Client.setCredentials({
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-      access_token: token,
+  private static async getCalendarClient() {
+    if (this.calendarClientPromise) return this.calendarClientPromise;
+
+    this.calendarClientPromise = (async () => {
+      const oauth2Client = this.getOauth2Client();
+      const { token } = await oauth2Client.getAccessToken();
+
+      if (!token) {
+        throw new Error('Failed to obtain access token');
+      }
+
+      return google.calendar({
+        version: 'v3',
+        auth: oauth2Client,
+      });
+    })();
+
+    this.calendarClientPromise.catch(() => {
+      this.calendarClientPromise = null;
     });
 
-    return google.calendar({
-      version: 'v3',
-      auth: oauth2Client as Auth.OAuth2Client,
-    });
+    return this.calendarClientPromise;
   }
 
   static async createInterviewEvent(
@@ -79,7 +96,7 @@ export class GoogleCalendarService {
           ...baseEvent,
           conferenceData: {
             createRequest: {
-              requestId: `req-${Date.now()}`,
+              requestId: `req-${randomUUID()}`,
               conferenceSolutionKey: { type: 'hangoutsMeet' },
             },
           },
@@ -104,6 +121,20 @@ export class GoogleCalendarService {
         eventId: null,
       };
     }
+  }
+
+  static async deleteEvent(eventId: string, calendarId: string = 'primary'): Promise<void> {
+    if (!eventId) {
+      return;
+    }
+
+    const calendar = await this.getCalendarClient();
+
+    await calendar.events.delete({
+      calendarId,
+      eventId,
+      sendUpdates: 'all',
+    });
   }
 
   static async addAttendeesToEvent(

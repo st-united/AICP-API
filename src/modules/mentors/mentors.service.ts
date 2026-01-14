@@ -1,33 +1,28 @@
-import { UsersService } from '@UsersModule/users.service';
-import { generateSecurePassword } from '@app/common/helpers/randomPassword';
-import { ExamStatus, ExamLevelEnum, InterviewRequestStatus, MentorBookingStatus, Prisma } from '@prisma/client';
-import { TokenService } from '../auth/services/token.service';
-import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { EmailService } from '../email/email.service';
+import { UsersService } from '@UsersModule/users.service';
+import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
+import { generateSecurePassword } from '@app/common/helpers/randomPassword';
+import { ExamLevelEnum, ExamStatus, InterviewRequestStatus, MentorBookingStatus, Prisma } from '@prisma/client';
+import { MentorSpotStatus, Order, timeSlotEnum } from '@Constant/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { RedisService } from '../redis/redis.service';
+import { TokenService } from '../auth/services/token.service';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import {
-  MentorBookingResponseDto,
-  MentorBookingResponseDto as MentorBookingResponseV1,
-  MentorDto,
-} from './dto/response/mentor-booking.dto';
+import { MentorResponseDto } from './dto/response/mentor-response.dto';
+import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { MentorBookingResponseDto, MentorDto } from './dto/response/mentor-booking.dto';
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
-import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { InterviewShift, Order, MentorSpotStatus } from '@Constant/enums';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
-import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { GoogleCalendarService } from '@app/common/helpers/google-calendar.service';
 
 @Injectable()
@@ -381,6 +376,29 @@ export class MentorsService {
         }),
       ]);
 
+      await this.prisma.$transaction([
+        this.prisma.interviewRequest.update({
+          where: { id: interviewRequest.id },
+          data: {
+            currentSpotId: spot.id,
+            status: InterviewRequestStatus.ASSIGNED,
+          },
+        }),
+        this.prisma.mentorBooking.create({
+          data: {
+            mentorId: mentor.id,
+            interviewRequestId: interviewRequest.id,
+            status: MentorBookingStatus.UPCOMING,
+          },
+        }),
+        this.prisma.exam.update({
+          where: { id: dto.examId },
+          data: {
+            examStatus: ExamStatus.INTERVIEW_SCHEDULED,
+          },
+        }),
+      ]);
+
       return new ResponseItem(null, 'Đặt lịch phỏng vấn thành công');
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof ConflictException) {
@@ -657,10 +675,10 @@ export class MentorsService {
     const toCreate = validRequestIds.filter((id) => !alreadyAssignedIds.has(id));
 
     if (toCreate.length === 0) {
-      return {
-        message: 'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.',
-        data: { bookings: [] },
-      };
+      return new ResponseItem(
+        { bookings: [] },
+        'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.'
+      );
     }
 
     const bookings = await this.prisma.$transaction(async (transaction) => {
@@ -690,59 +708,23 @@ export class MentorsService {
       return createdBookings;
     });
 
-    const assignedInterviews = await this.prisma.interviewRequest.findMany({
-      where: {
-        id: { in: toCreate },
-        status: InterviewRequestStatus.ASSIGNED,
-      },
-      select: {
-        id: true,
-        currentSpot: {
-          select: {
-            startAt: true,
-            endAt: true,
-            timezone: true,
-            meetUrl: true,
-          },
-        },
-        exam: {
-          select: {
-            user: {
-              select: {
-                email: true,
-                fullName: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    await Promise.all(
-      assignedInterviews.map(async (interview) => {
-        const { exam, currentSpot } = interview;
-        const user = exam?.user;
-        if (user?.email && user?.fullName && currentSpot) {
-          const meetLink = await GoogleCalendarService.createInterviewEvent(user.email, mentor.user.email, {
-            startAt: currentSpot.startAt,
-            endAt: currentSpot.endAt,
-            timezone: currentSpot.timezone,
-            meetUrl: currentSpot.meetUrl,
-          });
-          //TODO: Enable email service
-          // await this.emailService.sendEmailInterviewScheduleToUser(
-          //   user.email,
-          //   user.fullName,
-          //   mentor.user.fullName,
-          //   currentSpot.startAt,
-          //   currentSpot.endAt,
-          //   meetLink
-          // );
-        }
-      })
-    );
-
     return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
+  }
+
+  private getTimeSlotKey(startAt: Date, endAt: Date): keyof typeof timeSlotEnum | null {
+    const key = `${startAt.getHours()}-${endAt.getHours()}`;
+    const map: Record<string, keyof typeof timeSlotEnum> = {
+      '8-9': 'AM_08_09',
+      '9-10': 'AM_09_10',
+      '10-11': 'AM_10_11',
+      '11-12': 'AM_11_12',
+      '14-15': 'PM_02_03',
+      '15-16': 'PM_03_04',
+      '16-17': 'PM_04_05',
+      '17-18': 'PM_05_06',
+    };
+
+    return map[key] ?? null;
   }
 
   async sendInterviewReminders(): Promise<void> {
@@ -810,13 +792,20 @@ export class MentorsService {
           continue;
         }
 
+        const spot = booking.interviewRequest?.currentSpot;
+        const slotKey = spot ? this.getTimeSlotKey(spot.startAt, spot.endAt) : null;
+        if (!spot || !slotKey) {
+          this.logger.warn(`Skipping reminder for booking ${booking.id}: missing time slot`);
+          continue;
+        }
+
         await this.emailService.sendMentorReminderEmail({
           mentorEmail: booking.mentor.user.email,
           mentorName: booking.mentor.user.fullName,
           intervieweeName: booking.interviewRequest.exam.user.fullName,
-          interviewDate: booking.interviewRequest.currentSpot.startAt,
-          timeSlot: null,
-          meetLink: booking.interviewRequest.currentSpot.meetUrl,
+          interviewDate: spot.startAt,
+          timeSlot: slotKey,
+          meetLink: spot.meetUrl ?? 'https://meet.google.com/default-link',
         });
       } catch (error) {
         this.logger.error(`Failed to send reminder to ${booking.mentor.user.email}`, error.stack);

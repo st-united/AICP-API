@@ -46,8 +46,8 @@ import sharp from 'sharp';
 import { UpdateStudentInfoDto } from './dto/request/update-student-info.dto';
 import { CurrentUserRankingDto, RankingUserDto } from './dto/ranking-user.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { calculateProfileCompleted } from '@app/common/helpers/checkProfileCompleted';
 import { RankingResponseDto } from './dto/response/ranking-response.dto';
+import { calculateProfileCompleted } from '@app/common/helpers/checkProfileCompleted';
 
 @Injectable()
 export class UsersService {

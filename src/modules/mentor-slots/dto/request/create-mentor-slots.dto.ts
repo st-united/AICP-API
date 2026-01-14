@@ -1,11 +1,13 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
+  ArrayUnique,
   IsArray,
   IsIn,
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   Min,
@@ -40,15 +42,17 @@ export class CreateMentorSlotsDto {
   @IsString()
   timezone?: string;
 
+  @IsOptional()
   @IsInt()
   @IsIn([15, 30, 45, 60])
-  durationMin: number;
+  durationMin?: number;
 
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => AvailabilityDayDto)
-  availabilities: AvailabilityDayDto[];
+  availabilities?: AvailabilityDayDto[];
 
   @IsOptional()
   @IsInt()
@@ -65,4 +69,11 @@ export class CreateMentorSlotsDto {
   @IsString()
   @IsIn(['SKIP', 'REPLACE', 'ERROR'])
   conflictPolicy?: 'SKIP' | 'REPLACE' | 'ERROR' = 'SKIP';
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  deletedSlotIds?: string[];
 }

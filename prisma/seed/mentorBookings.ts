@@ -1,4 +1,4 @@
-import { randomFutureDate, addMinutes } from '../../src/common/helpers/date-time';
+import { addMinutes, randomFutureDate } from '../../src/common/helpers/date-time';
 import { PrismaClient, MentorBookingStatus, MentorSpotStatus, InterviewRequestStatus } from '@prisma/client';
 
 export async function seedMentorBookings(
