@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsString, IsUUID } from 'class-validator';
 
 export class DomainDto {
   @Expose()
   @ApiProperty({ description: 'Domain ID' })
-  @IsString()
+  @IsUUID()
   id: string;
 
   @Expose()

@@ -25,6 +25,7 @@ import { InterviewReminderModule } from './modules/interview-reminder/interview-
 import { AspectsModule } from './modules/aspects/aspects.module';
 import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 import { AssessmentMethodsModule } from './modules/assessment-methods/assessment-methods.module';
+import { CompetencyFrameworkModule } from './modules/competency-framework/competency-framework.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { AssessmentMethodsModule } from './modules/assessment-methods/assessment
     AspectsModule,
     MentorSlotsModule,
     AssessmentMethodsModule,
+    CompetencyFrameworkModule,
   ],
   providers: [
     {

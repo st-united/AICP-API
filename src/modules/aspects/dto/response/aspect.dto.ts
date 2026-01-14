@@ -1,3 +1,4 @@
+import { AssessmentMethodDto } from '@app/modules/competency-framework/dto/response/assessment-method.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { CompetencyDimension } from '@prisma/client';
 import { Expose } from 'class-transformer';
@@ -36,4 +37,17 @@ export class AspectDto {
     enum: CompetencyDimension,
   })
   dimension: CompetencyDimension;
+
+  @Expose()
+  @ApiProperty({
+    example: 3,
+    description: 'Trọng số của tiêu chí',
+  })
+  weightDimension?: number;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Phương pháp đánh giá của tiêu chí',
+  })
+  assessmentMethods?: AssessmentMethodDto[];
 }
