@@ -269,12 +269,12 @@ model AssessmentMethod {
 }
 
 model CompetencyAspectAssessmentMethod {
-  competencyAspectId    String   @map("competency_aspect_id") @db.Uuid
-  assessmentMethodId    String   @map("assessment_method_id") @db.Uuid
+  competencyAspectId   String   @map("competency_aspect_id") @db.Uuid
+  assessmentMethodId   String   @map("assessment_method_id") @db.Uuid
   weightWithinDimension Decimal? @map("weight_within_dimension") @db.Decimal(3, 2)
 
-  competencyAspect CompetencyAspect @relation(fields: [competencyAspectId], references: [id], onDelete: Cascade)
-  assessmentMethod AssessmentMethod @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
+  competencyAspect     CompetencyAspect @relation(fields: [competencyAspectId], references: [id], onDelete: Cascade)
+  assessmentMethod     AssessmentMethod @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 
   @@id([competencyAspectId, assessmentMethodId])
   @@map("competency_aspect_assessment_method")

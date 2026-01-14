@@ -154,13 +154,20 @@ export class ZaloOtpService {
       } else {
         const errorMessage = res.data.message;
         this.logger.error(`Zalo API error: ${errorMessage}`);
-        return { error: errorMessage };
+        return { error: errorMessage, errorCode: res.data.error };
       }
     } catch (err: any) {
       this.logger.error(`Error sending OTP to Zalo: ${err.message}`, err.stack);
 
       if (err.response && err.response.data && err.response.data.error_code === 1002) {
-        return { error: 'access_token_expired' };
+        return { error: 'access_token_expired', errorCode: 1002 };
+      }
+
+      if (err.response && err.response.data && err.response.data.error) {
+        return {
+          error: err.response.data.message || err.response.data.error,
+          errorCode: err.response.data.error,
+        };
       }
 
       const errorMessage = err.message || 'send_otp_failed';
@@ -305,17 +312,18 @@ export class ZaloOtpService {
 
     let sendResult = await this.sendOtpToZalo(userId, phoneNumber, otp, accessToken);
 
-    if (sendResult?.error === 'access_token_expired') {
-      this.logger.log('Access token expired, refreshing...');
+    if (sendResult?.error && ZaloErrorTranslator.isAccessTokenError(sendResult.error, sendResult.errorCode)) {
+      this.logger.log('Token error: ', sendResult.error);
       accessToken = await this.refreshAccessToken();
       sendResult = await this.sendOtpToZalo(userId, phoneNumber, otp, accessToken);
     }
 
     if (sendResult?.error) {
+      this.logger.log('Send otp error: ', sendResult.error);
       if (ZaloErrorTranslator.isPhoneNumberError(sendResult.error)) {
-        throw new BadRequestException(ZaloErrorTranslator.translate(sendResult.error));
+        throw new BadRequestException(ZaloErrorTranslator.translateError(sendResult.error, sendResult.errorCode));
       }
-      throw new ZaloApiException(sendResult.error);
+      throw new ZaloApiException(ZaloErrorTranslator.translateError(sendResult.error, sendResult.errorCode));
     }
 
     return new ResponseItem({ success: true }, 'OTP đã được gửi thành công', SendOtpResponseDto);
