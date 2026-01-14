@@ -389,7 +389,7 @@ model MentorTimeSpot {
   meetUrl         String? @map("meet_url") @db.Text
   calendarEventId String? @map("calendar_event_id") @db.Text
 
-  mentor Mentor @relation("MentorSpots", fields: [mentorId], references: [id])
+  mentor Mentor          @relation("MentorSpots", fields: [mentorId], references: [id])
 
   interviewRequest InterviewRequest? @relation("SpotInterview")
 

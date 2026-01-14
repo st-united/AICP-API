@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ResponseItem } from '@app/common/dtos';
-import { InterviewRequestStatus, SlotStatus } from '@prisma/client';
 import { MentorSpotStatus, Order } from '@Constant/enums';
 import { FilterBookingResponseItemDto } from './dto/filter-booking-response-item.dto';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { PaginatedBookingResponseDto } from './dto/paginated-booking-response.dto';
+import { InterviewRequestStatus, SlotStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
 import { PrismaService } from '../prisma/prisma.service';

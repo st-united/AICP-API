@@ -23,6 +23,8 @@ import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
+import { GoogleCalendarService } from '@app/common/helpers/google-calendar.service';
+
 @Injectable()
 export class MentorsService {
   private readonly logger = new Logger(MentorsService.name);
@@ -351,6 +353,28 @@ export class MentorsService {
           status: MentorSpotStatus.BOOKED,
         },
       });
+      await this.prisma.$transaction([
+        this.prisma.interviewRequest.update({
+          where: { id: interviewRequest.id },
+          data: {
+            currentSpotId: spot.id,
+            status: InterviewRequestStatus.ASSIGNED,
+          },
+        }),
+        this.prisma.mentorBooking.create({
+          data: {
+            mentorId: mentor.id,
+            interviewRequestId: interviewRequest.id,
+            status: MentorBookingStatus.UPCOMING,
+          },
+        }),
+        this.prisma.exam.update({
+          where: { id: dto.examId },
+          data: {
+            examStatus: ExamStatus.INTERVIEW_SCHEDULED,
+          },
+        }),
+      ]);
 
       await this.prisma.$transaction([
         this.prisma.interviewRequest.update({

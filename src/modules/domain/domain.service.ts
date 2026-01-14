@@ -11,7 +11,6 @@ import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
 import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
 import { UpdateDomainStatusDto } from '@app/modules/domain/dto/request/update-domain-status.dto';
 import { Order } from '@Constant/enums';
-
 @Injectable()
 export class DomainService {
   private readonly logger = new Logger(DomainService.name);

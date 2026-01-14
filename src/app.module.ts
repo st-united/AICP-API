@@ -73,6 +73,8 @@ import { AssessmentMethodsModule } from './modules/assessment-methods/assessment
     UniversityModule,
     InterviewReminderModule,
     AspectsModule,
+    InterviewReminderModule,
+    MentorSlotsModule,
     MentorSlotsModule,
     AssessmentMethodsModule,
   ],
