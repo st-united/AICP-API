@@ -16,6 +16,7 @@ import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
+import { AvailableMentorResponseDto } from './dto/response/available-mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { MentorBookingResponseDto, MentorDto } from '@app/modules/mentors/dto/response/mentor-booking.dto';
@@ -31,6 +32,7 @@ import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagg
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { RequestCustom } from '@app/common/interfaces';
 import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
+import { GetAvailableMentorsDto } from '@app/modules/mentors/dto/request/get-available-mentors.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -60,6 +62,11 @@ export class MentorsController {
   @UseGuards(JwtAccessTokenGuard)
   async getMentorsByParams(@Query() dto: SearchMentorRequestDto): Promise<ResponsePaginate<MentorDto>> {
     return this.mentorsService.getMentorsByParams(dto);
+  }
+
+  @Get('available')
+  async getAvailableMentors(@Query() dto: GetAvailableMentorsDto): Promise<ResponseItem<AvailableMentorResponseDto[]>> {
+    return this.mentorsService.getAvailableMentors(dto);
   }
 
   @Get('bookings')

@@ -1,4 +1,4 @@
-import { IsISO8601, IsString } from 'class-validator';
+import { IsISO8601, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateMentorBookingDto {
   @IsString()
@@ -9,4 +9,8 @@ export class CreateMentorBookingDto {
 
   @IsISO8601()
   endAt: string;
+
+  @IsOptional()
+  @IsUUID()
+  mentorId?: string;
 }
