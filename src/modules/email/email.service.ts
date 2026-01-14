@@ -126,6 +126,28 @@ export class EmailService {
     await this.sendEmail(email, 'Thông báo xóa tài khoản', template);
   }
 
+  async sendInterviewScheduleConfirmationEmail(
+    fullName: string,
+    email: string,
+    dateLabel: string,
+    timeLabel: string,
+    meetUrl?: string
+  ): Promise<void> {
+    const template = this.generateInterviewScheduleConfirmationTemplate(fullName, dateLabel, timeLabel, meetUrl);
+    await this.sendEmail(email, 'Xác nhận lịch phỏng vấn chính thức', template);
+  }
+
+  async sendInterviewReminderEmail(
+    fullName: string,
+    email: string,
+    dateLabel: string,
+    timeLabel: string,
+    meetUrl?: string
+  ): Promise<void> {
+    const template = this.generateInterviewReminderTemplate(fullName, dateLabel, timeLabel, meetUrl);
+    await this.sendEmail(email, 'Nhắc nhở lịch phỏng vấn', template);
+  }
+
   private async sendEmail(to: string, subject: string, html: string): Promise<void> {
     try {
       await this.transporter.sendMail({
@@ -290,6 +312,112 @@ export class EmailService {
           </body>
         </html>
       `;
+  }
+
+  private generateInterviewScheduleConfirmationTemplate(
+    fullName: string,
+    dateLabel: string,
+    timeLabel: string,
+    meetUrl?: string
+  ): string {
+    const safeMeetUrl = meetUrl?.trim();
+    const meetContent = safeMeetUrl
+      ? `<a href="${safeMeetUrl}" style="color: #1a73e8; text-decoration: none;">${safeMeetUrl}</a>`
+      : 'Đang cập nhật';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Xác nhận lịch phỏng vấn chính thức</title>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { width: 100%; max-width: 720px; margin: 20px auto; background-color: #ffffff; border: 1px solid #d1d1d1; border-radius: 12px; }
+            .header { background-color: #0b3a82; color: #ffffff; text-align: center; padding: 16px; border-radius: 10px 10px 0 0; font-size: 22px; font-weight: bold; }
+            .content { text-align: center; padding: 24px 32px 8px; }
+            .hello { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+            .list { text-align: left; margin: 18px auto; max-width: 520px; font-size: 16px; color: #000000; }
+            .list li { margin: 8px 0; }
+            .footer { margin-top: 20px; text-align: center; font-size: 14px; color: #555555; border-top: 1px solid rgb(199, 198, 198); padding: 20px 10px; margin-left: 20px; margin-right: 20px; }
+            p { color: #000000; font-size: 16px; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">Xác nhận lịch phỏng vấn chính thức</div>
+            <div class="content">
+              <div class="hello">Xin chào ${fullName}</div>
+              <p>Cảm ơn bạn đã đăng ký tham gia phỏng vấn!</p>
+              <p>Chúng tôi xin thông báo lịch phỏng vấn bạn đã đăng ký với các thông tin cụ thể như sau:</p>
+              <ul class="list">
+                <li>Ngày phỏng vấn: ${dateLabel}</li>
+                <li>Thời gian: ${timeLabel}</li>
+                <li>Hình thức: Phỏng vấn trực tuyến</li>
+                <li>Link tham gia: ${meetContent}</li>
+              </ul>
+              <p>Nếu bạn cần thay đổi lịch phỏng vấn, xin vui lòng thông báo cho chúng tôi trước ít nhất 24 giờ để được hỗ trợ sắp xếp lịch phù hợp.</p>
+              <p>Chúng tôi rất mong chờ được đồng hành cùng bạn!<br>Nếu bạn có bất kỳ thắc mắc nào hoặc cần hỗ trợ thêm, vui lòng liên hệ với chúng tôi!</p>
+              <p>Thân ái,<br>Đội ngũ DevPlus</p>
+            </div>
+            <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  private generateInterviewReminderTemplate(
+    fullName: string,
+    dateLabel: string,
+    timeLabel: string,
+    meetUrl?: string
+  ): string {
+    const safeMeetUrl = meetUrl?.trim();
+    const meetContent = safeMeetUrl
+      ? `<a href="${safeMeetUrl}" style="color: #1a73e8; text-decoration: none;">${safeMeetUrl}</a>`
+      : 'Đang cập nhật';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Nhắc nhở lịch phỏng vấn</title>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { width: 100%; max-width: 720px; margin: 20px auto; background-color: #ffffff; border: 1px solid #d1d1d1; border-radius: 12px; }
+            .header { background-color: #0b3a82; color: #ffffff; text-align: center; padding: 16px; border-radius: 10px 10px 0 0; font-size: 22px; font-weight: bold; }
+            .content { text-align: center; padding: 24px 32px 8px; }
+            .hello { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+            .list { text-align: left; margin: 18px auto; max-width: 520px; font-size: 16px; color: #000000; }
+            .list li { margin: 8px 0; }
+            .footer { margin-top: 20px; text-align: center; font-size: 14px; color: #555555; border-top: 1px solid rgb(199, 198, 198); padding: 20px 10px; margin-left: 20px; margin-right: 20px; }
+            p { color: #000000; font-size: 16px; margin: 10px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">Nhắc nhở lịch phỏng vấn</div>
+            <div class="content">
+              <div class="hello">Xin chào ${fullName}</div>
+              <p>Cảm ơn bạn đã đăng ký tham gia phỏng vấn cùng chúng tôi!</p>
+              <p>Chúng tôi xin gửi đến bạn lời nhắc về lịch phỏng vấn đã được xác nhận, cụ thể như sau:</p>
+              <ul class="list">
+                <li>Ngày phỏng vấn: ${dateLabel}</li>
+                <li>Thời gian: ${timeLabel}</li>
+                <li>Hình thức: Phỏng vấn trực tuyến</li>
+                <li>Link tham gia: ${meetContent}</li>
+              </ul>
+              <p>Vui lòng tham gia đúng giờ để buổi phỏng vấn diễn ra thuận lợi! Nếu có phát sinh đột xuất cần thay đổi lịch, bạn vui lòng liên hệ với chúng tôi sớm nhất có thể để được hỗ trợ.</p>
+              <p>Chúng tôi rất mong chờ được đồng hành cùng bạn!<br>Nếu bạn có bất kỳ thắc mắc nào hoặc cần hỗ trợ thêm, vui lòng liên hệ với chúng tôi!</p>
+              <p>Thân ái,<br>Đội ngũ DevPlus</p>
+            </div>
+            <div class="footer">© ${new Date().getFullYear()} DevPlus. All rights reserved.</div>
+          </div>
+        </body>
+      </html>
+    `;
   }
 
   private activateMentorAccountEmailTemplate(fullName: string, loginLink: string): string {

@@ -6,6 +6,7 @@ import { ResponseItem } from '@app/common/dtos';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { GetAvailableSlotsQueryDto } from './dto/get-available-slots-query.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -23,9 +24,10 @@ export class BookingController {
 
   @Get('available-slots/:examId')
   async getAvailableSlotsByExamId(
-    @Param('examId', new ParseUUIDPipe()) examId: string
+    @Param('examId', new ParseUUIDPipe()) examId: string,
+    @Query() query: GetAvailableSlotsQueryDto
   ): Promise<ResponseItem<ExamSlotsReportDto>> {
-    return await this.bookingService.getAvailableSlotsByExamId(examId);
+    return await this.bookingService.getAvailableSlotsByExamId(examId, query);
   }
 
   @Get()
