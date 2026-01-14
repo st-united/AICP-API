@@ -38,6 +38,30 @@ class InterviewRequestDetailDto {
     example: 'ASSIGNED',
   })
   status: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Mentor id assigned to the interview',
+    example: '123e4567-e89b-12d3-a456-426614174123',
+    required: false,
+  })
+  mentorId?: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Mentor name assigned to the interview',
+    example: 'Nguyen Van A',
+    required: false,
+  })
+  mentorName?: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Meeting URL for the interview',
+    example: 'https://meet.google.com/abc-defg-hij',
+    required: false,
+  })
+  meetUrl?: string;
 }
 
 export class CheckInterviewRequestResponseDto {
