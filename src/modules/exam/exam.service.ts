@@ -7,7 +7,7 @@ import { examSetDefaultName, Order, UserRoleEnum } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
-import { DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
+import { AspectDto, DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
 import * as puppeteer from 'puppeteer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs';
@@ -749,6 +749,44 @@ export class ExamService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi kiểm tra trạng thái đặt lịch bài thi');
+    }
+  }
+
+  async getAspectsScoreByAssessmentMethod(examId: string): Promise<ResponseItem<AspectDto[]>> {
+    try {
+      const exam = await this.prisma.exam.findUnique({
+        where: { id: examId },
+        select: {
+          examAspectSnapshot: {
+            select: {
+              aspect: {
+                select: {
+                  id: true,
+                  name: true,
+                  represent: true,
+                  pillarId: true,
+                },
+              },
+              score: true,
+            },
+          },
+        },
+      });
+
+      if (!exam) throw new NotFoundException('Bài thi không tồn tại');
+
+      const response: AspectDto[] = exam.examAspectSnapshot.map((item) => ({
+        id: item.aspect.id,
+        name: item.aspect.name,
+        represent: item.aspect.represent,
+        score: Number(item.score),
+      }));
+
+      return new ResponseItem<AspectDto[]>(response, 'Lấy điểm theo tiêu chí đánh giá thành công');
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Lỗi khi lấy điểm theo tiêu chí đánh giá');
     }
   }
 }

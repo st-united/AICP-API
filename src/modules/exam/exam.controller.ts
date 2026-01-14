@@ -22,6 +22,7 @@ import * as dayjs from 'dayjs';
 import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
+import { AspectDto } from './dto/response/detail-exam-response.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -157,5 +158,12 @@ export class ExamController {
     @Req() req
   ): Promise<ResponseItem<ExamWithResultDto>> {
     return this.examService.getExamWithResult(id, req.user.userId);
+  }
+
+  @Get(':id/aspects-score')
+  @ApiOperation({ summary: 'Lấy thông tin điểm theo tiêu chí đánh giá' })
+  @ApiParam({ name: 'id', type: String, description: 'ID bộ đề thi' })
+  async getAspectsScoreByAssessmentMethod(@Param('id', ParseUUIDPipe) id: string): Promise<ResponseItem<AspectDto[]>> {
+    return this.examService.getAspectsScoreByAssessmentMethod(id);
   }
 }
