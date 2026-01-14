@@ -65,6 +65,10 @@ export class CompetencyFrameworkService {
       throw new BadRequestException('Khung năng lực không tồn tại');
     }
 
+    if (existingFramework.isActive) {
+      throw new BadRequestException('Không thể chỉnh sửa khung năng lực đang được phát hành');
+    }
+
     const effectiveIsActive = isActive ?? existingFramework.isActive;
     const effectiveName = name ?? existingFramework.name;
     const effectiveDomainId = domain?.id ?? existingFramework.domainId;
@@ -272,7 +276,7 @@ export class CompetencyFrameworkService {
       if (request.isActive === framework.isActive) {
         throw new BadRequestException('Khung năng lực đang ở trạng thái này');
       }
-
+      console.log(request.isActive);
       if (request.isActive === false) {
         await this.prismaService.$transaction(async (tx) => {
           await tx.competencyFramework.update({
@@ -321,6 +325,53 @@ export class CompetencyFrameworkService {
       }
       console.log('Error changing competency framework status:', error);
       throw new BadRequestException('Lỗi khi thay đổi trạng thái khung năng lực');
+    }
+  }
+
+  async deleteCompetencyFramework(competencyFrameworkId: string): Promise<void> {
+    try {
+      const framework = await this.prismaService.competencyFramework.findUnique({
+        where: { id: competencyFrameworkId },
+        select: { id: true, isActive: true },
+      });
+
+      if (!framework) {
+        throw new NotFoundException('Khung năng lực không tồn tại');
+      }
+
+      if (framework.isActive) {
+        throw new BadRequestException('Không thể xóa khung năng lực đang được phát hành');
+      }
+
+      await this.prismaService.$transaction(async (tx) => {
+        await tx.competencyAssessment.deleteMany({
+          where: { frameworkId: competencyFrameworkId },
+        });
+        await tx.competencyAspectAssessmentMethod.deleteMany({
+          where: {
+            competencyAspect: {
+              competencyPillar: { frameworkId: competencyFrameworkId },
+            },
+          },
+        });
+        await tx.competencyAspect.deleteMany({
+          where: {
+            competencyPillar: { frameworkId: competencyFrameworkId },
+          },
+        });
+        await tx.competencyPillar.deleteMany({
+          where: { frameworkId: competencyFrameworkId },
+        });
+        await tx.competencyFramework.delete({
+          where: { id: competencyFrameworkId },
+        });
+      });
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      console.log('Error deleting competency framework:', error);
+      throw new BadRequestException('Lỗi khi xóa khung năng lực');
     }
   }
 }

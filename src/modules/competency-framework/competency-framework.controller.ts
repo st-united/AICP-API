@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { CompetencyFrameworkService } from './competency-framework.service';
@@ -53,6 +53,16 @@ export class CompetencyFrameworkController {
     @Body() request: UpdateCompetencyFrameworkDto
   ): Promise<void> {
     await this.competencyFrameworkService.updateCompetencyFramework(competencyFrameworkId, request);
+  }
+
+  @Delete(':competencyFrameworkId')
+  @Roles(UserRoleEnum.ADMIN)
+  @ApiOperation({ summary: 'Delete a competency framework' })
+  @ApiResponse({ status: 200, description: 'Competency framework deleted successfully' })
+  async deleteCompetencyFramework(
+    @Param('competencyFrameworkId', ParseUUIDPipe) competencyFrameworkId: string
+  ): Promise<void> {
+    await this.competencyFrameworkService.deleteCompetencyFramework(competencyFrameworkId);
   }
 
   @Patch(':competencyFrameworkId/status')

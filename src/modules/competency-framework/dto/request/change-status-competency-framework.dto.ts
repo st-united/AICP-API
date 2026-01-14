@@ -1,14 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class ChangeStatusCompetencyFrameworkDto {
-  @IsOptional()
+  @IsNotEmpty()
+  @IsBoolean()
   @ApiProperty({ example: true, description: 'Trạng thái phát hành' })
   @Transform(({ value }) => {
     if (value === 'true') return true;
     if (value === 'false') return false;
-    return null;
+    return value;
   })
-  isActive?: boolean;
+  isActive: boolean;
 }
