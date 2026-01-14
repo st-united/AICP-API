@@ -55,3 +55,8 @@ export enum InterviewShift {
 
 export const MentorSpotStatus = PrismaMentorSpotStatus;
 export type MentorSpotStatus = PrismaMentorSpotStatus;
+export enum AppEnvEnum {
+  LOCAL = 'local',
+  DEVELOP = 'development',
+  UAT = 'uat',
+}
