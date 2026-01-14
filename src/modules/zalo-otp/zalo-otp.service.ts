@@ -15,6 +15,7 @@ import {
   OtpInvalidException,
 } from './exceptions/zalo-otp.exception';
 import { ConfigService } from '@nestjs/config';
+import { AppEnvEnum } from '@Constant/enums';
 @Injectable()
 export class ZaloOtpService {
   private readonly logger = new Logger(ZaloOtpService.name);
@@ -267,18 +268,32 @@ export class ZaloOtpService {
       throw new BadRequestException('Số điện thoại đã được xác thực Zalo.');
     }
 
-    const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
-    const otpData = await this.redisService.getValue(otpKey);
+    let savedOtp: string | null = null;
+    let isBypass = false;
+    let otpKey: string | null = null;
+    const currentEnv = (process.env.NODE_ENV || AppEnvEnum.DEVELOP).toLowerCase();
+    const bypassEnvs = new Set([AppEnvEnum.LOCAL, AppEnvEnum.DEVELOP, AppEnvEnum.UAT]);
+    if (bypassEnvs.has(currentEnv as AppEnvEnum)) {
+      savedOtp = this.configService.get<string>('ZALO_OTP_BYPASS_CODE') || process.env.ZALO_OTP_BYPASS_CODE;
+      if (!savedOtp) {
+        throw new InternalServerErrorException('Chưa cấu hình OTP bypass');
+      }
+      isBypass = true;
+    } else {
+      otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
+      const otpData = await this.redisService.getValue(otpKey);
 
-    if (!otpData) {
-      throw new OtpExpiredException();
+      if (!otpData) {
+        throw new OtpExpiredException();
+      }
+      const data = JSON.parse(otpData);
+      savedOtp = data.otp;
     }
 
-    const data = JSON.parse(otpData);
-    const savedOtp = data.otp;
-
     if (savedOtp === otp) {
-      await this.redisService.deleteValue(otpKey);
+      if (!isBypass && otpKey) {
+        await this.redisService.deleteValue(otpKey);
+      }
       this.logger.log(`OTP verified successfully for user ${userId}, phone ${phoneNumber}`);
       await this.prismaService.user.update({
         where: { id: userId },
@@ -296,6 +311,12 @@ export class ZaloOtpService {
 
     if (zaloVerified) {
       throw new BadRequestException('Số điện thoại đã được xác thực Zalo.');
+    }
+
+    const currentEnv = (process.env.NODE_ENV || '').toLowerCase();
+    const bypassEnvs = new Set([AppEnvEnum.LOCAL, AppEnvEnum.DEVELOP, AppEnvEnum.UAT]);
+    if (bypassEnvs.has(currentEnv as AppEnvEnum)) {
+      return new ResponseItem({ success: true }, 'OTP đã được gửi thành công', SendOtpResponseDto);
     }
 
     const canSend = await this.canSendOtp(userId, phoneNumber);

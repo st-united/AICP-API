@@ -39,3 +39,9 @@ export enum InterviewShift {
   MORNING = 'MORNING',
   AFTERNOON = 'AFTERNOON',
 }
+
+export enum AppEnvEnum {
+  LOCAL = 'local',
+  DEVELOP = 'development',
+  UAT = 'uat',
+}
