@@ -8,6 +8,8 @@ import { InterviewRequestStatus, SlotStatus } from '@prisma/client';
 import { DailyAvailabilityDto, ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { UserInterviewInfoDto } from './dto/user-interview-info-response.dto';
 import { MentorSpotStatus, Order } from '@Constant/enums';
+import { GetAvailableSlotsQueryDto } from './dto/get-available-slots-query.dto';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class BookingService {
@@ -101,7 +103,10 @@ export class BookingService {
     };
   }
 
-  async getAvailableSlotsByExamId(examId: string): Promise<ResponseItem<ExamSlotsReportDto>> {
+  async getAvailableSlotsByExamId(
+    examId: string,
+    query?: GetAvailableSlotsQueryDto
+  ): Promise<ResponseItem<ExamSlotsReportDto>> {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
     });
@@ -110,14 +115,91 @@ export class BookingService {
       throw new BadRequestException('Không tìm thấy hoặc thiếu bài kiểm tra đã hoàn thành');
     }
 
+    const totalMentors = await this.prisma.mentor.count();
+    const now = new Date();
+    const dailyReports: DailyAvailabilityDto[] = [];
+    const mentorFilter = query?.mentorId ? { mentorId: query.mentorId } : {};
+
+    if (query?.month) {
+      const monthCursor = dayjs(`${query.month}-01`);
+      if (!monthCursor.isValid()) {
+        throw new BadRequestException('month không hợp lệ');
+      }
+
+      const monthStart = monthCursor.startOf('month').toDate();
+      const monthEnd = monthCursor.endOf('month').toDate();
+      const rangeStart = monthStart > now ? monthStart : now;
+
+      const spots = await this.prisma.mentorTimeSpot.findMany({
+        where: {
+          startAt: {
+            gte: rangeStart,
+            lte: monthEnd,
+          },
+          ...mentorFilter,
+          mentor: { isActive: true },
+        },
+      });
+
+      const dayMap = new Map<string, typeof spots>();
+      spots.forEach((spot) => {
+        const dateKey = dayjs(spot.startAt).format('YYYY-MM-DD');
+        const list = dayMap.get(dateKey) ?? [];
+        list.push(spot);
+        dayMap.set(dateKey, list);
+      });
+
+      dayMap.forEach((daySpots, dateKey) => {
+        const availableSpots = daySpots.filter((s) => s.status === MentorSpotStatus.AVAILABLE);
+        if (!availableSpots.length) return;
+
+        const booked = daySpots.filter((s) => s.status === MentorSpotStatus.BOOKED).length;
+        const total = daySpots.length || totalMentors * 8;
+        const timeSpotMap = new Map<string, { startAt: Date; endAt: Date; availableMentors: number }>();
+
+        availableSpots.forEach((spot) => {
+          const key = `${spot.startAt.toISOString()}_${spot.endAt.toISOString()}`;
+          const existing = timeSpotMap.get(key);
+          if (existing) {
+            existing.availableMentors += 1;
+            return;
+          }
+          timeSpotMap.set(key, {
+            startAt: spot.startAt,
+            endAt: spot.endAt,
+            availableMentors: 1,
+          });
+        });
+
+        const timeSpots = Array.from(timeSpotMap.values()).sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+
+        dailyReports.push({
+          date: dateKey,
+          morning: {
+            slot: availableSpots.length,
+            status: this.getSlotStatus(availableSpots.length, total),
+          },
+          afternoon: {
+            slot: Math.max(0, total - booked),
+            status: this.getSlotStatus(total - booked, total),
+          },
+          timeSpots,
+        });
+      });
+
+      dailyReports.sort((a, b) => a.date.localeCompare(b.date));
+
+      return {
+        message: 'Danh sách slot khả dụng',
+        data: { days: dailyReports },
+      };
+    }
+
     const days = [2, 3, 4].map((offset) => {
       const date = new Date();
       date.setDate(date.getDate() + offset);
       return date;
     });
-
-    const totalMentors = await this.prisma.mentor.count();
-    const dailyReports: DailyAvailabilityDto[] = [];
 
     for (const day of days) {
       const startOfDay = new Date(day);
@@ -126,18 +208,39 @@ export class BookingService {
       const endOfDay = new Date(startOfDay);
       endOfDay.setDate(endOfDay.getDate() + 1);
 
+      const rangeStart = startOfDay > now ? startOfDay : now;
       const spots = await this.prisma.mentorTimeSpot.findMany({
         where: {
           startAt: {
-            gte: startOfDay,
+            gte: rangeStart,
             lt: endOfDay,
           },
+          ...mentorFilter,
+          mentor: { isActive: true },
         },
       });
 
-      const available = spots.filter((s) => s.status === MentorSpotStatus.AVAILABLE).length;
+      const availableSpots = spots.filter((s) => s.status === MentorSpotStatus.AVAILABLE);
+      const available = availableSpots.length;
       const booked = spots.filter((s) => s.status === MentorSpotStatus.BOOKED).length;
       const total = spots.length || totalMentors * 8;
+      const timeSpotMap = new Map<string, { startAt: Date; endAt: Date; availableMentors: number }>();
+
+      availableSpots.forEach((spot) => {
+        const key = `${spot.startAt.toISOString()}_${spot.endAt.toISOString()}`;
+        const existing = timeSpotMap.get(key);
+        if (existing) {
+          existing.availableMentors += 1;
+          return;
+        }
+        timeSpotMap.set(key, {
+          startAt: spot.startAt,
+          endAt: spot.endAt,
+          availableMentors: 1,
+        });
+      });
+
+      const timeSpots = Array.from(timeSpotMap.values()).sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 
       dailyReports.push({
         date: startOfDay.toISOString().split('T')[0],
@@ -149,6 +252,7 @@ export class BookingService {
           slot: Math.max(0, total - booked),
           status: this.getSlotStatus(total - booked, total),
         },
+        timeSpots,
       });
     }
 
