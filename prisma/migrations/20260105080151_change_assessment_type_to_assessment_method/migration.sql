@@ -10,7 +10,8 @@
 
 */
 -- AlterTable
-ALTER TABLE "public"."CompetencyAssessment" DROP COLUMN "assessment_type";
+ALTER TABLE "public"."CompetencyAssessment" DROP COLUMN "assessment_type",
+ADD COLUMN     "assessment_method_id" UUID;
 
 -- AlterTable
 ALTER TABLE "public"."Exam" DROP COLUMN "assessment_type";
@@ -35,3 +36,5 @@ CREATE TABLE "public"."AssessmentMethod" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AssessmentMethod_name_key" ON "public"."AssessmentMethod"("name");
+
+ALTER TABLE "public"."CompetencyAssessment" ADD CONSTRAINT "CompetencyAssessment_assessment_method_id_fkey" FOREIGN KEY ("assessment_method_id") REFERENCES "public"."AssessmentMethod"("id") ON DELETE CASCADE ON UPDATE CASCADE;

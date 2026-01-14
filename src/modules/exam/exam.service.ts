@@ -775,13 +775,6 @@ export class ExamService {
       const exam = await this.prisma.exam.findUnique({
         where: { id: examId },
         select: {
-          id: true,
-          assessmentMethodId: true,
-          examSet: {
-            select: {
-              assessmentMethodId: true,
-            },
-          },
           examAspectSnapshot: {
             select: {
               aspect: {
@@ -800,30 +793,12 @@ export class ExamService {
 
       if (!exam) throw new NotFoundException('Bài thi không tồn tại');
 
-      const { examAspectSnapshot, assessmentMethodId } = exam;
-
-      // Get list aspect IDs by assessment method
-      const aspectsByAssessmentMethod = await this.prisma.competencyAspectAssessmentMethod.findMany({
-        where: {
-          assessmentMethodId: assessmentMethodId || exam.examSet.assessmentMethodId,
-        },
-        select: {
-          competencyAspectId: true,
-        },
-      });
-
-      // Convert to Set for O(1) lookup instead of O(n) array search
-      const allowedAspectIds = new Set(aspectsByAssessmentMethod.map((am) => am.competencyAspectId));
-
-      // Filter and map in single pass
-      const response: AspectDto[] = examAspectSnapshot
-        .filter((item) => allowedAspectIds.has(item.aspect.id))
-        .map((item) => ({
-          id: item.aspect.id,
-          name: item.aspect.name,
-          represent: item.aspect.represent,
-          score: Number(item.score),
-        }));
+      const response: AspectDto[] = exam.examAspectSnapshot.map((item) => ({
+        id: item.aspect.id,
+        name: item.aspect.name,
+        represent: item.aspect.represent,
+        score: Number(item.score),
+      }));
 
       return new ResponseItem<AspectDto[]>(response, 'Lấy điểm theo tiêu chí đánh giá thành công');
     } catch (error) {
