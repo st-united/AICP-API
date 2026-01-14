@@ -17,8 +17,15 @@ export async function seedCompetencyAspectAssessmentMethod(
 ) {
   try {
     for (const assessmentMethod of assessmentMethods) {
-      // Random số lượng aspects từ 1 đến toàn bộ
-      const randomCount = Math.floor(Math.random() * aspects.length) + 1;
+      let randomCount: number;
+
+      // Special case: Self Assessment cần 5-6 aspects
+      if (assessmentMethod.name === 'Self Assessment') {
+        randomCount = Math.floor(Math.random() * 2) + 5; // 5 hoặc 6
+      } else {
+        // Random số lượng aspects từ 1 đến toàn bộ
+        randomCount = Math.floor(Math.random() * aspects.length) + 1;
+      }
 
       // Shuffle và chọn random aspects
       const shuffledAspects = shuffleArray(aspects);
