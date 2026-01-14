@@ -19,6 +19,7 @@ import { seedUserAnswers } from './userAnswers';
 import { seedExamLevels } from './examlevel';
 import { seedInterviewRequest } from './interviewRequest';
 import { seedAssessmentMethods } from './assessmentMethods';
+import { seedCompetencyAspectAssessmentMethod } from './competencyAspectAssessmentMethod';
 
 const prisma = new PrismaClient();
 
@@ -82,7 +83,9 @@ async function main() {
   await seedAssessmentMethods(prisma);
   const assessmentMethods = await prisma.assessmentMethod.findMany();
 
-  await prisma.assessmentMethod.findMany();
+  // 14.5 Competency Aspect Assessment Method
+  await seedCompetencyAspectAssessmentMethod(prisma, aspects, assessmentMethods);
+
   // 15. Exam Sets
   await seedExamSets(prisma, questions, competencyFrameworks, assessmentMethods);
   const examSets = await prisma.examSet.findMany();
