@@ -23,5 +23,5 @@ export class AssessmentMethodDto {
     example: 50,
     description: 'Trọng số của phương pháp đánh giá trong tiêu chí',
   })
-  weigehtWithinDimension: number;
+  weightWithinDimension: number;
 }

@@ -5,7 +5,7 @@ import { AspectPayload, AssessmentMethodPayload, PillarPayload } from '../types/
 export const mapAssessmentMethodDto = (item: AssessmentMethodPayload) => ({
   id: item.assessmentMethod.id,
   name: item.assessmentMethod.name,
-  weigehtWithinDimension: item.weightWithinDimension ? Number(item.weightWithinDimension) * 100 : undefined,
+  weightWithinDimension: item.weightWithinDimension ? Number(item.weightWithinDimension) * 100 : undefined,
 });
 
 export const mapAspectDto = (aspect: AspectPayload) => ({
