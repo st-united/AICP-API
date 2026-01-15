@@ -60,3 +60,8 @@ export const convertStringToEnglish = (text: string, isLowerKey: boolean = false
 
   return isLowerKey ? normalized.toLowerCase() : normalized;
 };
+
+export const hasVietnameseAccent = (text: string): boolean => {
+  if (!text) return false;
+  return text !== convertStringToEnglish(text, false);
+};
