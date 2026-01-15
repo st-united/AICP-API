@@ -71,10 +71,7 @@ export const validatePillar = async (pillar: CompetencyPillarDto, isActive: bool
   if (uniqueAssessmentMethodIds.length > 0) {
     if (isActive) {
       const totalWeight = assessmentMethods.reduce((sum, method) => {
-        const weight =
-          (method as { weightWithinDimension?: number; weigehtWithinDimension?: number }).weightWithinDimension ??
-          (method as { weigehtWithinDimension?: number }).weigehtWithinDimension ??
-          0;
+        const weight = (method as { weightWithinDimension?: number }).weightWithinDimension ?? 0;
         return sum + weight;
       }, 0);
       if (Math.abs(totalWeight - 100) > 0.01) {
