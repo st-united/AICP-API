@@ -35,7 +35,25 @@ export class AnswersService {
       { id: string; weightedScore: number; rawScore: number; weightWithinDimension: number }
     > = {};
     const existingExam = await this.prisma.exam.findFirst({
-      where: { id: examId },
+      where: {
+        id: examId,
+      },
+      select: {
+        id: true,
+        examStatus: true,
+        examSet: {
+          select: {
+            id: true,
+            name: true,
+            framework: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (existingExam?.examStatus !== ExamStatus.IN_PROGRESS) {
@@ -54,7 +72,7 @@ export class AnswersService {
           select: { id: true, questionId: true },
         }),
         this.prisma.examSetQuestion.findMany({
-          where: { examSetId: existingExam.examSetId },
+          where: { examSetId: existingExam.examSet.id },
           include: {
             question: {
               select: {
@@ -82,6 +100,7 @@ export class AnswersService {
           },
         }),
         this.prisma.competencyPillar.findMany({
+          where: { frameworkId: existingExam.examSet.framework.id },
           select: { id: true, name: true, weightWithinDimension: true },
         }),
       ]);
