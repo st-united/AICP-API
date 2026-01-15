@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InterviewRequestStatus } from '@prisma/client';
 import * as dayjs from 'dayjs';
+import * as utc from 'dayjs/plugin/utc';
+import * as timezone from 'dayjs/plugin/timezone';
 
 import { EmailService } from '../email/email.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +11,10 @@ import { RedisService } from '../redis/redis.service';
 
 const REMINDER_WINDOW_MINUTES = 5;
 const VIETNAMESE_WEEKDAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+const DEFAULT_TIMEZONE = 'Asia/Ho_Chi_Minh';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 @Injectable()
 export class InterviewReminderScheduler {
@@ -65,8 +71,9 @@ export class InterviewReminderScheduler {
       if (!shouldSend) continue;
 
       try {
-        const dateLabel = this.formatInterviewDateLabel(spot.startAt);
-        const timeLabel = this.formatInterviewTimeLabel(spot.startAt, spot.endAt);
+        const tz = spot.timezone || DEFAULT_TIMEZONE;
+        const dateLabel = this.formatInterviewDateLabel(spot.startAt, tz);
+        const timeLabel = this.formatInterviewTimeLabel(spot.startAt, spot.endAt, tz);
         await this.emailService.sendInterviewReminderEmail(
           user.fullName,
           user.email,
@@ -81,13 +88,13 @@ export class InterviewReminderScheduler {
     }
   }
 
-  private formatInterviewDateLabel(date: Date): string {
-    const day = dayjs(date);
+  private formatInterviewDateLabel(date: Date, timezone: string): string {
+    const day = dayjs(date).tz(timezone);
     const weekday = VIETNAMESE_WEEKDAYS[day.day()] ?? '';
     return `${weekday}, ngày ${day.format('DD/MM/YYYY')}`;
   }
 
-  private formatInterviewTimeLabel(startAt: Date, endAt: Date): string {
-    return `${dayjs(startAt).format('HH:mm')} - ${dayjs(endAt).format('HH:mm')}`;
+  private formatInterviewTimeLabel(startAt: Date, endAt: Date, timezone: string): string {
+    return `${dayjs(startAt).tz(timezone).format('HH:mm')} - ${dayjs(endAt).tz(timezone).format('HH:mm')}`;
   }
 }
