@@ -64,7 +64,7 @@ export class ZaloOtpController {
   @UseGuards(JwtAccessTokenGuard)
   @Post('send-otp')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Gửi OTP đến số điện thoại qua Zalo' })
   @ApiResponse({
     status: 200,
@@ -90,7 +90,7 @@ export class ZaloOtpController {
   @UseGuards(JwtAccessTokenGuard)
   @Post('verify')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Xác thực mã OTP' })
   @ApiBody({ type: VerifyOtpDto })
   @ApiResponse({
@@ -116,7 +116,7 @@ export class ZaloOtpController {
 
   @UseGuards(JwtAccessTokenGuard)
   @Post('status')
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Lấy trạng thái OTP cho số điện thoại' })
   @ApiQuery({
     name: 'phone',
@@ -146,7 +146,7 @@ export class ZaloOtpController {
 
   @UseGuards(JwtAccessTokenGuard)
   @Get('can-send-otp')
-  @ApiBearerAuth()
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Kiểm tra thời gian có thể gửi OTP' })
   @ApiResponse({
     status: 200,
