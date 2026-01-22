@@ -1,4 +1,4 @@
-import { convertStringToEnglish } from '../../src/common/utils/stringUtils';
+import { convertStringToEnglish } from '@app/common/utils';
 import { PrismaClient } from '@prisma/client';
 import { AssessmentMethodSeedEnum } from './constant/assessmentMethodSeedEnum';
 

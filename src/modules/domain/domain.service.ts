@@ -6,11 +6,11 @@ import { CreateDomainDto } from '@app/modules/domain/dto/request/create-domain.d
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
 import { UpdateDomainDto } from '@app/modules/domain/dto/request/update-domain.dto';
 import { Prisma } from '@prisma/client';
-import { ensureUnaccentIndex } from '@app/common/utils/unaccent-index';
 import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
 import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
 import { UpdateDomainStatusDto } from '@app/modules/domain/dto/request/update-domain-status.dto';
 import { Order } from '@Constant/enums';
+import { createVietnameseSearchCondition } from '@app/common/utils';
 @Injectable()
 export class DomainService {
   private readonly logger = new Logger(DomainService.name);
@@ -24,31 +24,11 @@ export class DomainService {
       const keyword = (search ?? '').trim();
 
       const statusCondition: Prisma.Sql =
-        status === undefined || status === null ? Prisma.sql`TRUE` : Prisma.sql`t."is_active" = ${status}`;
+        status === undefined || status === null ? Prisma.sql`TRUE` : Prisma.sql`"is_active" = ${status}`;
 
-      const whereSql = Prisma.sql`${statusCondition}`;
+      const searchCondition = createVietnameseSearchCondition('name', keyword);
 
-      const columns = ['id', 'name', 'description', 'version', 'is_active', 'created_at', 'updated_at'];
-
-      const fromSql =
-        keyword.length > 0
-          ? Prisma.sql`
-          FROM public.search_unaccent(
-            '"Domain"'::regclass, 
-            'name', 
-            ${keyword}, 
-            ${columns}
-          ) AS t(
-            "id" uuid,
-            "name" varchar,
-            "description" text,
-            "version" varchar,
-            "is_active" boolean,
-            "created_at" timestamptz,
-            "updated_at" timestamptz
-          )
-        `
-          : Prisma.sql`FROM "Domain" AS t`;
+      const whereSql = Prisma.sql`${statusCondition} AND ${searchCondition}`;
 
       const [domains, totalRows] = await this.prisma.$transaction([
         this.prisma.$queryRaw<
@@ -61,7 +41,7 @@ export class DomainService {
         >(
           Prisma.sql`
           SELECT "id", "name", "description", "is_active" AS "isActive"
-          ${fromSql}
+          FROM "Domain"
           WHERE ${whereSql}
           ORDER BY "created_at" DESC
           LIMIT ${request.take} OFFSET ${request.skip}
@@ -70,7 +50,7 @@ export class DomainService {
         this.prisma.$queryRaw<{ count: bigint }[]>(
           Prisma.sql`
           SELECT COUNT(*)::bigint AS count
-          ${fromSql}
+          FROM "Domain"
           WHERE ${whereSql}
         `
         ),
