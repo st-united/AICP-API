@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { CompetencyDimension, Prisma } from '@prisma/client';
 import { CompetencyPillarDto } from '../dto/response/competency-pillar.dto';
 import { DomainDto } from '../../domain/dto/response/domain.dto';
-import { isNullOrEmpty } from '@app/common/utils/stringUtils';
+import { isNullOrEmpty } from '@app/common/utils';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export const validateActivePillars = (

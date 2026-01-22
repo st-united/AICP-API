@@ -8,7 +8,7 @@ import { CompetencyPillarDto } from './dto/response/competency-pillar.dto';
 import { CompetencyFrameworkDto } from './dto/response/competency-framework.dto';
 import { SearchCompetencyFrameworkRequestDto } from './dto/request/search-competency-framework.dto';
 import { ChangeStatusCompetencyFrameworkDto } from './dto/request/change-status-competency-framework.dto';
-import { convertStringToEnglish, isNullOrEmpty } from '@app/common/utils/stringUtils';
+import { convertStringToEnglish, isNullOrEmpty } from '@app/common/utils';
 import { DomainDto } from '../domain/dto/response/domain.dto';
 import { CompetencyDimension, Prisma } from '@prisma/client';
 import { log } from 'console';

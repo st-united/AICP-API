@@ -6,41 +6,57 @@ import { CreateDomainDto } from '@app/modules/domain/dto/request/create-domain.d
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
 import { UpdateDomainDto } from '@app/modules/domain/dto/request/update-domain.dto';
 import { Prisma } from '@prisma/client';
-import { convertStringToEnglish, sanitizeString } from '@app/common/utils';
 import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
 import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
 import { UpdateDomainStatusDto } from '@app/modules/domain/dto/request/update-domain-status.dto';
 import { Order } from '@Constant/enums';
-
+import { createVietnameseSearchCondition } from '@app/common/utils';
 @Injectable()
 export class DomainService {
   private readonly logger = new Logger(DomainService.name);
+  private static unaccentIndexPromise: Promise<void> | null = null;
 
   constructor(private readonly prisma: PrismaService) {}
 
   async searchPaging(request: PaginatedSearchDomainDto): Promise<ResponsePaginate<DomainDto>> {
     try {
       const { search, status } = request;
+      const keyword = (search ?? '').trim();
 
-      const where: Prisma.DomainWhereInput = {
-        ...(search && search.trim() && { searchText: { contains: convertStringToEnglish(search, true) } }),
-        isActive: status,
-      };
-      const [domains, total] = await this.prisma.$transaction([
-        this.prisma.domain.findMany({
-          where,
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            isActive: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          skip: request.skip,
-          take: request.take,
-        }),
-        this.prisma.domain.count({ where }),
+      const statusCondition: Prisma.Sql =
+        status === undefined || status === null ? Prisma.sql`TRUE` : Prisma.sql`"is_active" = ${status}`;
+
+      const searchCondition = createVietnameseSearchCondition('name', keyword);
+
+      const whereSql = Prisma.sql`${statusCondition} AND ${searchCondition}`;
+
+      const [domains, totalRows] = await this.prisma.$transaction([
+        this.prisma.$queryRaw<
+          {
+            id: string;
+            name: string;
+            description: string | null;
+            isActive: boolean;
+          }[]
+        >(
+          Prisma.sql`
+          SELECT "id", "name", "description", "is_active" AS "isActive"
+          FROM "Domain"
+          WHERE ${whereSql}
+          ORDER BY "created_at" DESC
+          LIMIT ${request.take} OFFSET ${request.skip}
+        `
+        ),
+        this.prisma.$queryRaw<{ count: bigint }[]>(
+          Prisma.sql`
+          SELECT COUNT(*)::bigint AS count
+          FROM "Domain"
+          WHERE ${whereSql}
+        `
+        ),
       ]);
+
+      const total = Number(totalRows[0]?.count ?? 0);
 
       const result: DomainDto[] = domains.map((domain) => ({
         id: domain.id,
@@ -49,7 +65,11 @@ export class DomainService {
         isActive: domain.isActive,
       }));
 
-      const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
+      const pageMetaDto = new PageMetaDto({
+        itemCount: total,
+        pageOptionsDto: request,
+      });
+
       return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách lĩnh vực thành công');
     } catch (error) {
       this.logger.error(error);
@@ -88,7 +108,6 @@ export class DomainService {
         data: {
           name: params.name,
           description: params.description,
-          searchText: convertStringToEnglish(params.name, true),
         },
         select: {
           id: true,
@@ -130,7 +149,6 @@ export class DomainService {
         where: { id },
         data: {
           name: params.name,
-          searchText: convertStringToEnglish(params.name, true),
           ...(params.description !== undefined ? { description: params.description } : {}),
         },
         select: {
