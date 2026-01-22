@@ -17,17 +17,30 @@ STABLE
 AS $$
 DECLARE
   cols_sql text;
+  normalized_kw text;
 BEGIN
   SELECT string_agg(format('%I', c), ', ')
   INTO cols_sql
   FROM unnest(cols) AS c;
 
-  RETURN QUERY EXECUTE format(
-    'SELECT %s FROM %s WHERE unaccent_immutable(lower(%I)) LIKE %L',
-    cols_sql,
-    tbl,
-    col,
-    '%' || lower(coalesce(kw, '')) || '%'
-  );
+  normalized_kw := lower(coalesce(kw, ''));
+
+  IF normalized_kw = unaccent_immutable(normalized_kw) THEN
+    RETURN QUERY EXECUTE format(
+      'SELECT %s FROM %s WHERE unaccent_immutable(lower(%I)) LIKE %L',
+      cols_sql,
+      tbl,
+      col,
+      '%' || normalized_kw || '%'
+    );
+  ELSE
+    RETURN QUERY EXECUTE format(
+      'SELECT %s FROM %s WHERE lower(%I) LIKE %L',
+      cols_sql,
+      tbl,
+      col,
+      '%' || normalized_kw || '%'
+    );
+  END IF;
 END;
 $$;

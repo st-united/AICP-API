@@ -21,50 +21,60 @@ export class DomainService {
     try {
       const { search, status } = request;
       const keyword = (search ?? '').trim();
-      if (keyword.length > 0 && !DomainService.unaccentIndexPromise) {
-        DomainService.unaccentIndexPromise = ensureUnaccentIndex(this.prisma, {
-          table: 'Domain',
-          column: 'name',
-          indexName: 'domain_unaccent_name_idx',
-        });
-      }
-      if (DomainService.unaccentIndexPromise) {
-        await DomainService.unaccentIndexPromise;
-      }
+
       const statusCondition: Prisma.Sql =
         status === undefined || status === null ? Prisma.sql`TRUE` : Prisma.sql`t."is_active" = ${status}`;
+
       const whereSql = Prisma.sql`${statusCondition}`;
+
       const columns = ['id', 'name', 'description', 'version', 'is_active', 'created_at', 'updated_at'];
-      const fromSql = Prisma.sql`
-        FROM public.search_unaccent('"Domain"'::regclass, 'name', ${keyword}, ${columns}) AS t(
-          "id" uuid,
-          "name" varchar,
-          "description" text,
-          "version" varchar,
-          "is_active" boolean,
-          "created_at" timestamptz,
-          "updated_at" timestamptz
-        )
-      `;
+
+      const fromSql =
+        keyword.length > 0
+          ? Prisma.sql`
+          FROM public.search_unaccent(
+            '"Domain"'::regclass, 
+            'name', 
+            ${keyword}, 
+            ${columns}
+          ) AS t(
+            "id" uuid,
+            "name" varchar,
+            "description" text,
+            "version" varchar,
+            "is_active" boolean,
+            "created_at" timestamptz,
+            "updated_at" timestamptz
+          )
+        `
+          : Prisma.sql`FROM "Domain" AS t`;
 
       const [domains, totalRows] = await this.prisma.$transaction([
-        this.prisma.$queryRaw<{ id: string; name: string; description: string | null; isActive: boolean }[]>(
+        this.prisma.$queryRaw<
+          {
+            id: string;
+            name: string;
+            description: string | null;
+            isActive: boolean;
+          }[]
+        >(
           Prisma.sql`
-            SELECT "id", "name", "description", "is_active" AS "isActive"
-            ${fromSql}
-            WHERE ${whereSql}
-            ORDER BY "created_at" DESC
-            LIMIT ${request.take} OFFSET ${request.skip}
-          `
+          SELECT "id", "name", "description", "is_active" AS "isActive"
+          ${fromSql}
+          WHERE ${whereSql}
+          ORDER BY "created_at" DESC
+          LIMIT ${request.take} OFFSET ${request.skip}
+        `
         ),
         this.prisma.$queryRaw<{ count: bigint }[]>(
           Prisma.sql`
-            SELECT COUNT(*)::bigint AS count
-            ${fromSql}
-            WHERE ${whereSql}
-          `
+          SELECT COUNT(*)::bigint AS count
+          ${fromSql}
+          WHERE ${whereSql}
+        `
         ),
       ]);
+
       const total = Number(totalRows[0]?.count ?? 0);
 
       const result: DomainDto[] = domains.map((domain) => ({
@@ -74,7 +84,11 @@ export class DomainService {
         isActive: domain.isActive,
       }));
 
-      const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
+      const pageMetaDto = new PageMetaDto({
+        itemCount: total,
+        pageOptionsDto: request,
+      });
+
       return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách lĩnh vực thành công');
     } catch (error) {
       this.logger.error(error);
