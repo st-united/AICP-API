@@ -6,41 +6,77 @@ import { CreateDomainDto } from '@app/modules/domain/dto/request/create-domain.d
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
 import { UpdateDomainDto } from '@app/modules/domain/dto/request/update-domain.dto';
 import { Prisma } from '@prisma/client';
-import { convertStringToEnglish, sanitizeString } from '@app/common/utils';
+import { ensureUnaccentIndex } from '@app/common/utils/unaccent-index';
 import { PageMetaDto, ResponsePaginate } from '@app/common/dtos';
 import { PaginatedSearchDomainDto } from '@app/modules/domain/dto/request/paginated-search-domain.dto';
 import { UpdateDomainStatusDto } from '@app/modules/domain/dto/request/update-domain-status.dto';
 import { Order } from '@Constant/enums';
-
 @Injectable()
 export class DomainService {
   private readonly logger = new Logger(DomainService.name);
+  private static unaccentIndexPromise: Promise<void> | null = null;
 
   constructor(private readonly prisma: PrismaService) {}
 
   async searchPaging(request: PaginatedSearchDomainDto): Promise<ResponsePaginate<DomainDto>> {
     try {
       const { search, status } = request;
+      const keyword = (search ?? '').trim();
 
-      const where: Prisma.DomainWhereInput = {
-        ...(search && search.trim() && { searchText: { contains: convertStringToEnglish(search, true) } }),
-        isActive: status,
-      };
-      const [domains, total] = await this.prisma.$transaction([
-        this.prisma.domain.findMany({
-          where,
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            isActive: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          skip: request.skip,
-          take: request.take,
-        }),
-        this.prisma.domain.count({ where }),
+      const statusCondition: Prisma.Sql =
+        status === undefined || status === null ? Prisma.sql`TRUE` : Prisma.sql`t."is_active" = ${status}`;
+
+      const whereSql = Prisma.sql`${statusCondition}`;
+
+      const columns = ['id', 'name', 'description', 'version', 'is_active', 'created_at', 'updated_at'];
+
+      const fromSql =
+        keyword.length > 0
+          ? Prisma.sql`
+          FROM public.search_unaccent(
+            '"Domain"'::regclass, 
+            'name', 
+            ${keyword}, 
+            ${columns}
+          ) AS t(
+            "id" uuid,
+            "name" varchar,
+            "description" text,
+            "version" varchar,
+            "is_active" boolean,
+            "created_at" timestamptz,
+            "updated_at" timestamptz
+          )
+        `
+          : Prisma.sql`FROM "Domain" AS t`;
+
+      const [domains, totalRows] = await this.prisma.$transaction([
+        this.prisma.$queryRaw<
+          {
+            id: string;
+            name: string;
+            description: string | null;
+            isActive: boolean;
+          }[]
+        >(
+          Prisma.sql`
+          SELECT "id", "name", "description", "is_active" AS "isActive"
+          ${fromSql}
+          WHERE ${whereSql}
+          ORDER BY "created_at" DESC
+          LIMIT ${request.take} OFFSET ${request.skip}
+        `
+        ),
+        this.prisma.$queryRaw<{ count: bigint }[]>(
+          Prisma.sql`
+          SELECT COUNT(*)::bigint AS count
+          ${fromSql}
+          WHERE ${whereSql}
+        `
+        ),
       ]);
+
+      const total = Number(totalRows[0]?.count ?? 0);
 
       const result: DomainDto[] = domains.map((domain) => ({
         id: domain.id,
@@ -49,7 +85,11 @@ export class DomainService {
         isActive: domain.isActive,
       }));
 
-      const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: request });
+      const pageMetaDto = new PageMetaDto({
+        itemCount: total,
+        pageOptionsDto: request,
+      });
+
       return new ResponsePaginate(result, pageMetaDto, 'Lấy danh sách lĩnh vực thành công');
     } catch (error) {
       this.logger.error(error);
@@ -88,7 +128,6 @@ export class DomainService {
         data: {
           name: params.name,
           description: params.description,
-          searchText: convertStringToEnglish(params.name, true),
         },
         select: {
           id: true,
@@ -130,7 +169,6 @@ export class DomainService {
         where: { id },
         data: {
           name: params.name,
-          searchText: convertStringToEnglish(params.name, true),
           ...(params.description !== undefined ? { description: params.description } : {}),
         },
         select: {
