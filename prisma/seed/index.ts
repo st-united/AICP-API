@@ -18,6 +18,7 @@ import { seedMentorBookings } from './mentorBookings';
 import { seedUserAnswers } from './userAnswers';
 import { seedExamLevels } from './examlevel';
 import { seedInterviewRequest } from './interviewRequest';
+import { seedAssessmentMethods } from './assessmentMethods';
 
 const prisma = new PrismaClient();
 
@@ -51,16 +52,10 @@ async function main() {
   const competencyFrameworks = await prisma.competencyFramework.findMany();
 
   // 8. Competency Pillars
-  await seedPillars(prisma, competencyFrameworks);
-  const pillars = await prisma.competencyPillar.findMany({
-    include: {
-      aspects: true,
-    },
-  });
+  const pillars = await seedPillars(prisma, competencyFrameworks);
 
   // 9. Aspects
-  await seedAspects(prisma, pillars);
-  const aspects = await prisma.competencyAspect.findMany();
+  const aspects = await seedAspects(prisma, pillars);
 
   // 10. Levels
   await seedLevels(prisma);
@@ -77,16 +72,20 @@ async function main() {
   // 13. Courses
   await seedCourses(prisma, aspects, domains);
 
-  // 14. Exam Sets
-  await seedExamSets(prisma, questions, competencyFrameworks);
+  // 14. Assessment Methods
+  await seedAssessmentMethods(prisma);
+  const assessmentMethods = await prisma.assessmentMethod.findMany();
+
+  // 15. Exam Sets
+  await seedExamSets(prisma, questions, competencyFrameworks, assessmentMethods);
   const examSets = await prisma.examSet.findMany();
 
-  // 15. Exams
-  const exams = await seedExams(prisma, userMap, examSets, examLevels, pillars, aspects);
+  // 16. Exams
+  const exams = await seedExams(prisma, userMap, examSets, examLevels);
   const allExams = await prisma.exam.findMany();
   const examMap = Object.fromEntries(allExams.map((exam) => [exam.userId, { id: exam.id }]));
 
-  // 16. Mentors
+  // 17. Mentors
   await seedMentors(prisma, userMap);
   const mentors = await prisma.mentor.findMany({
     include: {
@@ -94,10 +93,10 @@ async function main() {
     },
   });
 
-  // 17. Mentor Bookings
+  // 18. Mentor Bookings
   await seedMentorBookings(prisma, userMap, examMap, mentors);
 
-  // 18. User Answers
+  // 19. User Answers
   await seedUserAnswers(prisma, userMap, questions, exams);
 
   console.log('✅ Seeding completed.');

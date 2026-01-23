@@ -227,7 +227,11 @@ export class ExamService {
                   id: true,
                   name: true,
                   represent: true,
-                  pillarId: true,
+                  aspectPillars: {
+                    select: {
+                      pillar: { select: { id: true } },
+                    },
+                  },
                 },
               },
               score: true,
@@ -244,7 +248,7 @@ export class ExamService {
         const pillar = pillarSnapshot.pillar;
 
         const aspects = examAspectSnapshot
-          .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+          .filter((aspectSnapshot) => aspectSnapshot.aspect.aspectPillars.some((ap) => ap.pillar.id === pillar.id))
           .map((aspectSnapshot) => ({
             id: aspectSnapshot.aspect.id,
             name: aspectSnapshot.aspect.name,
@@ -633,7 +637,11 @@ export class ExamService {
                       id: true,
                       name: true,
                       represent: true,
-                      pillarId: true,
+                      aspectPillars: {
+                        select: {
+                          pillar: { select: { id: true } },
+                        },
+                      },
                     },
                   },
                   score: true,
@@ -652,7 +660,7 @@ export class ExamService {
             const pillar = pillarSnapshot.pillar;
 
             const aspects = examAspectSnapshot
-              .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+              .filter((aspectSnapshot) => aspectSnapshot.aspect.aspectPillars.some((ap) => ap.pillar.id === pillar.id))
               .map((aspectSnapshot) => ({
                 id: aspectSnapshot.aspect.id,
                 name: aspectSnapshot.aspect.name,

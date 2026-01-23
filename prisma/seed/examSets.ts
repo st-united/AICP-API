@@ -1,9 +1,10 @@
-import { PrismaClient, Question, CompetencyFramework } from '@prisma/client';
+import { PrismaClient, Question, CompetencyFramework, AssessmentMethod } from '@prisma/client';
 
 export async function seedExamSets(
   prisma: PrismaClient,
   questions: Question[],
-  competencyFrameworks: CompetencyFramework[]
+  competencyFrameworks: CompetencyFramework[],
+  assessmentMethods: AssessmentMethod[]
 ) {
   const competencyFrameworkMap = Object.fromEntries(competencyFrameworks.map((c) => [c.version, c]));
 
@@ -68,6 +69,10 @@ export async function seedExamSets(
 
   await Promise.all(
     examSetsData.map(async (examSetData) => {
+      const getAssessmentID = assessmentMethods.find((am) => am.name === 'Self Assessment')?.id;
+      if (!getAssessmentID) {
+        throw new Error('Assessment method "Self Assessment" not found. Ensure seedAssessmentMethods runs first.');
+      }
       const examSet = await prisma.examSet.create({
         data: {
           name: examSetData.name,
@@ -78,6 +83,7 @@ export async function seedExamSets(
           timeLimitMinutes: 15,
           passingScore: 3,
           frameworkId: competencyFrameworkMap[examSetData.frameworkVersion].id,
+          assessmentMethodId: getAssessmentID,
         },
       });
 
