@@ -16,6 +16,7 @@ import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { UpdateMentorDto } from './dto/request/update-mentor.dto';
 import { ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { MentorResponseDto } from './dto/response/mentor-response.dto';
+import { AvailableMentorResponseDto } from './dto/response/available-mentor-response.dto';
 import { MentorStatsDto } from './dto/response/getMentorStats.dto';
 import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { MentorBookingResponseDto, MentorDto } from '@app/modules/mentors/dto/response/mentor-booking.dto';
@@ -24,16 +25,15 @@ import { BookingGateway } from '../booking/booking.gateway';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
 import { Public } from '../auth/guards/decorator/public.decorator';
+import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { CheckInterviewRequestDto } from './dto/request/check-interview-request.dto';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
+import { ApiOperation, ApiResponse, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { RequestCustom } from '@app/common/interfaces';
 import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
+import { GetAvailableMentorsDto } from '@app/modules/mentors/dto/request/get-available-mentors.dto';
 
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard)
@@ -63,6 +63,11 @@ export class MentorsController {
   @UseGuards(JwtAccessTokenGuard)
   async getMentorsByParams(@Query() dto: SearchMentorRequestDto): Promise<ResponsePaginate<MentorDto>> {
     return this.mentorsService.getMentorsByParams(dto);
+  }
+
+  @Get('available')
+  async getAvailableMentors(@Query() dto: GetAvailableMentorsDto): Promise<ResponseItem<AvailableMentorResponseDto[]>> {
+    return this.mentorsService.getAvailableMentors(dto);
   }
 
   @Get('bookings')
@@ -119,7 +124,7 @@ export class MentorsController {
 
   @Post('assign')
   async assignMentor(@Body() dto: AssignMentorDto, @Req() req): Promise<ResponseItem<AssignMentorResultDto>> {
-    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId);
+    const result = await this.mentorsService.assignMentorToRequests(dto, req.user.userId, req.user.email);
     return result;
   }
 

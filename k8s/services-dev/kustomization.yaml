@@ -3,12 +3,12 @@ namespace: devplus-aicp-dev
 resources:
   - ../base
 
-secretGenerator:
-  - name: aicp-api-env
-    envs:
-      - .env.dev
-    options:
-      disableNameSuffixHash: true
+# secretGenerator:
+#   - name: aicp-api-env
+#     envs:
+#       - .env.dev
+#     options:
+#       disableNameSuffixHash: true
 
 #   - name: firebase-service-key
 #     files:

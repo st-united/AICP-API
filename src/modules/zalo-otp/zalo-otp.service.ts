@@ -15,6 +15,7 @@ import {
   OtpInvalidException,
 } from './exceptions/zalo-otp.exception';
 import { ConfigService } from '@nestjs/config';
+import { AppEnvEnum } from '@Constant/enums';
 @Injectable()
 export class ZaloOtpService {
   private readonly logger = new Logger(ZaloOtpService.name);
@@ -154,13 +155,20 @@ export class ZaloOtpService {
       } else {
         const errorMessage = res.data.message;
         this.logger.error(`Zalo API error: ${errorMessage}`);
-        return { error: errorMessage };
+        return { error: errorMessage, errorCode: res.data.error };
       }
     } catch (err: any) {
       this.logger.error(`Error sending OTP to Zalo: ${err.message}`, err.stack);
 
       if (err.response && err.response.data && err.response.data.error_code === 1002) {
-        return { error: 'access_token_expired' };
+        return { error: 'access_token_expired', errorCode: 1002 };
+      }
+
+      if (err.response && err.response.data && err.response.data.error) {
+        return {
+          error: err.response.data.message || err.response.data.error,
+          errorCode: err.response.data.error,
+        };
       }
 
       const errorMessage = err.message || 'send_otp_failed';
@@ -187,7 +195,7 @@ export class ZaloOtpService {
       const res = await axios.post('https://oauth.zaloapp.com/v4/oa/access_token', data, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          secret_key: process.env.ZALO_APP_SECRET,
+          secret_key: process.env.ZALO_APP_SECRET_KEY,
         },
       });
 
@@ -260,18 +268,32 @@ export class ZaloOtpService {
       throw new BadRequestException('Số điện thoại đã được xác thực Zalo.');
     }
 
-    const otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
-    const otpData = await this.redisService.getValue(otpKey);
+    let savedOtp: string | null = null;
+    let isBypass = false;
+    let otpKey: string | null = null;
+    const currentEnv = (process.env.NODE_ENV || AppEnvEnum.DEVELOP).toLowerCase();
+    const bypassEnvs = new Set([AppEnvEnum.LOCAL, AppEnvEnum.DEVELOP, AppEnvEnum.UAT]);
+    if (bypassEnvs.has(currentEnv as AppEnvEnum)) {
+      savedOtp = this.configService.get<string>('ZALO_OTP_BYPASS_CODE') || process.env.ZALO_OTP_BYPASS_CODE;
+      if (!savedOtp) {
+        throw new InternalServerErrorException('Chưa cấu hình OTP bypass');
+      }
+      isBypass = true;
+    } else {
+      otpKey = this.configService.get<string>('OTP_KEY_PREFIX') + userId + ':' + phoneNumber;
+      const otpData = await this.redisService.getValue(otpKey);
 
-    if (!otpData) {
-      throw new OtpExpiredException();
+      if (!otpData) {
+        throw new OtpExpiredException();
+      }
+      const data = JSON.parse(otpData);
+      savedOtp = data.otp;
     }
 
-    const data = JSON.parse(otpData);
-    const savedOtp = data.otp;
-
     if (savedOtp === otp) {
-      await this.redisService.deleteValue(otpKey);
+      if (!isBypass && otpKey) {
+        await this.redisService.deleteValue(otpKey);
+      }
       this.logger.log(`OTP verified successfully for user ${userId}, phone ${phoneNumber}`);
       await this.prismaService.user.update({
         where: { id: userId },
@@ -291,6 +313,12 @@ export class ZaloOtpService {
       throw new BadRequestException('Số điện thoại đã được xác thực Zalo.');
     }
 
+    const currentEnv = (process.env.NODE_ENV || '').toLowerCase();
+    const bypassEnvs = new Set([AppEnvEnum.LOCAL, AppEnvEnum.DEVELOP, AppEnvEnum.UAT]);
+    if (bypassEnvs.has(currentEnv as AppEnvEnum)) {
+      return new ResponseItem({ success: true }, 'OTP đã được gửi thành công', SendOtpResponseDto);
+    }
+
     const canSend = await this.canSendOtp(userId, phoneNumber);
     if (!canSend) {
       throw new OtpRateLimitException();
@@ -305,17 +333,18 @@ export class ZaloOtpService {
 
     let sendResult = await this.sendOtpToZalo(userId, phoneNumber, otp, accessToken);
 
-    if (sendResult?.error === 'access_token_expired') {
-      this.logger.log('Access token expired, refreshing...');
+    if (sendResult?.error && ZaloErrorTranslator.isAccessTokenError(sendResult.error, sendResult.errorCode)) {
+      this.logger.log('Token error: ', sendResult.error);
       accessToken = await this.refreshAccessToken();
       sendResult = await this.sendOtpToZalo(userId, phoneNumber, otp, accessToken);
     }
 
     if (sendResult?.error) {
+      this.logger.log('Send otp error: ', sendResult.error);
       if (ZaloErrorTranslator.isPhoneNumberError(sendResult.error)) {
-        throw new BadRequestException(ZaloErrorTranslator.translate(sendResult.error));
+        throw new BadRequestException(ZaloErrorTranslator.translateError(sendResult.error, sendResult.errorCode));
       }
-      throw new ZaloApiException(sendResult.error);
+      throw new ZaloApiException(ZaloErrorTranslator.translateError(sendResult.error, sendResult.errorCode));
     }
 
     return new ResponseItem({ success: true }, 'OTP đã được gửi thành công', SendOtpResponseDto);

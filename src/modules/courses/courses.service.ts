@@ -20,7 +20,6 @@ import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import { GoogleCloudStorageService } from '@app/modules/google-cloud/google-cloud-storage.service';
 import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
-import { title } from 'process';
 @Injectable()
 export class CoursesService {
   private readonly logger = new Logger(CoursesService.name);

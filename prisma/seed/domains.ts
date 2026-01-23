@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-
 export async function seedDomains(prisma: PrismaClient) {
   const domainsData = [
     {
@@ -39,8 +38,8 @@ export async function seedDomains(prisma: PrismaClient) {
   for (const domainData of domainsData) {
     await prisma.domain.upsert({
       where: { name: domainData.name },
-      update: {},
-      create: domainData,
+      update: { description: domainData.description },
+      create: { ...domainData },
     });
   }
 }

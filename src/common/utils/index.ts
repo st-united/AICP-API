@@ -1,2 +1,3 @@
-export * from './fileUtils';
-export * from './stringUtils';
+export * from './file.utils';
+export * from './string.utils';
+export * from './search.utils';

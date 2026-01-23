@@ -16,6 +16,7 @@ import { ResponseItem } from '@app/common/dtos';
 import { CourseResponseDto } from '@app/modules/courses/dto/response/course-response.dto';
 import { RegisterCourseDto } from '@app/modules/courses/dto/request/register-course.dto';
 import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
+import { PaginatedSearchCourseDto } from '@app/modules/courses/dto/request/paginated-search-course.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { Roles } from '@app/modules/auth/guards/decorator/roles.decorator';
 import { UserRoleEnum } from '@Constant/enums';
@@ -23,8 +24,6 @@ import { CreateCourseDto } from '@app/modules/courses/dto/request/create-course.
 import { VALIDATION_THUMB_IMAGE } from '@app/validations';
 import { SFIALevel } from '@prisma/client';
 import { RolesGuard } from '@app/modules/auth/guards/roles.guard';
-import { PaginatedSearchCourseDto } from './dto/request/paginated-search-course.dto';
-
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAccessTokenGuard, RolesGuard)
 @Controller('courses')

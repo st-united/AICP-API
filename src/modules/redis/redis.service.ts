@@ -1,4 +1,4 @@
-import { concatSanitizedStrings } from '@app/common/utils/stringUtils';
+import { concatSanitizedStrings } from '@app/common/utils/string.utils';
 import { REDIS_CLIENT } from '@Constant/redis';
 import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

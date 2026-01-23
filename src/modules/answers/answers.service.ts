@@ -35,7 +35,25 @@ export class AnswersService {
       { id: string; weightedScore: number; rawScore: number; weightWithinDimension: number }
     > = {};
     const existingExam = await this.prisma.exam.findFirst({
-      where: { id: examId },
+      where: {
+        id: examId,
+      },
+      select: {
+        id: true,
+        examStatus: true,
+        examSet: {
+          select: {
+            id: true,
+            name: true,
+            framework: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (existingExam?.examStatus !== ExamStatus.IN_PROGRESS) {
@@ -54,7 +72,7 @@ export class AnswersService {
           select: { id: true, questionId: true },
         }),
         this.prisma.examSetQuestion.findMany({
-          where: { examSetId: existingExam.examSetId },
+          where: { examSetId: existingExam.examSet.id },
           include: {
             question: {
               select: {
@@ -82,6 +100,7 @@ export class AnswersService {
           },
         }),
         this.prisma.competencyPillar.findMany({
+          where: { frameworkId: existingExam.examSet.framework.id },
           select: { id: true, name: true, weightWithinDimension: true },
         }),
       ]);
@@ -444,33 +463,5 @@ export class AnswersService {
 
   private isNonEmpty(obj: any): boolean {
     return obj && typeof obj === 'object' && Object.keys(obj).length > 0;
-  }
-
-  async autoSubmitExpiredExams(): Promise<void> {
-    const now = new Date();
-    const tenSecondsAgo = new Date(now.getTime() - 10_000);
-
-    const expiredExams = await this.prisma.exam.findMany({
-      where: {
-        examStatus: ExamStatus.IN_PROGRESS,
-        finishedAt: {
-          lte: tenSecondsAgo,
-        },
-      },
-      select: {
-        id: true,
-        userId: true,
-      },
-    });
-
-    if (!expiredExams.length) return;
-
-    const updatePromises = expiredExams.map((exam) =>
-      this.update(exam.userId, exam.id).catch((error) => {
-        console.error(`[AutoSubmit] Failed examId=${exam.id} userId=${exam.userId}`, error.message);
-      })
-    );
-
-    await Promise.all(updatePromises);
   }
 }

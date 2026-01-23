@@ -7,7 +7,7 @@ import { examSetDefaultName, Order, UserRoleEnum } from '@Constant/enums';
 import { GetHistoryExamDto } from './dto/request/history-exam.dto';
 import { HistoryExamResponseDto } from './dto/response/history-exam-response.dto';
 import * as dayjs from 'dayjs';
-import { DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
+import { AspectDto, DetailExamResponseDto } from './dto/response/detail-exam-response.dto';
 import * as puppeteer from 'puppeteer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs';
@@ -17,6 +17,7 @@ import { DATE_TIME } from '@Constant/datetime';
 import { ExamWithResultDto, UserWithExamsResponseDto } from './dto/response/exam-with-result.dto';
 import { UsersWithExamsFilters } from './dto/request/user-with-exams-filters.dto';
 import { VerifyExamResponseDto } from './dto/response/verify-exam-response.dto';
+import { UpdateTestTimeDto } from './dto/request/update-exam.dto';
 
 @Injectable()
 export class ExamService {
@@ -429,8 +430,7 @@ export class ExamService {
       throw new NotFoundException('Bộ đề thi không tồn tại');
     }
 
-    // Tính thời gian làm bài
-    const diffMs = new Date(existingExam.updatedAt).getTime() - new Date(existingExam.createdAt).getTime();
+    const diffMs = new Date(existingExam.finishedAt).getTime() - new Date(existingExam.startedAt).getTime();
     const h = Math.floor(diffMs / 3600000)
       .toString()
       .padStart(2, '0');
@@ -495,7 +495,7 @@ export class ExamService {
       where: { id: existingExam.examLevelId },
     });
 
-    const result = await this.getCoursesByExamLevel(examLevel.examLevel, userId);
+    const result = await this.getCoursesByExamLevel(userId);
 
     return new ResponseItem<ExamWithResultDto>(
       {
@@ -526,9 +526,7 @@ export class ExamService {
     return mapping[level];
   }
 
-  async getCoursesByExamLevel(examLevel: ExamLevelEnum, userId: string) {
-    const mappedLevel = this.mapExamLevelToSFIALevel(examLevel);
-
+  async getCoursesByExamLevel(userId: string) {
     const allCourses = await this.prisma.course.findMany({
       where: {
         isActive: true,
@@ -542,12 +540,7 @@ export class ExamService {
       },
     });
 
-    const filteredCourses = allCourses.filter((course) => {
-      if (!course.sfiaLevels || course.sfiaLevels.length === 0) return false;
-
-      return course.sfiaLevels.some((sfia) => SFIALevel[sfia] >= SFIALevel[mappedLevel]);
-    });
-    const coursesWithRegistrationStatus = filteredCourses.map((course) => {
+    const coursesWithRegistrationStatus = allCourses.map((course) => {
       const { userProgress, ...courseData } = course;
       const isRegistered = userProgress.length > 0;
 
@@ -556,6 +549,7 @@ export class ExamService {
         isRegistered,
       };
     });
+
     return coursesWithRegistrationStatus;
   }
 
@@ -749,6 +743,68 @@ export class ExamService {
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException('Lỗi khi kiểm tra trạng thái đặt lịch bài thi');
+    }
+  }
+
+  async updateTestTime(examId: string, updateTestTimeDto: UpdateTestTimeDto): Promise<ResponseItem<null>> {
+    try {
+      const existingExam = await this.prisma.exam.findUnique({
+        where: { id: examId },
+      });
+      if (!existingExam) {
+        throw new NotFoundException('Không tìm thấy bài làm');
+      }
+      await this.prisma.exam.update({
+        where: { id: examId },
+        data: {
+          ...(updateTestTimeDto.startedAt && { startedAt: updateTestTimeDto.startedAt }),
+          ...(updateTestTimeDto.finishedAt && { finishedAt: updateTestTimeDto.finishedAt }),
+        },
+      });
+
+      return new ResponseItem(null, 'Cập nhật thời gian thi thành công');
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      this.logger.error(error);
+      throw new BadRequestException('Lỗi khi cập nhật thời gian thi');
+    }
+  }
+
+  async getAspectsScoreByAssessmentMethod(examId: string): Promise<ResponseItem<AspectDto[]>> {
+    try {
+      const exam = await this.prisma.exam.findUnique({
+        where: { id: examId },
+        select: {
+          examAspectSnapshot: {
+            select: {
+              aspect: {
+                select: {
+                  id: true,
+                  name: true,
+                  represent: true,
+                  pillarId: true,
+                },
+              },
+              score: true,
+            },
+          },
+        },
+      });
+
+      if (!exam) throw new NotFoundException('Bài thi không tồn tại');
+
+      const response: AspectDto[] = exam.examAspectSnapshot.map((item) => ({
+        id: item.aspect.id,
+        name: item.aspect.name,
+        represent: item.aspect.represent,
+        score: Number(item.score),
+      }));
+
+      return new ResponseItem<AspectDto[]>(response, 'Lấy điểm theo tiêu chí đánh giá thành công');
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException('Lỗi khi lấy điểm theo tiêu chí đánh giá');
     }
   }
 }

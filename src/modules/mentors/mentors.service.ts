@@ -1,41 +1,36 @@
-import { BadRequestException, Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
-import { CreateMentorDto } from './dto/request/create-mentor.dto';
-import { UpdateMentorDto } from './dto/request/update-mentor.dto';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import * as dayjs from 'dayjs';
+
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
-import { MentorResponseDto } from './dto/response/mentor-response.dto';
-import { PrismaService } from '../prisma/prisma.service';
+import { GoogleCalendarService } from '@app/common/helpers/google-calendar.service';
+import { generateSecurePassword } from '@app/common/helpers/randomPassword';
 import { UsersService } from '@UsersModule/users.service';
+import { MentorSpotStatus, Order, timeSlotEnum } from '@Constant/enums';
+import { ExamLevelEnum, ExamStatus, InterviewRequestStatus, MentorBookingStatus, Prisma } from '@prisma/client';
+
+import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { generateSecurePassword } from '@app/helpers/randomPassword';
-import {
-  ExamStatus,
-  ExamLevelEnum,
-  InterviewRequestStatus,
-  MentorBookingStatus,
-  Prisma,
-  SFIALevel,
-  TimeSlotBooking,
-} from '@prisma/client';
-import { MentorStatsDto } from './dto/response/getMentorStats.dto';
-import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
 import { RedisService } from '../redis/redis.service';
 import { TokenService } from '../auth/services/token.service';
+import { CreateMentorBookingDto } from './dto/request/create-mentor-booking.dto';
+import { CreateMentorDto } from './dto/request/create-mentor.dto';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
+import { UpdateMentorDto } from './dto/request/update-mentor.dto';
+import { MentorStatsDto } from './dto/response/getMentorStats.dto';
+import { MentorResponseDto } from './dto/response/mentor-response.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
-import { plainToInstance } from 'class-transformer';
-import {
-  MentorBookingResponseDto,
-  MentorBookingResponseDto as MentorBookingResponseV1,
-  MentorDto,
-} from './dto/response/mentor-booking.dto';
+import { MentorBookingResponseDto, MentorDto } from './dto/response/mentor-booking.dto';
 import { MentorBookingResponseDto as MentorBookingResponseV2 } from './dto/response/mentor-booking-response.dto';
-import { MentorBookingFilter } from './interface/mentorBookingFilter.interface';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
-import { InterviewShift, Order } from '@Constant/enums';
 import { CheckInterviewRequestResponseDto } from './dto/response/check-interview-request-response.dto';
 import { SearchMentorRequestDto } from '@app/modules/mentors/dto/request/search-mentor-request.dto';
 import { GetBookingByMentorRequestDto } from '@app/modules/mentors/dto/request/get-booking-by-mentor-request.dto';
+import { GetAvailableMentorsDto } from '@app/modules/mentors/dto/request/get-available-mentors.dto';
+import { AvailableMentorResponseDto } from '@app/modules/mentors/dto/response/available-mentor-response.dto';
+
+const VIETNAMESE_WEEKDAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
 @Injectable()
 export class MentorsService {
   private readonly logger = new Logger(MentorsService.name);
@@ -163,6 +158,107 @@ export class MentorsService {
     } catch (error) {
       throw new BadRequestException('Lỗi khi lấy danh sách mentor');
     }
+  }
+
+  async getAvailableMentors(dto: GetAvailableMentorsDto): Promise<ResponseItem<AvailableMentorResponseDto[]>> {
+    const take = Number(dto.take ?? 10);
+    const skip = Number(dto.skip ?? 0);
+    const search = dto.search?.trim();
+    const now = dayjs();
+
+    const spotWhere: Prisma.MentorTimeSpotWhereInput = {
+      status: MentorSpotStatus.AVAILABLE,
+      startAt: {
+        gte: now.toDate(),
+      },
+    };
+
+    if (dto.scheduledDate) {
+      const day = dayjs(dto.scheduledDate);
+      if (!day.isValid()) {
+        throw new BadRequestException('scheduledDate không hợp lệ');
+      }
+
+      if (day.isBefore(now, 'day')) {
+        return new ResponseItem<AvailableMentorResponseDto[]>([], 'Lấy danh sách mentor khả dụng thành công');
+      }
+
+      if (dto.startTime && dto.endTime) {
+        const startAt = dayjs(`${dto.scheduledDate} ${dto.startTime}`, 'YYYY-MM-DD HH:mm');
+        const endAt = dayjs(`${dto.scheduledDate} ${dto.endTime}`, 'YYYY-MM-DD HH:mm');
+
+        if (!startAt.isValid() || !endAt.isValid() || !endAt.isAfter(startAt)) {
+          throw new BadRequestException('Khung giờ không hợp lệ');
+        }
+
+        if (startAt.isBefore(now)) {
+          return new ResponseItem<AvailableMentorResponseDto[]>([], 'Lấy danh sách mentor khả dụng thành công');
+        }
+
+        spotWhere.startAt = { gte: startAt.toDate() };
+        spotWhere.endAt = { lte: endAt.toDate() };
+      } else {
+        const rangeStart = day.isSame(now, 'day') ? now : day.startOf('day');
+        spotWhere.startAt = {
+          gte: rangeStart.toDate(),
+          lte: day.endOf('day').toDate(),
+        };
+      }
+    }
+
+    if (dto.durationMinutes) {
+      const duration = Number(dto.durationMinutes);
+      if (Number.isFinite(duration) && duration > 0) {
+        spotWhere.durationMinutes = { gte: duration };
+      }
+    }
+
+    const mentors = await this.prisma.mentor.findMany({
+      where: {
+        isActive: true,
+        ...(search && {
+          user: {
+            OR: [
+              { fullName: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        }),
+        timeSpots: {
+          some: spotWhere,
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+        expertise: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: Order.DESC,
+      },
+      skip: Number.isFinite(skip) && skip > 0 ? skip : 0,
+      take: Number.isFinite(take) && take > 0 ? take : 10,
+    });
+
+    const data: AvailableMentorResponseDto[] = mentors.map((mentor) => ({
+      ...mentor,
+      fullName: mentor.user?.fullName,
+      email: mentor.user?.email,
+      avatarUrl: mentor.user?.avatarUrl,
+    }));
+
+    return new ResponseItem<AvailableMentorResponseDto[]>(data, 'Lấy danh sách mentor khả dụng thành công');
   }
 
   async getMentor(id: string): Promise<ResponseItem<MentorResponseDto>> {
@@ -313,101 +409,217 @@ export class MentorsService {
     return this.toggleMentorAccountStatus(id, true, url);
   }
 
-  async createScheduler(userId, dto: CreateMentorBookingDto): Promise<ResponseItem<MentorBookingResponseV1>> {
+  async createScheduler(userId: string, dto: CreateMentorBookingDto): Promise<ResponseItem<any>> {
     try {
-      const existingBooking = await this.prisma.interviewRequest.findFirst({
-        where: { examId: dto.examId },
-      });
+      const startAt = new Date(dto.startAt);
+      const endAt = new Date(dto.endAt);
+      const now = new Date();
 
-      if (existingBooking) {
-        throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
+      if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt <= startAt) {
+        throw new BadRequestException('Thời gian phỏng vấn không hợp lệ');
       }
 
-      const exams = await this.prisma.exam.findMany({
-        where: {
-          userId,
-          examSet: {
-            isActive: true,
-            exam: {
-              some: { id: dto.examId },
-            },
-          },
-        },
-      });
-
-      const hasScheduled = exams.some((exam) => exam.examStatus === ExamStatus.INTERVIEW_SCHEDULED);
-
-      if (hasScheduled) {
-        throw new ConflictException('Bài thi đã được đặt lịch');
+      if (startAt <= now) {
+        throw new BadRequestException('Không thể đặt lịch trong quá khứ');
       }
-      const interviewDate = new Date(dto.interviewDate);
-      const startOfDay = new Date(interviewDate.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(interviewDate.setHours(23, 59, 59, 999));
 
-      const mentors = await this.prisma.mentor.findMany({ where: { isActive: true } });
-      const totalMentors = mentors.length;
+      const bookingResult = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.interviewRequest.findFirst({
+          where: { examId: dto.examId },
+        });
 
-      const morningSlots = [
-        TimeSlotBooking.AM_08_09,
-        TimeSlotBooking.AM_09_10,
-        TimeSlotBooking.AM_10_11,
-        TimeSlotBooking.AM_11_12,
-      ];
+        if (existing) {
+          throw new BadRequestException('Bài kiểm tra này đã được đặt lịch phỏng vấn.');
+        }
 
-      const afternoonSlots = [
-        TimeSlotBooking.PM_02_03,
-        TimeSlotBooking.PM_03_04,
-        TimeSlotBooking.PM_04_05,
-        TimeSlotBooking.PM_05_06,
-      ];
-
-      const selectedShiftSlots = dto.interviewShift === InterviewShift.MORNING ? morningSlots : afternoonSlots;
-
-      let selectedSlot: TimeSlotBooking | null = null;
-
-      for (const slot of selectedShiftSlots) {
-        const count = await this.prisma.interviewRequest.count({
-          where: {
-            interviewDate: {
-              gte: startOfDay,
-              lt: endOfDay,
+        const exam = await tx.exam.findUnique({
+          where: { id: dto.examId },
+          include: {
+            user: {
+              select: {
+                fullName: true,
+                email: true,
+              },
             },
-            timeSlot: slot,
           },
         });
 
-        if (count < totalMentors) {
-          selectedSlot = slot;
-          break;
+        if (!exam || exam.userId !== userId) {
+          throw new BadRequestException('Bài thi không hợp lệ');
+        }
+
+        if (dto.mentorId) {
+          const mentor = await tx.mentor.findFirst({
+            where: { id: dto.mentorId, isActive: true },
+            select: { id: true },
+          });
+
+          if (!mentor) {
+            throw new BadRequestException('Mentor không hợp lệ');
+          }
+        }
+
+        const spot = await tx.mentorTimeSpot.findFirst({
+          where: {
+            startAt,
+            endAt,
+            status: MentorSpotStatus.AVAILABLE,
+            mentor: { isActive: true },
+            ...(dto.mentorId ? { mentorId: dto.mentorId } : {}),
+          },
+          include: {
+            mentor: {
+              select: {
+                id: true,
+                user: { select: { fullName: true, email: true } },
+              },
+            },
+          },
+          orderBy: { startAt: 'asc' },
+        });
+
+        if (!spot) {
+          throw new BadRequestException('Không còn khung giờ trống phù hợp');
+        }
+
+        const interviewRequest = await tx.interviewRequest.create({
+          data: {
+            examId: dto.examId,
+            status: InterviewRequestStatus.PENDING,
+          },
+        });
+
+        const updated = await tx.mentorTimeSpot.updateMany({
+          where: { id: spot.id, status: MentorSpotStatus.AVAILABLE },
+          data: { status: MentorSpotStatus.BOOKED },
+        });
+
+        if (!updated.count) {
+          throw new ConflictException('Khung giờ đã được đặt');
+        }
+
+        await tx.interviewRequest.update({
+          where: { id: interviewRequest.id },
+          data: {
+            currentSpotId: spot.id,
+            status: InterviewRequestStatus.ASSIGNED,
+          },
+        });
+
+        await tx.mentorBooking.create({
+          data: {
+            mentorId: spot.mentorId,
+            interviewRequestId: interviewRequest.id,
+            status: MentorBookingStatus.UPCOMING,
+          },
+        });
+
+        await tx.exam.update({
+          where: { id: dto.examId },
+          data: {
+            examStatus: ExamStatus.INTERVIEW_SCHEDULED,
+          },
+        });
+
+        return {
+          bookingData: {
+            examId: dto.examId,
+            interviewRequestId: interviewRequest.id,
+            mentorId: spot.mentorId,
+            mentorName: spot.mentor?.user?.fullName,
+            spotId: spot.id,
+            startAt: spot.startAt,
+            endAt: spot.endAt,
+            meetUrl: spot.meetUrl,
+            status: InterviewRequestStatus.ASSIGNED,
+          },
+          emailContext: {
+            userFullName: exam.user?.fullName,
+            userEmail: exam.user?.email,
+            mentorEmail: spot.mentor?.user?.email,
+            calendarEventId: spot.calendarEventId,
+            timezone: spot.timezone,
+            meetUrl: spot.meetUrl,
+            spotId: spot.id,
+            startAt: spot.startAt,
+            endAt: spot.endAt,
+          },
+        };
+      });
+
+      const { bookingData, emailContext } = bookingResult;
+      let resolvedMeetUrl = bookingData.meetUrl;
+      let calendarEventId = emailContext.calendarEventId;
+      let createdCalendarEvent = false;
+
+      if (!calendarEventId && emailContext.userEmail && emailContext.mentorEmail) {
+        try {
+          const eventInfo = await GoogleCalendarService.createInterviewEvent(
+            emailContext.userEmail,
+            emailContext.mentorEmail,
+            {
+              startAt: emailContext.startAt,
+              endAt: emailContext.endAt,
+              timezone: emailContext.timezone,
+              meetUrl: emailContext.meetUrl ?? null,
+            }
+          );
+          resolvedMeetUrl = eventInfo.meetUrl;
+          calendarEventId = eventInfo.eventId;
+          createdCalendarEvent = true;
+
+          await this.prisma.mentorTimeSpot.update({
+            where: { id: emailContext.spotId },
+            data: {
+              meetUrl: resolvedMeetUrl,
+              calendarEventId: calendarEventId,
+            },
+          });
+        } catch (error) {
+          this.logger.error('Failed to create calendar event for booking', error);
         }
       }
 
-      if (!selectedSlot) {
-        throw new BadRequestException(`Tất cả khung giờ của buổi ${dto.interviewShift.toLowerCase()} đã đầy.`);
+      if (calendarEventId && emailContext.userEmail && !createdCalendarEvent) {
+        try {
+          await GoogleCalendarService.addAttendeesToEvent(calendarEventId, [
+            emailContext.userEmail,
+            emailContext.mentorEmail,
+          ]);
+        } catch (error) {
+          this.logger.error('Failed to add attendee to calendar event', error);
+        }
       }
 
-      const booking = await this.prisma.interviewRequest.create({
-        data: {
-          examId: dto.examId,
-          interviewDate: startOfDay,
-          timeSlot: selectedSlot,
-        },
-      });
+      if (emailContext.userEmail && emailContext.userFullName) {
+        try {
+          const dateLabel = this.formatInterviewDateLabel(emailContext.startAt);
+          const timeLabel = this.formatInterviewTimeLabel(emailContext.startAt, emailContext.endAt);
+          await this.emailService.sendInterviewScheduleConfirmationEmail(
+            emailContext.userFullName,
+            emailContext.userEmail,
+            dateLabel,
+            timeLabel,
+            resolvedMeetUrl
+          );
+        } catch (error) {
+          this.logger.error('Failed to send interview confirmation email', error);
+        }
+      }
 
-      await this.prisma.exam.update({
-        where: { id: dto.examId },
-        data: {
-          examStatus: ExamStatus.INTERVIEW_SCHEDULED,
+      return new ResponseItem(
+        {
+          ...bookingData,
+          meetUrl: resolvedMeetUrl,
         },
-      });
-
-      return new ResponseItem(booking, 'Đặt lịch thành công!');
+        'Đặt lịch phỏng vấn thành công'
+      );
     } catch (error) {
-      if (error instanceof ConflictException || error instanceof BadRequestException) {
+      if (error instanceof BadRequestException || error instanceof ConflictException) {
         throw error;
       }
       this.logger.error(error);
-      throw new BadRequestException(error?.message || 'Đặt lịch thất bại.');
+      throw new BadRequestException('Đặt lịch phỏng vấn thất bại');
     }
   }
 
@@ -435,6 +647,54 @@ export class MentorsService {
       return new ResponseItem(null, 'Kích hoạt tài khoản thành công');
     } catch (error) {
       throw new BadRequestException('Mã kích hoạt không hợp lệ hoặc đã hết hạn', error.message);
+    }
+  }
+
+  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
+    try {
+      if (!examId) {
+        throw new BadRequestException('id bộ đề là bắt buộc');
+      }
+      const interviewRequest = await this.prisma.interviewRequest.findFirst({
+        where: { examId },
+        include: {
+          currentSpot: {
+            include: {
+              mentor: {
+                select: {
+                  user: { select: { fullName: true } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: Order.DESC },
+      });
+
+      const response: CheckInterviewRequestResponseDto = {
+        hasInterviewRequest: !!interviewRequest,
+        interviewRequest: interviewRequest
+          ? {
+              id: interviewRequest.id,
+              examId: interviewRequest.examId,
+              startAt: interviewRequest.currentSpot?.startAt,
+              endAt: interviewRequest.currentSpot?.endAt,
+              status: interviewRequest.status,
+              mentorId: interviewRequest.currentSpot?.mentorId,
+              mentorName: interviewRequest.currentSpot?.mentor?.user?.fullName,
+              meetUrl: interviewRequest.currentSpot?.meetUrl,
+            }
+          : undefined,
+      };
+
+      return new ResponseItem(
+        response,
+        interviewRequest ? 'Người dùng đã có lịch phỏng vấn' : 'Người dùng chưa có lịch phỏng vấn',
+        CheckInterviewRequestResponseDto
+      );
+    } catch (error) {
+      this.logger.error('Error checking user interview request:', error);
+      throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
     }
   }
 
@@ -473,6 +733,7 @@ export class MentorsService {
           include: {
             interviewRequest: {
               include: {
+                currentSpot: true,
                 exam: {
                   include: {
                     examLevel: true,
@@ -514,17 +775,21 @@ export class MentorsService {
         notJoined,
       };
 
-      const data: MentorBookingResponseV2[] = records.map((booking) => ({
-        id: booking.id,
-        fullName: booking.interviewRequest.exam.user.fullName,
-        email: booking.interviewRequest.exam.user.email,
-        phoneNumber: booking.interviewRequest.exam.user.phoneNumber,
-        timeSlot: booking.interviewRequest.timeSlot,
-        interviewDate: booking.interviewRequest.interviewDate,
-        nameExamSet: booking.interviewRequest.exam?.examSet?.name,
-        level: booking.interviewRequest.exam?.examLevel?.examLevel,
-        status: booking.status,
-      }));
+      const data: MentorBookingResponseV2[] = records.map((booking) => {
+        const spot = booking.interviewRequest.currentSpot;
+
+        return {
+          id: booking.id,
+          fullName: booking.interviewRequest.exam.user.fullName,
+          email: booking.interviewRequest.exam.user.email,
+          phoneNumber: booking.interviewRequest.exam.user.phoneNumber,
+          interviewDate: spot?.startAt,
+          timeSlot: spot ? `${spot.startAt.toISOString()} - ${spot.endAt.toISOString()}` : '',
+          nameExamSet: booking.interviewRequest.exam?.examSet?.name,
+          level: booking.interviewRequest.exam?.examLevel?.examLevel,
+          status: booking.status,
+        };
+      });
 
       return new ResponseItem(
         {
@@ -559,40 +824,33 @@ export class MentorsService {
 
     const where: Prisma.MentorBookingWhereInput = {
       mentorId,
-      ...(statuses && statuses.length > 0 && { status: { in: statuses } }),
+      ...(statuses?.length && { status: { in: statuses } }),
       interviewRequest: {
-        ...(levels &&
-          levels.length > 0 && {
-            exam: {
-              examLevel: { examLevel: { in: levels as ExamLevelEnum[] } },
-            },
-          }),
+        ...(levels?.length && {
+          exam: {
+            examLevel: { examLevel: { in: levels } },
+          },
+        }),
         ...(dateStart || dateEnd
           ? {
-              interviewDate: {
-                ...(dateStart && { gte: new Date(dateStart) }),
-                ...(dateEnd && { lte: new Date(dateEnd) }),
+              currentSpot: {
+                startAt: {
+                  ...(dateStart && { gte: new Date(dateStart) }),
+                  ...(dateEnd && { lte: new Date(dateEnd) }),
+                },
               },
             }
           : {}),
         ...(keyword && {
-          OR: [
-            {
-              exam: {
-                user: { fullName: { contains: keyword, mode: 'insensitive' } },
-              },
+          exam: {
+            user: {
+              OR: [
+                { fullName: { contains: keyword, mode: 'insensitive' } },
+                { email: { contains: keyword, mode: 'insensitive' } },
+                { phoneNumber: { contains: keyword, mode: 'insensitive' } },
+              ],
             },
-            {
-              exam: {
-                user: { email: { contains: keyword, mode: 'insensitive' } },
-              },
-            },
-            {
-              exam: {
-                user: { phoneNumber: { contains: keyword, mode: 'insensitive' } },
-              },
-            },
-          ],
+          },
         }),
       },
     };
@@ -600,11 +858,18 @@ export class MentorsService {
     return where;
   }
 
-  async assignMentorToRequests(dto: AssignMentorDto, userId: string): Promise<ResponseItem<AssignMentorResultDto>> {
+  async assignMentorToRequests(
+    dto: AssignMentorDto,
+    userId: string,
+    email: string
+  ): Promise<ResponseItem<AssignMentorResultDto>> {
     const { interviewRequestIds } = dto;
 
     const mentor = await this.prisma.mentor.findUnique({
       where: { userId },
+      include: {
+        user: { select: { email: true, fullName: true } },
+      },
     });
 
     if (!mentor) {
@@ -637,167 +902,209 @@ export class MentorsService {
     const toCreate = validRequestIds.filter((id) => !alreadyAssignedIds.has(id));
 
     if (toCreate.length === 0) {
-      return {
-        message: 'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.',
-        data: {
-          bookings: [],
-        },
-      };
+      return new ResponseItem(
+        { bookings: [] },
+        'Không có đặt chỗ mới nào được tạo. Tất cả các yêu cầu đã được phân công.'
+      );
     }
 
-    const transactionOps = [
-      ...toCreate.map((requestId) =>
-        this.prisma.mentorBooking.create({
-          data: {
-            mentorId: mentor.id,
-            interviewRequestId: requestId,
-          },
-          select: {
-            id: true,
-            interviewRequestId: true,
-            mentorId: true,
-            status: true,
-            createdAt: true,
-          },
-        })
-      ),
-      this.prisma.interviewRequest.updateMany({
-        where: {
-          id: { in: toCreate },
-        },
-        data: {
-          status: InterviewRequestStatus.ASSIGNED,
-        },
-      }),
-    ];
+    const bookings = await this.prisma.$transaction(async (transaction) => {
+      const createdBookings = await Promise.all(
+        toCreate.map((requestId) =>
+          transaction.mentorBooking.create({
+            data: {
+              mentorId: mentor.id,
+              interviewRequestId: requestId,
+            },
+            select: {
+              id: true,
+              interviewRequestId: true,
+              mentorId: true,
+              status: true,
+              createdAt: true,
+            },
+          })
+        )
+      );
 
-    const results = await this.prisma.$transaction(transactionOps);
-
-    const bookings = results.slice(0, -1) as {
-      id: string;
-      interviewRequestId: string;
-      mentorId: string;
-      status: string;
-      createdAt: Date;
-    }[];
-
-    return {
-      message: 'Yêu cầu phỏng vấn đã được nhận',
-      data: {
-        bookings,
-      },
-    };
-  }
-
-  async checkUserInterviewRequest(examId: string): Promise<ResponseItem<CheckInterviewRequestResponseDto>> {
-    try {
-      if (!examId) {
-        throw new BadRequestException('id bộ đề là bắt buộc');
-      }
-      const interviewRequest = await this.prisma.interviewRequest.findFirst({
-        where: {
-          examId,
-        },
-        select: {
-          id: true,
-          interviewDate: true,
-          timeSlot: true,
-          examId: true,
-        },
-        orderBy: {
-          createdAt: Order.DESC,
-        },
+      await transaction.interviewRequest.updateMany({
+        where: { id: { in: toCreate } },
+        data: { status: InterviewRequestStatus.ASSIGNED },
       });
 
-      const response: CheckInterviewRequestResponseDto = {
-        hasInterviewRequest: !!interviewRequest,
-        interviewRequest: interviewRequest
-          ? {
-              id: interviewRequest.id,
-              interviewDate: interviewRequest.interviewDate,
-              timeSlot: interviewRequest.timeSlot,
-              examId: interviewRequest.examId,
-            }
-          : undefined,
-      };
+      return createdBookings;
+    });
 
-      return new ResponseItem(
-        response,
-        interviewRequest ? 'Người dùng đã có lịch phỏng vấn' : 'Người dùng chưa có lịch phỏng vấn',
-        CheckInterviewRequestResponseDto
-      );
-    } catch (error) {
-      this.logger.error('Error checking user interview request:', error);
-      throw new BadRequestException('Lỗi khi kiểm tra lịch phỏng vấn của người dùng');
+    return new ResponseItem({ bookings }, 'Yêu cầu phỏng vấn đã được nhận');
+  }
+
+  private getTimeSlotKey(startAt: Date, endAt: Date): keyof typeof timeSlotEnum | null {
+    const key = `${startAt.getHours()}-${endAt.getHours()}`;
+    const map: Record<string, keyof typeof timeSlotEnum> = {
+      '8-9': 'AM_08_09',
+      '9-10': 'AM_09_10',
+      '10-11': 'AM_10_11',
+      '11-12': 'AM_11_12',
+      '14-15': 'PM_02_03',
+      '15-16': 'PM_03_04',
+      '16-17': 'PM_04_05',
+      '17-18': 'PM_05_06',
+    };
+
+    return map[key] ?? null;
+  }
+
+  async sendInterviewReminders(): Promise<void> {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const start = new Date(tomorrow);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(tomorrow);
+    end.setHours(23, 59, 59, 999);
+
+    const bookings = await this.prisma.mentorBooking.findMany({
+      where: {
+        status: MentorBookingStatus.UPCOMING,
+        interviewRequest: {
+          currentSpot: {
+            startAt: {
+              gte: start,
+              lte: end,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        mentor: {
+          select: {
+            user: {
+              select: {
+                email: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+        interviewRequest: {
+          select: {
+            currentSpot: {
+              select: {
+                startAt: true,
+                endAt: true,
+                meetUrl: true,
+              },
+            },
+            exam: {
+              select: {
+                user: {
+                  select: {
+                    fullName: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    for (const booking of bookings) {
+      const reminderKey = `mentor_reminder_sent:${booking.id}`;
+      try {
+        const wasSet = await this.redisService.setIfNotExists(reminderKey, 'sent');
+        if (!wasSet) {
+          continue;
+        }
+
+        const spot = booking.interviewRequest?.currentSpot;
+        const slotKey = spot ? this.getTimeSlotKey(spot.startAt, spot.endAt) : null;
+        if (!spot || !slotKey) {
+          this.logger.warn(`Skipping reminder for booking ${booking.id}: missing time slot`);
+          continue;
+        }
+
+        await this.emailService.sendMentorReminderEmail({
+          mentorEmail: booking.mentor.user.email,
+          mentorName: booking.mentor.user.fullName,
+          intervieweeName: booking.interviewRequest.exam.user.fullName,
+          interviewDate: spot.startAt,
+          timeSlot: slotKey,
+          meetLink: spot.meetUrl ?? 'https://meet.google.com/default-link',
+        });
+      } catch (error) {
+        this.logger.error(`Failed to send reminder to ${booking.mentor.user.email}`, error.stack);
+        await this.redisService.deleteValue(reminderKey);
+      }
     }
   }
 
   async getBookingByMentor(dto: GetBookingByMentorRequestDto): Promise<ResponsePaginate<MentorBookingResponseDto>> {
-    try {
-      const mentor = await this.prisma.mentor.findUnique({
-        where: { id: dto.mentorId },
-      });
+    const mentor = await this.prisma.mentor.findUnique({
+      where: { id: dto.mentorId },
+    });
 
-      if (!mentor) {
-        throw new NotFoundException('Không tìm thấy mentor');
-      }
+    if (!mentor) {
+      throw new NotFoundException('Không tìm thấy mentor');
+    }
 
-      const where: Prisma.MentorBookingWhereInput = {
-        mentorId: mentor.id,
-        ...(dto.status && { status: { in: dto.status } }),
-      };
+    const where: Prisma.MentorBookingWhereInput = {
+      mentorId: mentor.id,
+      ...(dto.status && { status: { in: dto.status } }),
+    };
 
-      const [results, total] = await this.prisma.$transaction([
-        this.prisma.mentorBooking.findMany({
-          where,
-          select: {
-            id: true,
-            interviewRequest: {
-              select: {
-                exam: {
-                  select: {
-                    id: true,
-                    user: {
-                      select: {
-                        fullName: true,
-                        email: true,
-                      },
-                    },
-                  },
+    const [results, total] = await this.prisma.$transaction([
+      this.prisma.mentorBooking.findMany({
+        where,
+        include: {
+          interviewRequest: {
+            include: {
+              currentSpot: true,
+              exam: {
+                include: {
+                  user: true,
                 },
-                interviewDate: true,
-                timeSlot: true,
               },
             },
-            createdAt: true,
-            updatedAt: true,
           },
-          orderBy: { createdAt: Order.DESC },
-          skip: dto.skip,
-          take: dto.take,
-        }),
+        },
+        orderBy: { createdAt: Order.DESC },
+        skip: dto.skip,
+        take: dto.take,
+      }),
+      this.prisma.mentorBooking.count({ where }),
+    ]);
 
-        this.prisma.mentorBooking.count({ where }),
-      ]);
-
-      const interviewRequests: MentorBookingResponseDto[] = results.map((booking) => ({
+    const data = results.map((booking) => {
+      const spot = booking.interviewRequest.currentSpot;
+      return {
         id: booking.id,
         fullName: booking.interviewRequest.exam.user.fullName,
         email: booking.interviewRequest.exam.user.email,
-        interviewDate: booking.interviewRequest.interviewDate,
-        timeSlot: booking.interviewRequest.timeSlot,
+        interviewDate: spot?.startAt,
+        timeSlot: spot ? `${spot.startAt.toISOString()} - ${spot.endAt.toISOString()}` : '',
         examId: booking.interviewRequest.exam.id,
         createdAt: booking.createdAt,
         updatedAt: booking.updatedAt,
-      }));
+      };
+    });
 
-      return new ResponsePaginate<MentorBookingResponseDto>(
-        interviewRequests,
-        new PageMetaDto({ itemCount: total, pageOptionsDto: dto }),
-        'Lấy danh sách lịch phỏng vấn sắp tới của cố vấn thành công'
-      );
-    } catch (error) {
-      throw new BadRequestException('Lỗi khi lấy danh sách lịch phỏng vấn sắp tới của cố vấn');
-    }
+    return new ResponsePaginate(
+      data,
+      new PageMetaDto({ itemCount: total, pageOptionsDto: dto }),
+      'Lấy danh sách lịch phỏng vấn của mentor thành công'
+    );
+  }
+
+  private formatInterviewDateLabel(date: Date): string {
+    const day = dayjs(date);
+    const weekday = VIETNAMESE_WEEKDAYS[day.day()] ?? '';
+    return `${weekday}, ngày ${day.format('DD/MM/YYYY')}`;
+  }
+
+  private formatInterviewTimeLabel(startAt: Date, endAt: Date): string {
+    return `${dayjs(startAt).format('HH:mm')} - ${dayjs(endAt).format('HH:mm')}`;
   }
 }
