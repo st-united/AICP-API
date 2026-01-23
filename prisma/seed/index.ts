@@ -52,16 +52,10 @@ async function main() {
   const competencyFrameworks = await prisma.competencyFramework.findMany();
 
   // 8. Competency Pillars
-  await seedPillars(prisma, competencyFrameworks);
-  const pillars = await prisma.competencyPillar.findMany({
-    include: {
-      aspects: true,
-    },
-  });
+  const pillars = await seedPillars(prisma, competencyFrameworks);
 
   // 9. Aspects
-  await seedAspects(prisma, pillars);
-  const aspects = await prisma.competencyAspect.findMany();
+  const aspects = await seedAspects(prisma, pillars);
 
   // 10. Levels
   await seedLevels(prisma);
@@ -82,14 +76,12 @@ async function main() {
   await seedAssessmentMethods(prisma);
   const assessmentMethods = await prisma.assessmentMethod.findMany();
 
-  await prisma.assessmentMethod.findMany();
-
   // 15. Exam Sets
   await seedExamSets(prisma, questions, competencyFrameworks, assessmentMethods);
   const examSets = await prisma.examSet.findMany();
 
   // 16. Exams
-  const exams = await seedExams(prisma, userMap, examSets, examLevels, pillars, aspects);
+  const exams = await seedExams(prisma, userMap, examSets, examLevels);
   const allExams = await prisma.exam.findMany();
   const examMap = Object.fromEntries(allExams.map((exam) => [exam.userId, { id: exam.id }]));
 
