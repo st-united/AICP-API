@@ -7,32 +7,45 @@ export async function seedCompetencyAspectAssessmentMethod(
   assessmentMethods: AssessmentMethod[]
 ) {
   try {
-    // Mapping assessment methods với represent codes của aspects
+    // Mapping assessment methods với tên aspects
     const mappings: Record<string, string[]> = {
-      [AssessmentMethodSeedEnum.TEST_ONLINE]: ['A1', 'A3', 'A4', 'A5', 'B1', 'B2', 'B4', 'B5', 'B6', 'C1', 'C2', 'C3'],
+      [AssessmentMethodSeedEnum.TEST_ONLINE]: [
+        'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
+        'Tư Duy Phản Biện & Lý Luận Đạo Đức (Critical Thinking & Ethical Reasoning)',
+        'Trí Tuệ Ranh Giới Con Người-AI (Human-AI Boundary Intelligence)',
+        'Nhận Thức Rủi Ro & Quản Trị AI (AI Risk Awareness & Governance)',
+        'Giao Tiếp AI & Prompt Engineering (AI Communication & Prompt Engineering)',
+        'Nghiên Cứu & Tổng Hợp Thông Tin (Research & Information Synthesis)',
+        'Hiểu Biết Dữ Liệu & Xác Thực (Data Understanding & Validation)',
+        'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Problem Decomposition & AI Scoping)',
+        'Năng Lực Bảo Mật & Quyền Riêng Tư (Security & Privacy Competency)',
+        'Thành Thạo Công Cụ AI Cốt Lõi (Core AI Tools Mastery)',
+        'Đánh Giá & Lựa Chọn Công Cụ (Tool Evaluation & Selection)',
+        'Tích Hợp & Thiết Kế Quy Trình (Integration & Workflow Design)',
+      ],
       [AssessmentMethodSeedEnum.EVIDENCE]: [
-        'A1',
-        'A2',
-        'A3',
-        'B1',
-        'B2',
-        'B3',
-        'B4',
-        'B5',
-        'B6',
-        'C1',
-        'C2',
-        'C3',
-        'C4',
+        'Khả Năng Thích Ứng & Tư Duy Phát Triển (Adaptability & Growth Mindset)',
+        'Tự Học & Cải Tiến Liên Tục (Self-Learning & Continuous Improvement)',
+        'Tư Duy Phản Biện & Lý Luận Đạo Đức (Critical Thinking & Ethical Reasoning)',
+        'Giao Tiếp AI & Prompt Engineering (AI Communication & Prompt Engineering)',
+        'Nghiên Cứu & Tổng Hợp Thông Tin (Research & Information Synthesis)',
+        'Làm Việc Nhóm & Hợp Tác AI-Con Người (Teamwork & Human-AI Collaboration)',
+        'Hiểu Biết Dữ Liệu & Xác Thực (Data Understanding & Validation)',
+        'Phân Tách Vấn Đề & Xác Định Phạm Vi AI (Problem Decomposition & AI Scoping)',
+        'Năng Lực Bảo Mật & Quyền Riêng Tư (Security & Privacy Competency)',
+        'Thành Thạo Công Cụ AI Cốt Lõi (Core AI Tools Mastery)',
+        'Đánh Giá & Lựa Chọn Công Cụ (Tool Evaluation & Selection)',
+        'Tích Hợp & Thiết Kế Quy Trình (Integration & Workflow Design)',
+        'Đổi Mới & Phát Triển Tùy Chỉnh (Innovation & Custom Development)',
       ],
       [AssessmentMethodSeedEnum.INTERVIEW]: [], // Tất cả aspects
     };
 
     for (const assessmentMethod of assessmentMethods) {
-      const representCodes = mappings[assessmentMethod.name];
+      const aspectNames = mappings[assessmentMethod.name];
 
       // Nếu không có mapping, bỏ qua
-      if (representCodes === undefined) {
+      if (aspectNames === undefined) {
         console.warn(`No mapping found for assessment method: ${assessmentMethod.name}`);
         continue;
       }
@@ -43,8 +56,8 @@ export async function seedCompetencyAspectAssessmentMethod(
       if (assessmentMethod.name === AssessmentMethodSeedEnum.INTERVIEW) {
         selectedAspects = aspects;
       } else {
-        // Test Online, Evidence: lọc theo represent code
-        selectedAspects = aspects.filter((aspect) => representCodes.includes(aspect.represent));
+        // Test Online, Evidence: lọc theo tên aspect
+        selectedAspects = aspects.filter((aspect) => aspectNames.includes(aspect.name));
       }
 
       for (const aspect of selectedAspects) {

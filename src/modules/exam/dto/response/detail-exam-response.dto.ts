@@ -9,9 +9,6 @@ export class AspectDto {
   name: string;
 
   @Expose()
-  represent: string;
-
-  @Expose()
   score: number;
 }
 
