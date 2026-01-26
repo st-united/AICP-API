@@ -226,7 +226,6 @@ export class ExamService {
                 select: {
                   id: true,
                   name: true,
-                  represent: true,
                   aspectPillars: {
                     select: {
                       pillar: { select: { id: true } },
@@ -252,7 +251,6 @@ export class ExamService {
           .map((aspectSnapshot) => ({
             id: aspectSnapshot.aspect.id,
             name: aspectSnapshot.aspect.name,
-            represent: aspectSnapshot.aspect.represent,
             score: Number(aspectSnapshot.score),
           }));
 
@@ -660,7 +658,6 @@ export class ExamService {
                     select: {
                       id: true,
                       name: true,
-                      represent: true,
                       aspectPillars: {
                         select: {
                           pillar: { select: { id: true } },
@@ -688,7 +685,6 @@ export class ExamService {
               .map((aspectSnapshot) => ({
                 id: aspectSnapshot.aspect.id,
                 name: aspectSnapshot.aspect.name,
-                represent: aspectSnapshot.aspect.represent,
                 score: Number(aspectSnapshot.score),
               }));
 

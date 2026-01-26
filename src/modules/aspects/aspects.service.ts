@@ -12,7 +12,6 @@ export class AspectsService {
         id: true,
         name: true,
         description: true,
-        represent: true,
         dimension: true,
       },
     });

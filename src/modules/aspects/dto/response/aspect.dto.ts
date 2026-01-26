@@ -26,12 +26,6 @@ export class AspectDto {
 
   @Expose()
   @ApiProperty({
-    example: 'B1',
-  })
-  represent: string;
-
-  @Expose()
-  @ApiProperty({
     example: 'TOOLSET',
     enum: CompetencyDimension,
   })
