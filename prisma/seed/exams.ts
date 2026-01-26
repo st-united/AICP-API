@@ -13,7 +13,9 @@ export async function seedExams(
   prisma: PrismaClient,
   userMap: { [email: string]: { id: string } },
   examSets: ExamSet[],
-  examLevels: ExamLevel[]
+  examLevels: ExamLevel[],
+  competencyPillars: CompetencyPillar[],
+  competencyAspects: CompetencyAspect[]
 ) {
   const examSetMap = Object.fromEntries(examSets.map((es) => [es.name, es]));
 
@@ -174,7 +176,6 @@ export async function seedExams(
         examLevelId: examLevelMap[data.examLevelName].id,
         readyToWorkTier: ReadyToWorkTier.NOT_READY,
         sfiaLevel: sfiaLevels[Math.floor(Math.random() * sfiaLevels.length)],
-        assessmentMethodId: examSetMap[data.examSetName].assessmentMethodId,
       },
     })
   );
@@ -185,36 +186,26 @@ export async function seedExams(
     const exam = exams[i];
     const data = examData[i];
 
-    // Get pillars for this framework through PillarFramework junction table
-    const pillarFrameworks = await prisma.pillarFramework.findMany({
-      where: { frameworkId: examSetMap[data.examSetName].frameworkId },
-      include: { pillar: true },
-    });
+    const relatedPillars = competencyPillars.filter(
+      (pillar) => pillar.frameworkId === examSetMap[data.examSetName].frameworkId
+    );
 
     // Tạo ExamAspectSnapshot trước
     const aspectSnapshots: { pillarId: string; totalScore: number; aspectCount: number }[] = [];
 
-    for (const pf of pillarFrameworks) {
-      const pillar = pf.pillar;
-
-      // Get aspects for this pillar through AspectPillar junction table
-      const aspectPillars = await prisma.aspectPillar.findMany({
-        where: { pillarId: pillar.id },
-        include: { aspect: true },
-      });
-
+    for (const pillar of relatedPillars) {
+      const relatedAspects = competencyAspects.filter((aspect) => aspect.pillarId === pillar.id);
       let totalWeightedScore = 0;
       let totalWeight = 0;
       let aspectCount = 0;
 
-      const aspectPromises = aspectPillars.map(async (ap) => {
-        const aspect = ap.aspect;
+      const aspectPromises = relatedAspects.map(async (aspect) => {
         // Lấy điểm số từ data hoặc tạo random
         const aspectScoresForDimension = data.aspectScores[pillar.dimension] || {};
         const score = aspectScoresForDimension[aspect.name] ?? Math.random() * 2 + 1; // Random 1-3 nếu không có
 
-        // Tính tổng trọng số cho pillar - lấy từ junction table
-        const weight = Number(ap.weightWithinDimension);
+        // Tính tổng trọng số cho pillar
+        const weight = Number(aspect.weightWithinDimension);
         totalWeightedScore += score * weight;
         totalWeight += weight;
         aspectCount++;

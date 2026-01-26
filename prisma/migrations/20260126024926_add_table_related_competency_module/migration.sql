@@ -1,26 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the column `pillar_id` on the `CompetencyAspect` table. All the data in the column will be lost.
-  - You are about to drop the column `weight_within_dimension` on the `CompetencyAspect` table. All the data in the column will be lost.
-  - You are about to drop the column `framework_id` on the `CompetencyPillar` table. All the data in the column will be lost.
-  - You are about to drop the column `weight_within_dimension` on the `CompetencyPillar` table. All the data in the column will be lost.
-
-*/
--- DropForeignKey
-ALTER TABLE "public"."CompetencyAspect" DROP CONSTRAINT "CompetencyAspect_pillar_id_fkey";
-
--- DropForeignKey
-ALTER TABLE "public"."CompetencyPillar" DROP CONSTRAINT "CompetencyPillar_framework_id_fkey";
-
--- AlterTable
-ALTER TABLE "public"."CompetencyAspect" DROP COLUMN "pillar_id",
-DROP COLUMN "weight_within_dimension";
-
--- AlterTable
-ALTER TABLE "public"."CompetencyPillar" DROP COLUMN "framework_id",
-DROP COLUMN "weight_within_dimension";
-
 -- CreateTable
 CREATE TABLE "public"."AspectPillar" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),

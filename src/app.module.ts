@@ -21,6 +21,7 @@ import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
 import { CompetencyFrameworkModule } from './modules/competency-framework/competency-framework.module';
+import { MigrationModule } from './modules/migration/migration.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { CompetencyFrameworkModule } from './modules/competency-framework/compet
     ExportModule,
     AspectsModule,
     CompetencyFrameworkModule,
+    MigrationModule,
   ],
   providers: [
     {
