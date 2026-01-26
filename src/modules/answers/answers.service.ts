@@ -173,7 +173,6 @@ export class AnswersService {
 
       const validPillarIds = pillars.map((p) => p.id);
 
-      // Get all aspect-pillar relationships with weights
       const aspectPillars = await this.prisma.aspectPillar.findMany({
         where: { pillarId: { in: validPillarIds } },
         select: {
@@ -187,7 +186,6 @@ export class AnswersService {
         },
       });
 
-      // Get pillar weights from framework (assuming we need the framework from examSet)
       const examSet = await this.prisma.examSet.findUnique({
         where: { id: existingExam.examSetId },
         select: { frameworkId: true },
@@ -249,7 +247,7 @@ export class AnswersService {
       const overallScore = +Object.values(totalScorePerPillar)
         .reduce((acc, s) => acc + s.weightedScore * s.weightWithinDimension, 0)
         .toFixed(2);
-      const level = this.getSFIALevel(overallScore);
+      const level = await this.getSFIALevel(overallScore);
       const levelNumber = level.split('_')[1];
       const matchedExamLevels = Object.values(ExamLevelEnum).filter((level) =>
         level.startsWith(`LEVEL_${levelNumber}_`)
@@ -263,12 +261,20 @@ export class AnswersService {
         },
       });
 
+      const levelRecord = await this.prisma.level.findFirst({
+        where: {
+          sfiaLevel: level,
+          isActive: true,
+        },
+      });
+
       await this.prisma.exam.update({
         where: { id: examId },
         data: {
           overallScore,
           examStatus: ExamStatus.SUBMITTED,
           sfiaLevel: level,
+          levelId: levelRecord?.id || null,
           examLevelId: examLevels ? examLevels.id : null,
         },
       });
@@ -304,14 +310,40 @@ export class AnswersService {
     });
   }
 
-  private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore < 2) return SFIALevel.LEVEL_1_AWARENESS;
-    if (overallScore < 3) return SFIALevel.LEVEL_2_FOUNDATION;
-    if (overallScore < 4) return SFIALevel.LEVEL_3_APPLICATION;
-    if (overallScore < 5) return SFIALevel.LEVEL_4_INTEGRATION;
-    if (overallScore < 6) return SFIALevel.LEVEL_5_INNOVATION;
-    if (overallScore < 7) return SFIALevel.LEVEL_6_LEADERSHIP;
-    return SFIALevel.LEVEL_7_MASTERY;
+  private async getSFIALevel(overallScore: number): Promise<SFIALevel> {
+    let numericValue = 1;
+    if (overallScore >= 7) {
+      numericValue = 7;
+    } else if (overallScore >= 6) {
+      numericValue = 6;
+    } else if (overallScore >= 5) {
+      numericValue = 5;
+    } else if (overallScore >= 4) {
+      numericValue = 4;
+    } else if (overallScore >= 3) {
+      numericValue = 3;
+    } else if (overallScore >= 2) {
+      numericValue = 2;
+    }
+
+    const levelRecord = await this.prisma.level.findFirst({
+      where: {
+        numericValue,
+        isActive: true,
+      },
+    });
+
+    if (!levelRecord) {
+      if (overallScore < 2) return SFIALevel.LEVEL_1_AWARENESS;
+      if (overallScore < 3) return SFIALevel.LEVEL_2_FOUNDATION;
+      if (overallScore < 4) return SFIALevel.LEVEL_3_APPLICATION;
+      if (overallScore < 5) return SFIALevel.LEVEL_4_INTEGRATION;
+      if (overallScore < 6) return SFIALevel.LEVEL_5_INNOVATION;
+      if (overallScore < 7) return SFIALevel.LEVEL_6_LEADERSHIP;
+      return SFIALevel.LEVEL_7_MASTERY;
+    }
+
+    return levelRecord.sfiaLevel;
   }
 
   private async handleSelectionAnswers(userId, params: userAnswerDto) {

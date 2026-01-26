@@ -1,7 +1,7 @@
 import { PrismaClient, CompetencyDimension, CompetencyPillar } from '@prisma/client';
 
-export async function seedAspects(prisma: PrismaClient, pillars: CompetencyPillar[]) {
-  const pillarMap = Object.fromEntries(pillars.map((c) => [c.name, c]));
+export async function seedAspects(prisma: PrismaClient, pillar: CompetencyPillar[]) {
+  const pillarMap = Object.fromEntries(pillar.map((c) => [c.name, c]));
 
   const aspectData = [
     // Mindset
@@ -114,30 +114,15 @@ export async function seedAspects(prisma: PrismaClient, pillars: CompetencyPilla
       description: 'Ability to innovate and develop custom AI solutions.',
     },
   ];
-
-  // Step 1: Create aspects without pillarId and weightWithinDimension
-  const createdAspects = await Promise.all(
-    aspectData.map((catData) =>
-      prisma.competencyAspect.create({
-        data: {
-          name: catData.name,
-          description: catData.description,
-          dimension: catData.dimension,
-          represent: catData.represent,
-        },
-      })
-    )
-  );
-
-  // Step 2: Create AspectPillar junction records
-  await prisma.aspectPillar.createMany({
-    data: createdAspects.map((aspect, index) => ({
-      aspectId: aspect.id,
-      pillarId: pillarMap[aspectData[index].dimension].id,
-      weightWithinDimension: aspectData[index].weightWithinDimension,
+  await prisma.competencyAspect.createMany({
+    data: aspectData.map((catData) => ({
+      name: catData.name,
+      description: catData.description,
+      dimension: catData.dimension,
+      weightWithinDimension: catData.weightWithinDimension,
+      represent: catData.represent,
+      pillarId: pillarMap[catData.dimension].id,
     })),
     skipDuplicates: false,
   });
-
-  return createdAspects;
 }
