@@ -21,6 +21,8 @@ import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
 import { CompetencyFrameworkModule } from './modules/competency-framework/competency-framework.module';
+import { CompetencyPillarModule } from './modules/competency-pillar/competency-pillar.module';
+import { LevelScaleModule } from './modules/level-scale/level-scale.module';
 import { MigrationModule } from './modules/migration/migration.module';
 
 @Module({
@@ -68,6 +70,8 @@ import { MigrationModule } from './modules/migration/migration.module';
     ExportModule,
     AspectsModule,
     CompetencyFrameworkModule,
+    CompetencyPillarModule,
+    LevelScaleModule,
     MigrationModule,
   ],
   providers: [
