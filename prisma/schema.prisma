@@ -159,7 +159,7 @@ model LevelScale {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  levels     Level[]
+  levels Level[]
 }
 
 model Course {
@@ -256,7 +256,7 @@ model CompetencyAspect {
   id                    String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                  String                             @db.VarChar
   represent             String                             @default("") @db.VarChar
-  description           String                             @db.Text
+  description           String?                            @db.Text
   pillarId              String                             @map("pillar_id") @db.Uuid
   dimension             CompetencyDimension
   weightWithinDimension Decimal                            @map("weight_within_dimension") @db.Decimal(3, 2)
@@ -268,6 +268,7 @@ model CompetencyAspect {
   courseAspects         CourseAspect[]
   aspectPillars         AspectPillar[]
   assessmentMethods     CompetencyAspectAssessmentMethod[]
+  status                CompetencyAspectStatus             @default(DRAFT) @map("status")
 
   @@unique([pillarId, name])
 }
@@ -423,15 +424,15 @@ model InterviewRequest {
 }
 
 model CompetencyFramework {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  domainId     String   @map("domain_id") @db.Uuid
-  version      String   @default("1.0") @db.VarChar
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-  description  String?
-  name         String   @db.VarChar
-  searchText   String?  @map("search_text") @db.Text
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domainId    String   @map("domain_id") @db.Uuid
+  version     String   @default("1.0") @db.VarChar
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  description String?
+  name        String   @db.VarChar
+  searchText  String?  @map("search_text") @db.Text
 
   assessment       CompetencyAssessment[]
   domain           Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
@@ -687,6 +688,7 @@ model AspectPillar {
   levels AspectPillarLevel[]
 
   @@unique([aspectId, pillarId])
+  @@index([pillarId])
 }
 
 model PillarFramework {
@@ -729,8 +731,8 @@ model FrameworkLevel {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  framework    CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  level        Level               @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  framework CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  level     Level               @relation(fields: [levelId], references: [id], onDelete: Cascade)
 
   @@unique([frameworkId, levelId])
   @@index([frameworkId])
@@ -855,6 +857,12 @@ enum SlotStatus {
   AVAILABLE
   ALMOST_FULL
   FULL
+}
+
+enum CompetencyAspectStatus {
+  DRAFT
+  AVAILABLE
+  REFERENCED
 }
 
 enum CourseTypes {
