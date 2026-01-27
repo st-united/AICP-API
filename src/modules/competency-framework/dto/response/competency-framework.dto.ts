@@ -1,7 +1,96 @@
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { CompetencyPillarDto } from './competency-pillar.dto';
+import { AssessmentMethodDto } from './assessment-method.dto';
+
+export class LevelDto {
+  @Expose()
+  @ApiProperty({
+    example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+    description: 'ID của Level',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 'Level 1-2',
+    description: 'Mô tả của Level',
+  })
+  description: string;
+}
+
+export class AspectDto {
+  @Expose()
+  @ApiProperty({
+    example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+    description: 'ID của Aspect',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 'Giao Tiếp Hiệu Quả',
+    description: 'Tên của Aspect',
+  })
+  name: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 3,
+    description: 'Trọng số của tiêu chí trong pillar',
+  })
+  weightDimension: number;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Phương pháp đánh giá của tiêu chí',
+  })
+  assessmentMethods?: AssessmentMethodDto[];
+
+  @Expose()
+  @ApiProperty({
+    description: 'Danh sách các cấp độ (level) thuộc tiêu chí',
+    type: [LevelDto],
+  })
+  levels: LevelDto[];
+}
+
+export class CompetencyPillarDto {
+  @Expose()
+  @ApiProperty({
+    example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+    description: 'ID của Pillar',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 'Mindset',
+    description: 'Tên của Pillar',
+  })
+  name: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 'MINDSET',
+    description: 'Dimension của Pillar',
+  })
+  dimension: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 3,
+    description: 'Trọng số của pillar',
+  })
+  weightDimension: number;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Danh sách các Aspects thuộc Competency Pillar',
+    type: [AspectDto],
+  })
+  aspects: AspectDto[];
+}
 
 export class CompetencyFrameworkDto {
   @Expose()
@@ -67,4 +156,11 @@ export class CompetencyFrameworkDto {
     description: 'Ngày cập nhật',
   })
   updatedAt?: Date;
+
+  @Expose()
+  @ApiProperty({
+    description: 'Danh sách các cấp độ (level) của khung năng lực',
+    type: [LevelDto],
+  })
+  levels?: LevelDto[];
 }

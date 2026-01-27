@@ -1,8 +1,85 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsUUID, IsBoolean, IsObject, IsNotEmpty } from 'class-validator';
-import { CompetencyPillarDto } from '../response/competency-pillar.dto';
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
-import { Transform } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
+
+export class AspectLevelDto {
+  @Expose()
+  @ApiProperty({
+    example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+    description: 'ID của Aspect Level',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 'Level 1-2: Thừa nhận AI thay đổi công việc, sẵn sàng học',
+    description: 'Mô tả của từng cấp độ trong tiêu chí',
+  })
+  description: string;
+}
+
+export class AspectDto {
+  @Expose()
+  @ApiProperty({
+    example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+    description: 'ID của Aspect',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 3,
+    description: 'Trọng số của tiêu chí trong pillar',
+  })
+  weightDimension: number;
+
+  @Expose()
+  @Type(() => AspectLevelDto)
+  @ApiProperty({
+    description: 'Danh sách các cấp độ (level) thuộc tiêu chí',
+  })
+  levels: AspectLevelDto[];
+}
+
+export class CompetencyPillarDto {
+  @Expose()
+  @ApiProperty({
+    example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+    description: 'ID của Competency Pillar',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 3,
+    description: 'Trọng số của pillar',
+  })
+  weightDimension: number;
+
+  @Expose()
+  @Type(() => AspectDto)
+  @ApiProperty({
+    description: 'Danh sách các Aspects thuộc Competency Pillar',
+  })
+  aspects: AspectDto[];
+}
+
+export class FrameworkLevelDto {
+  @Expose()
+  @ApiProperty({
+    example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+    description: 'ID của level trong competency framework',
+  })
+  id: string;
+
+  @Expose()
+  @ApiProperty({
+    example: 'Level 1-2: Thừa nhận AI thay đổi công việc, sẵn sàng học',
+    description: 'Mô tả của từng cấp độ trong competency framework',
+  })
+  description: string;
+}
 
 export class CreateCompetencyFrameworkDto {
   @ApiProperty({ example: 'AI Framework' })
@@ -88,6 +165,23 @@ export class CreateCompetencyFrameworkDto {
     return value;
   })
   isActive: boolean;
+
+  @Expose()
+  @Type(() => FrameworkLevelDto)
+  @ApiProperty({
+    example: [
+      {
+        id: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1',
+        description: 'Level 1-2: Thừa nhận AI thay đổi công việc, sẵn sàng học',
+      },
+      {
+        id: 'a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6',
+        description: 'Level 3-4: Ứng dụng AI trong công việc hàng ngày',
+      },
+    ],
+    description: 'Danh sách các cấp độ (level) thuộc tiêu chí',
+  })
+  levels: FrameworkLevelDto[];
 }
 
 export class UpdateCompetencyFrameworkDto extends CreateCompetencyFrameworkDto {}

@@ -1,36 +1,87 @@
 import { CompetencyDimension } from '@prisma/client';
-import { CompetencyPillarDto } from '../dto/response/competency-pillar.dto';
-import { AspectPayload, AssessmentMethodPayload, PillarPayload } from '../types/competency-framework.types';
+import {
+  CompetencyFrameworkDto,
+  LevelDto,
+  AspectDto,
+  CompetencyPillarDto as PillarDto,
+} from '../dto/response/competency-framework.dto';
 
-export const mapAssessmentMethodDto = (item: AssessmentMethodPayload) => ({
-  id: item.assessmentMethod.id,
-  name: item.assessmentMethod.name,
-  weightWithinDimension: item.weightWithinDimension ? Number(item.weightWithinDimension) * 100 : undefined,
+export const mapLevelDto = (level: any): LevelDto => ({
+  id: level.levelId,
+  description: level.description,
 });
 
-export const mapAspectDto = (aspect: AspectPayload) => ({
-  id: aspect.id,
-  name: aspect.name,
-  description: aspect.description,
-  represent: aspect.represent,
-  dimension: aspect.dimension,
-  weightDimension: aspect.weightWithinDimension ? Number(aspect.weightWithinDimension) * 100 : undefined,
-  assessmentMethods: aspect.assessmentMethods.map((item) => mapAssessmentMethodDto(item)),
+export const mapAspectDto = (aspectPillar: any): AspectDto => ({
+  id: aspectPillar.aspect?.id,
+  name: aspectPillar.aspect?.name,
+  weightDimension: aspectPillar.weightWithinDimension ? Number(aspectPillar.weightWithinDimension) * 100 : 0,
+  levels: aspectPillar.levels?.map((level: any) => mapLevelDto(level)) || [],
 });
 
-export const mapPillarDto = (pillar: PillarPayload): CompetencyPillarDto => ({
-  id: pillar.id,
-  name: pillar.name,
-  dimension: pillar.dimension,
-  weightDimension: pillar.weightWithinDimension ? Number(pillar.weightWithinDimension) * 100 : undefined,
-  aspects: pillar.aspects.map((aspect) => mapAspectDto(aspect)),
+export const mapCompetencyPillarDto = (pillarFramework: any): PillarDto => ({
+  id: pillarFramework.pillar?.id,
+  name: pillarFramework.pillar?.name,
+  dimension: pillarFramework.pillar?.dimension,
+  weightDimension: pillarFramework.weightWithinDimension ? Number(pillarFramework.weightWithinDimension) * 100 : 0,
+  aspects: pillarFramework.pillar?.aspectPillars?.map((aspectPillar: any) => mapAspectDto(aspectPillar)) || [],
 });
 
-export const buildPillarsByDimension = (pillars: PillarPayload[]): Record<CompetencyDimension, CompetencyPillarDto> =>
-  pillars.reduce(
-    (acc, pillar) => {
-      acc[pillar.dimension] = mapPillarDto(pillar);
-      return acc;
+export const mapCompetencyFrameworkDto = (framework: any): CompetencyFrameworkDto => {
+  const pillars = framework.pillars || [];
+  const mindsetPillar = pillars.find((p: any) => p.pillar?.dimension === CompetencyDimension.MINDSET);
+  const skillsetPillar = pillars.find((p: any) => p.pillar?.dimension === CompetencyDimension.SKILLSET);
+  const toolsetPillar = pillars.find((p: any) => p.pillar?.dimension === CompetencyDimension.TOOLSET);
+
+  return {
+    id: framework.id,
+    name: framework.name,
+    domain: {
+      id: framework.domain?.id,
+      name: framework.domain?.name,
+      description: framework.domain?.description,
+      isActive: framework.domain?.isActice,
     },
-    {} as Record<CompetencyDimension, CompetencyPillarDto>
-  );
+    mindset: mindsetPillar ? mapCompetencyPillarDto(mindsetPillar) : undefined,
+    skillset: skillsetPillar ? mapCompetencyPillarDto(skillsetPillar) : undefined,
+    toolset: toolsetPillar ? mapCompetencyPillarDto(toolsetPillar) : undefined,
+    isActive: framework.isActive,
+    createdAt: framework.createdAt,
+    updatedAt: framework.updatedAt,
+    levels: framework.levels?.map((level: any) => mapLevelDto(level)) || [],
+  };
+};
+
+export const mapAspectLevelDto = (level: any) => ({
+  id: level.id,
+  levelId: level.levelId,
+  description: level.description,
+  name: level.level?.name,
+});
+
+export const mapFrameworkLevelDto = (level: any) => ({
+  id: level.id,
+  levelId: level.levelId,
+  description: level.description,
+  name: level.level?.name,
+});
+
+export const mapAspectWithLevelsDto = (aspectPillar: any) => ({
+  id: aspectPillar.aspect?.id,
+  name: aspectPillar.aspect?.name,
+  description: aspectPillar.aspect?.description,
+  represent: aspectPillar.aspect?.represent,
+  dimension: aspectPillar.aspect?.dimension,
+  weightDimension: aspectPillar.weightWithinDimension ? Number(aspectPillar.weightWithinDimension) * 100 : undefined,
+  levels: aspectPillar.levels?.map((level: any) => mapAspectLevelDto(level)) || [],
+});
+
+export const mapPillarDto = (pillarFramework: any) => ({
+  id: pillarFramework.pillar?.id,
+  name: pillarFramework.pillar?.name,
+  dimension: pillarFramework.pillar?.dimension,
+  weightDimension: pillarFramework.weightWithinDimension
+    ? Number(pillarFramework.weightWithinDimension) * 100
+    : undefined,
+  aspects:
+    pillarFramework.pillar?.aspectPillars?.map((aspectPillar: any) => mapAspectWithLevelsDto(aspectPillar)) || [],
+});

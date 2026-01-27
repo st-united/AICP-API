@@ -1,50 +1,53 @@
 import { BadRequestException } from '@nestjs/common';
 import { CompetencyDimension, Prisma } from '@prisma/client';
-import { CompetencyPillarDto } from '../dto/response/competency-pillar.dto';
-
-const pillarPrefixByDimension: Record<CompetencyDimension, string> = {
-  [CompetencyDimension.MINDSET]: 'A',
-  [CompetencyDimension.SKILLSET]: 'B',
-  [CompetencyDimension.TOOLSET]: 'C',
-};
-
-const getPillarPrefix = (dimension: CompetencyDimension): string => pillarPrefixByDimension[dimension];
+import { CompetencyPillarDto, FrameworkLevelDto } from '../dto/request/create-competency-framework.dto';
 
 export const persistPillars = async (
   tx: Prisma.TransactionClient,
   frameworkId: string,
-  pillars: Array<CompetencyPillarDto | undefined>
+  pillars: Array<CompetencyPillarDto | undefined>,
+  levels?: FrameworkLevelDto[]
 ): Promise<void> => {
+  if (levels && levels.length > 0) {
+    for (const level of levels) {
+      await tx.frameworkLevel.create({
+        data: {
+          frameworkId,
+          levelId: level.id,
+          description: level.description,
+        },
+      });
+    }
+  }
+
   for (const pillar of pillars) {
-    if (!pillar) continue;
-    const createdPillar = await tx.competencyPillar.create({
+    if (!pillar || !pillar.id) continue;
+
+    await tx.pillarFramework.create({
       data: {
-        name: pillar.name,
-        dimension: pillar.dimension,
+        pillarId: pillar.id,
         frameworkId,
         weightWithinDimension: pillar.weightDimension / 100,
       },
     });
-    for (const [index, aspect] of (pillar.aspects || []).entries()) {
-      const createdAspect = await tx.competencyAspect.create({
+
+    for (const aspect of pillar.aspects || []) {
+      if (!aspect.id) continue;
+
+      const createdAspectPillar = await tx.aspectPillar.create({
         data: {
-          name: aspect.name,
-          pillarId: createdPillar.id,
-          description: aspect.description,
-          represent: `${getPillarPrefix(pillar.dimension)}${index + 1}`,
+          aspectId: aspect.id,
+          pillarId: pillar.id,
           weightWithinDimension: aspect.weightDimension / 100,
-          dimension: pillar.dimension,
         },
       });
-      for (const method of aspect.assessmentMethods || []) {
-        if (!method?.id) {
-          throw new BadRequestException('Phương pháp đánh giá không hợp lệ');
-        }
-        await tx.competencyAspectAssessmentMethod.create({
+
+      for (const level of aspect.levels || []) {
+        await tx.aspectPillarLevel.create({
           data: {
-            competencyAspectId: createdAspect.id,
-            assessmentMethodId: method.id,
-            weightWithinDimension: ((method as { weightWithinDimension?: number }).weightWithinDimension ?? 0) / 100,
+            aspectPillarId: createdAspectPillar.id,
+            levelId: level.id,
+            description: level.description,
           },
         });
       }

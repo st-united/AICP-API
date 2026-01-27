@@ -4,33 +4,32 @@ import {
   CreateCompetencyFrameworkDto,
   UpdateCompetencyFrameworkDto,
 } from './dto/request/create-competency-framework.dto';
-import { CompetencyPillarDto } from './dto/response/competency-pillar.dto';
 import { CompetencyFrameworkDto } from './dto/response/competency-framework.dto';
 import { SearchCompetencyFrameworkRequestDto } from './dto/request/search-competency-framework.dto';
 import { ChangeStatusCompetencyFrameworkDto } from './dto/request/change-status-competency-framework.dto';
 import { convertStringToEnglish, isNullOrEmpty } from '@app/common/utils/stringUtils';
 import { DomainDto } from '../domain/dto/response/domain.dto';
 import { CompetencyDimension, Prisma } from '@prisma/client';
-import { log } from 'console';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { Order } from '@Constant/enums';
 import {
-  validateActivePillars,
+  validateSinglePillarAspects,
   validateDomain,
-  validatePillar,
-  validatePillarSet,
+  validatePillars,
   validatePublishedUniqueness,
+  validateFrameworkLevels,
 } from './validator/competency-framework.validator';
+import { validateCompetencyFrameworkForPublish } from './validator/validate-competency-framework-publish.validator';
 import { persistPillars } from './getter/competency-framework.getter';
-import { buildPillarsByDimension } from './mapper/competency-framework.mapper';
 import { competencyFrameworkSelect, CompetencyFrameworkPayload } from './types/competency-framework.types';
+import { mapCompetencyFrameworkDto } from './mapper/competency-framework.mapper';
 
 @Injectable()
 export class CompetencyFrameworkService {
   constructor(private readonly prismaService: PrismaService) {}
 
   private async validateCreateRequest(request: CreateCompetencyFrameworkDto) {
-    const { name, domain, mindset, skillset, toolset, isActive } = request;
+    const { name, domain, mindset, skillset, toolset, isActive, levels } = request;
     if (isActive && isNullOrEmpty(name)) {
       throw new BadRequestException('Tên khung năng lực không được rỗng');
     }
@@ -42,20 +41,15 @@ export class CompetencyFrameworkService {
       });
     }
 
-    if (isActive) {
-      validateActivePillars(mindset, skillset, toolset, true);
-    }
-    await validatePillarSet(
-      (pillar, active) => validatePillar(pillar, active, this.prismaService),
-      mindset,
-      skillset,
-      toolset,
-      isActive
-    );
+    await validatePillars(mindset, skillset, toolset, isActive, this.prismaService);
+    await validateSinglePillarAspects(mindset.aspects, isActive, this.prismaService);
+    await validateSinglePillarAspects(skillset.aspects, isActive, this.prismaService);
+    await validateSinglePillarAspects(toolset.aspects, isActive, this.prismaService);
+    await validateFrameworkLevels(levels, isActive, this.prismaService);
   }
 
   private async validateUpdateRequest(competencyFrameworkId: string, request: UpdateCompetencyFrameworkDto) {
-    const { name, domain, mindset, skillset, toolset, isActive } = request;
+    const { name, domain, mindset, skillset, toolset, isActive, levels } = request;
 
     const existingFramework = await this.prismaService.competencyFramework.findUnique({
       where: { id: competencyFrameworkId },
@@ -76,50 +70,53 @@ export class CompetencyFrameworkService {
     if (effectiveIsActive && isNullOrEmpty(effectiveName)) {
       throw new BadRequestException('Tên khung năng lực không được rỗng');
     }
-    if (effectiveIsActive && !isNullOrEmpty(name) && effectiveDomainId) {
+
+    if (domain !== undefined) {
+      await validateDomain(domain, effectiveIsActive, this.prismaService);
+    }
+
+    if (effectiveIsActive && !isNullOrEmpty(effectiveName) && effectiveDomainId) {
       await validatePublishedUniqueness(this.prismaService, {
-        name,
+        name: effectiveName,
         domainId: effectiveDomainId,
         excludeId: competencyFrameworkId,
       });
     }
 
-    await validateDomain(
-      effectiveDomainId ? ({ id: effectiveDomainId } as DomainDto) : undefined,
-      effectiveIsActive,
-      this.prismaService
-    );
+    if (mindset || skillset || toolset) {
+      await validatePillars(mindset, skillset, toolset, effectiveIsActive, this.prismaService);
 
-    if (effectiveIsActive) {
-      validateActivePillars(mindset, skillset, toolset, false);
+      if (mindset) {
+        await validateSinglePillarAspects(mindset.aspects, effectiveIsActive, this.prismaService);
+      }
+      if (skillset) {
+        await validateSinglePillarAspects(skillset.aspects, effectiveIsActive, this.prismaService);
+      }
+      if (toolset) {
+        await validateSinglePillarAspects(toolset.aspects, effectiveIsActive, this.prismaService);
+      }
     }
 
-    await validatePillarSet(
-      (pillar, active) => validatePillar(pillar, active, this.prismaService),
-      mindset,
-      skillset,
-      toolset,
-      effectiveIsActive
-    );
+    if (levels !== undefined) {
+      await validateFrameworkLevels(levels, effectiveIsActive, this.prismaService);
+    }
   }
 
   async createCompetencyFramework(request: CreateCompetencyFrameworkDto): Promise<void> {
     try {
       await this.validateCreateRequest(request);
-      const { name, domain, mindset, skillset, toolset, isActive } = request;
+      const { name, domain, mindset, skillset, toolset, isActive, levels } = request;
 
       await this.prismaService.$transaction(async (tx) => {
         const competencyFramework = await tx.competencyFramework.create({
           data: {
             name,
             domain: domain ? { connect: { id: domain.id } } : undefined,
-            searchText: name ? convertStringToEnglish(name, true) : '',
             isActive,
           },
         });
 
-        await persistPillars(tx, competencyFramework.id, [mindset, skillset, toolset]);
-        console.log('Competency framework created with ID:', competencyFramework.id);
+        await persistPillars(tx, competencyFramework.id, [mindset, skillset, toolset], levels);
       });
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
@@ -133,39 +130,66 @@ export class CompetencyFrameworkService {
   async updateCompetencyFramework(competencyFrameworkId: string, request: UpdateCompetencyFrameworkDto): Promise<void> {
     try {
       await this.validateUpdateRequest(competencyFrameworkId, request);
-      const { name, domain, mindset, skillset, toolset, isActive } = request;
+      const { name, domain, mindset, skillset, toolset, isActive, levels } = request;
 
       await this.prismaService.$transaction(async (tx) => {
-        await tx.competencyFramework.update({
-          where: { id: competencyFrameworkId },
-          data: {
-            name: name ?? undefined,
-            domain: domain?.id ? { connect: { id: domain.id } } : undefined,
-            searchText: name ? convertStringToEnglish(name, true) : undefined,
-            isActive: isActive,
-          },
-        });
+        const updateData: any = {};
 
-        await tx.competencyAssessment.deleteMany({
-          where: { frameworkId: competencyFrameworkId },
-        });
-        await tx.competencyAspectAssessmentMethod.deleteMany({
-          where: {
-            competencyAspect: {
-              competencyPillar: { frameworkId: competencyFrameworkId },
+        if (name !== undefined) {
+          updateData.name = name;
+        }
+
+        if (domain !== undefined) {
+          if (domain?.id) {
+            updateData.domain = { connect: { id: domain.id } };
+          } else {
+            updateData.domain = { disconnect: true };
+          }
+        }
+
+        if (isActive !== undefined) {
+          updateData.isActive = isActive;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await tx.competencyFramework.update({
+            where: { id: competencyFrameworkId },
+            data: updateData,
+          });
+        }
+
+        if (mindset || skillset || toolset || levels !== undefined) {
+          await tx.aspectPillarLevel.deleteMany({
+            where: {
+              aspectPillar: {
+                pillar: {
+                  pillarFrameworks: {
+                    some: { frameworkId: competencyFrameworkId },
+                  },
+                },
+              },
             },
-          },
-        });
-        await tx.competencyAspect.deleteMany({
-          where: {
-            competencyPillar: { frameworkId: competencyFrameworkId },
-          },
-        });
-        await tx.competencyPillar.deleteMany({
-          where: { frameworkId: competencyFrameworkId },
-        });
+          });
+          await tx.aspectPillar.deleteMany({
+            where: {
+              pillar: {
+                pillarFrameworks: {
+                  some: { frameworkId: competencyFrameworkId },
+                },
+              },
+            },
+          });
+          await tx.pillarFramework.deleteMany({
+            where: { frameworkId: competencyFrameworkId },
+          });
 
-        await persistPillars(tx, competencyFrameworkId, [mindset, skillset, toolset]);
+          if (levels !== undefined) {
+            await tx.frameworkLevel.deleteMany({
+              where: { frameworkId: competencyFrameworkId },
+            });
+          }
+          await persistPillars(tx, competencyFrameworkId, [mindset, skillset, toolset], levels);
+        }
       });
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
@@ -239,24 +263,12 @@ export class CompetencyFrameworkService {
     });
 
     if (!framework) {
-      throw new NotFoundException('Khung năng lực không tồn tại');
+      throw new NotFoundException('Không thể tìm thấy khung năng lực');
     }
 
-    const pillarByDimension = buildPillarsByDimension(framework.pillars);
+    const result = mapCompetencyFrameworkDto(framework);
 
-    const result: CompetencyFrameworkDto = {
-      id: framework.id,
-      name: framework.name,
-      isActive: framework.isActive,
-      domain: framework.domain,
-      createdAt: framework.createdAt,
-      updatedAt: framework.updatedAt,
-      mindset: pillarByDimension[CompetencyDimension.MINDSET],
-      skillset: pillarByDimension[CompetencyDimension.SKILLSET],
-      toolset: pillarByDimension[CompetencyDimension.TOOLSET],
-    };
-
-    return new ResponseItem(result);
+    return new ResponseItem(result, 'Lấy chi tiết khung năng lực thành công');
   }
 
   async changeStatusCompetencyFramework(
@@ -276,7 +288,7 @@ export class CompetencyFrameworkService {
       if (request.isActive === framework.isActive) {
         throw new BadRequestException('Khung năng lực đang ở trạng thái này');
       }
-      console.log(request.isActive);
+
       if (request.isActive === false) {
         await this.prismaService.$transaction(async (tx) => {
           await tx.competencyFramework.update({
@@ -291,27 +303,7 @@ export class CompetencyFrameworkService {
         throw new BadRequestException('Khung năng lực đã ở trạng thái phát hành');
       }
 
-      await validatePublishedUniqueness(this.prismaService, {
-        name: framework.name,
-        domainId: framework.domain.id,
-        excludeId: competencyFrameworkId,
-      });
-
-      await validateDomain({ id: framework.domain.id } as DomainDto, true, this.prismaService);
-
-      const pillarByDimension = buildPillarsByDimension(framework.pillars);
-      const mindset = pillarByDimension[CompetencyDimension.MINDSET];
-      const skillset = pillarByDimension[CompetencyDimension.SKILLSET];
-      const toolset = pillarByDimension[CompetencyDimension.TOOLSET];
-
-      validateActivePillars(mindset, skillset, toolset, true);
-      await validatePillarSet(
-        (pillar, active) => validatePillar(pillar, active, this.prismaService),
-        mindset,
-        skillset,
-        toolset,
-        true
-      );
+      await validateCompetencyFrameworkForPublish(framework, this.prismaService);
 
       await this.prismaService.$transaction(async (tx) => {
         await tx.competencyFramework.update({
@@ -350,16 +342,39 @@ export class CompetencyFrameworkService {
         await tx.competencyAspectAssessmentMethod.deleteMany({
           where: {
             competencyAspect: {
-              competencyPillar: { frameworkId: competencyFrameworkId },
+              aspectPillars: {
+                some: {
+                  pillar: {
+                    pillarFrameworks: {
+                      some: { frameworkId: competencyFrameworkId },
+                    },
+                  },
+                },
+              },
             },
           },
         });
-        await tx.competencyAspect.deleteMany({
+        await tx.aspectPillarLevel.deleteMany({
           where: {
-            competencyPillar: { frameworkId: competencyFrameworkId },
+            aspectPillar: {
+              pillar: {
+                pillarFrameworks: {
+                  some: { frameworkId: competencyFrameworkId },
+                },
+              },
+            },
           },
         });
-        await tx.competencyPillar.deleteMany({
+        await tx.aspectPillar.deleteMany({
+          where: {
+            pillar: {
+              pillarFrameworks: {
+                some: { frameworkId: competencyFrameworkId },
+              },
+            },
+          },
+        });
+        await tx.pillarFramework.deleteMany({
           where: { frameworkId: competencyFrameworkId },
         });
         await tx.competencyFramework.delete({

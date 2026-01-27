@@ -8,6 +8,8 @@ export const competencyFrameworkSelect = {
     select: {
       id: true,
       name: true,
+      description: true,
+      isActice: true,
     },
   },
   createdAt: true,
@@ -15,28 +17,53 @@ export const competencyFrameworkSelect = {
   pillars: {
     select: {
       id: true,
-      name: true,
-      dimension: true,
       weightWithinDimension: true,
-      aspects: {
+      pillar: {
         select: {
           id: true,
           name: true,
-          description: true,
-          represent: true,
           dimension: true,
-          weightWithinDimension: true,
-          assessmentMethods: {
+          aspectPillars: {
             select: {
+              id: true,
               weightWithinDimension: true,
-              assessmentMethod: {
+              aspect: {
                 select: {
                   id: true,
                   name: true,
+                  description: true,
+                  represent: true,
+                  dimension: true,
+                },
+              },
+              levels: {
+                select: {
+                  id: true,
+                  description: true,
+                  levelId: true,
+                  level: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
                 },
               },
             },
           },
+        },
+      },
+    },
+  },
+  levels: {
+    select: {
+      id: true,
+      description: true,
+      levelId: true,
+      level: {
+        select: {
+          id: true,
+          name: true,
         },
       },
     },
@@ -47,6 +74,7 @@ export type CompetencyFrameworkPayload = Prisma.CompetencyFrameworkGetPayload<{
   select: typeof competencyFrameworkSelect;
 }>;
 
-export type PillarPayload = CompetencyFrameworkPayload['pillars'][number];
-export type AspectPayload = PillarPayload['aspects'][number];
-export type AssessmentMethodPayload = AspectPayload['assessmentMethods'][number];
+export type PillarFrameworkPayload = CompetencyFrameworkPayload['pillars'][number];
+export type AspectPillarPayload = PillarFrameworkPayload['pillar']['aspectPillars'][number];
+export type AspectPillarLevelPayload = AspectPillarPayload['levels'][number];
+export type FrameworkLevelPayload = CompetencyFrameworkPayload['levels'][number];
