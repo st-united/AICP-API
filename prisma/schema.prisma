@@ -271,6 +271,7 @@ model CompetencyAspect {
   status                CompetencyAspectStatus             @default(DRAFT) @map("status")
 
   @@unique([pillarId, name])
+  @@index([status])
 }
 
 model AssessmentMethod {
@@ -297,6 +298,7 @@ model CompetencyAspectAssessmentMethod {
   assessmentMethod AssessmentMethod @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 
   @@id([competencyAspectId, assessmentMethodId])
+  @@index([competencyAspectId])
 }
 
 model ExamSet {
@@ -688,6 +690,7 @@ model AspectPillar {
   levels AspectPillarLevel[]
 
   @@unique([aspectId, pillarId])
+  @@index([aspectId])
   @@index([pillarId])
 }
 
@@ -703,6 +706,8 @@ model PillarFramework {
   framework CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
 
   @@unique([pillarId, frameworkId])
+  @@index([pillarId])
+  @@index([frameworkId])
 }
 
 model AspectPillarLevel {
