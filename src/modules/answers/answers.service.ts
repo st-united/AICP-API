@@ -223,7 +223,7 @@ export class AnswersService {
       });
 
       const examSet = await this.prisma.examSet.findUnique({
-        where: { id: existingExam.examSetId },
+        where: { id: existingExam.examSet.id },
         select: { frameworkId: true },
       });
 
