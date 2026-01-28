@@ -4,7 +4,7 @@ import { isNullOrEmpty } from '@app/common/utils/stringUtils';
 import { validateDomain, validatePublishedUniqueness } from './competency-framework.validator';
 import { DomainDto } from '../../domain/dto/response/domain.dto';
 import { CompetencyDimension } from '@prisma/client';
-import { competencyFrameworkSelect, CompetencyFrameworkPayload } from '../types/competency-framework.types';
+import { CompetencyFrameworkPayload } from '../types/competency-framework.types';
 import { isArrayNotNullOrEmpty } from '@app/common/utils';
 
 export const validateCompetencyFrameworkForPublish = async (

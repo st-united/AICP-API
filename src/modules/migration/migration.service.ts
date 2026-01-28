@@ -304,16 +304,18 @@ export class MigrationService {
     try {
       this.logger.log('Starting Framework Intermediate Tables Migration...');
 
-      const pillarFrameworkStats = await this.migratePillarFramework();
+      const frameworks = await this.getFrameworksWithFullData();
+
+      const pillarFrameworkStats = await this.migratePillarFrameworkFromData(frameworks);
       this.logger.log(`✅ Created ${pillarFrameworkStats.created} PillarFramework records`);
 
-      const aspectPillarStats = await this.migrateAspectPillar();
+      const aspectPillarStats = await this.migrateAspectPillarFromData(frameworks);
       this.logger.log(`✅ Created ${aspectPillarStats.created} AspectPillar records`);
 
       const aspectPillarLevelStats = await this.migrateAspectPillarLevel();
       this.logger.log(`✅ Created ${aspectPillarLevelStats.created} AspectPillarLevel records`);
 
-      const frameworkLevelStats = await this.migrateFrameworkLevel();
+      const frameworkLevelStats = await this.migrateFrameworkLevelFromData(frameworks);
       this.logger.log(`✅ Created ${frameworkLevelStats.created} FrameworkLevel records`);
 
       this.logger.log('✅ Framework Intermediate Tables Migration completed successfully');
@@ -338,21 +340,34 @@ export class MigrationService {
     }
   }
 
-  private async migratePillarFramework() {
+  private async getFrameworksWithFullData() {
+    return await this.prisma.competencyFramework.findMany({
+      select: {
+        id: true,
+        name: true,
+        pillars: {
+          select: {
+            id: true,
+            dimension: true,
+            weightWithinDimension: true,
+            aspects: {
+              select: {
+                id: true,
+                name: true,
+                weightWithinDimension: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  private async migratePillarFrameworkFromData(frameworks: any[]) {
     let created = 0;
 
-    const frameworks = await this.prisma.competencyFramework.findMany({
-      select: { id: true, name: true },
-    });
-
-    const pillars = await this.prisma.competencyPillar.findMany({
-      select: { id: true, dimension: true, weightWithinDimension: true, frameworkId: true },
-    });
-
     for (const framework of frameworks) {
-      const frameworkPillars = pillars.filter((p) => p.frameworkId === framework.id);
-
-      for (const pillar of frameworkPillars) {
+      for (const pillar of framework.pillars) {
         const existing = await this.prisma.pillarFramework.findFirst({
           where: {
             frameworkId: framework.id,
@@ -379,42 +394,69 @@ export class MigrationService {
     return { created };
   }
 
-  private async migrateAspectPillar() {
+  private async migrateAspectPillarFromData(frameworks: any[]) {
     let created = 0;
 
-    const aspects = await this.prisma.competencyAspect.findMany({
-      select: { id: true, name: true, dimension: true, weightWithinDimension: true, pillarId: true },
+    for (const framework of frameworks) {
+      for (const pillar of framework.pillars) {
+        for (const aspect of pillar.aspects) {
+          const existing = await this.prisma.aspectPillar.findFirst({
+            where: {
+              pillarId: pillar.id,
+              aspectId: aspect.id,
+            },
+          });
+
+          if (!existing) {
+            await this.prisma.aspectPillar.create({
+              data: {
+                pillarId: pillar.id,
+                aspectId: aspect.id,
+                weightWithinDimension: aspect.weightWithinDimension,
+              },
+            });
+            created++;
+            this.logger.log(
+              `Created AspectPillar: ${pillar.dimension} -> ${aspect.name} (weight: ${aspect.weightWithinDimension})`
+            );
+          }
+        }
+      }
+    }
+
+    return { created };
+  }
+
+  private async migrateFrameworkLevelFromData(frameworks: any[]) {
+    let created = 0;
+
+    const levels = await this.prisma.level.findMany({
+      where: { isActive: true },
+      select: { id: true, numericValue: true, name: true },
     });
 
-    const pillars = await this.prisma.competencyPillar.findMany({
-      select: { id: true, dimension: true },
-    });
-
-    for (const aspect of aspects) {
-      const matchingPillar = pillars.find((p) => p.dimension === aspect.dimension);
-
-      if (matchingPillar) {
-        const existing = await this.prisma.aspectPillar.findFirst({
+    for (const framework of frameworks) {
+      for (const level of levels) {
+        const existing = await this.prisma.frameworkLevel.findFirst({
           where: {
-            pillarId: matchingPillar.id,
-            aspectId: aspect.id,
+            frameworkId: framework.id,
+            levelId: level.id,
           },
         });
 
         if (!existing) {
-          await this.prisma.aspectPillar.create({
+          await this.prisma.frameworkLevel.create({
             data: {
-              pillarId: matchingPillar.id,
-              aspectId: aspect.id,
-              weightWithinDimension: aspect.weightWithinDimension,
+              frameworkId: framework.id,
+              levelId: level.id,
+              description: `${level.name} requirements for ${framework.name}`,
             },
           });
           created++;
-          this.logger.log(
-            `Created AspectPillar: ${matchingPillar.dimension} -> ${aspect.name} (weight: ${aspect.weightWithinDimension})`
-          );
         }
       }
+
+      this.logger.log(`Created FrameworkLevel for: ${framework.name} (${levels.length} levels)`);
     }
 
     return { created };
@@ -459,45 +501,6 @@ export class MigrationService {
       this.logger.log(
         `Created AspectPillarLevel for: ${aspectPillar.pillar.dimension} -> ${aspectPillar.aspect.name} (${levels.length} levels)`
       );
-    }
-
-    return { created };
-  }
-
-  private async migrateFrameworkLevel() {
-    let created = 0;
-
-    const frameworks = await this.prisma.competencyFramework.findMany({
-      select: { id: true, name: true },
-    });
-
-    const levels = await this.prisma.level.findMany({
-      where: { isActive: true },
-      select: { id: true, numericValue: true, name: true },
-    });
-
-    for (const framework of frameworks) {
-      for (const level of levels) {
-        const existing = await this.prisma.frameworkLevel.findFirst({
-          where: {
-            frameworkId: framework.id,
-            levelId: level.id,
-          },
-        });
-
-        if (!existing) {
-          await this.prisma.frameworkLevel.create({
-            data: {
-              frameworkId: framework.id,
-              levelId: level.id,
-              description: `${level.name} requirements for ${framework.name}`,
-            },
-          });
-          created++;
-        }
-      }
-
-      this.logger.log(`Created FrameworkLevel for: ${framework.name} (${levels.length} levels)`);
     }
 
     return { created };

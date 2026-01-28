@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { CompetencyAspectStatus, Prisma } from '@prisma/client';
 
 export const competencyFrameworkSelect = {
   id: true,
@@ -24,6 +24,13 @@ export const competencyFrameworkSelect = {
           name: true,
           dimension: true,
           aspectPillars: {
+            where: {
+              aspect: {
+                status: {
+                  not: CompetencyAspectStatus.DRAFT,
+                },
+              },
+            },
             select: {
               id: true,
               weightWithinDimension: true,

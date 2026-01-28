@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { CompetencyDimension, Prisma } from '@prisma/client';
+import { CompetencyAspectStatus, CompetencyDimension, Prisma } from '@prisma/client';
 import { CompetencyPillarDto as RequestPillarDto } from '../dto/request/create-competency-framework.dto';
 import { DomainDto } from '../../domain/dto/response/domain.dto';
 import { isNullOrEmpty } from '@app/common/utils/stringUtils';
@@ -88,7 +88,7 @@ const validateAspectIds = async (aspectIds: string[], prismaService: PrismaServi
   validateIdsUniqueness(aspectIds, 'Các tiêu chí không được trùng nhau');
 
   const existingAspects = await prismaService.competencyAspect.findMany({
-    where: { id: { in: aspectIds } },
+    where: { id: { in: aspectIds }, status: { not: CompetencyAspectStatus.DRAFT } },
     select: { id: true },
   });
   validateEntityExistence(aspectIds, existingAspects, 'Một hoặc nhiều tiêu chí không tồn tại trong hệ thống');
