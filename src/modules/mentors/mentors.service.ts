@@ -187,8 +187,19 @@ export class MentorsService {
       }
 
       if (dto.startTime && dto.endTime) {
-        const startAt = dayjs(`${dto.scheduledDate} ${dto.startTime}`, 'YYYY-MM-DD HH:mm');
-        const endAt = dayjs(`${dto.scheduledDate} ${dto.endTime}`, 'YYYY-MM-DD HH:mm');
+        let startAt: dayjs.Dayjs;
+        let endAt: dayjs.Dayjs;
+
+        // Support ISO datetime with timezone (e.g., 2026-01-29T15:10:00+07:00)
+        // and legacy HH:mm format for backward compatibility
+        if (dto.startTime.includes('T')) {
+          startAt = dayjs(dto.startTime);
+          endAt = dayjs(dto.endTime);
+        } else {
+          // Legacy format: HH:mm - parse as UTC to match server timezone
+          startAt = dayjs(`${dto.scheduledDate} ${dto.startTime}`, 'YYYY-MM-DD HH:mm');
+          endAt = dayjs(`${dto.scheduledDate} ${dto.endTime}`, 'YYYY-MM-DD HH:mm');
+        }
 
         if (!startAt.isValid() || !endAt.isValid() || !endAt.isAfter(startAt)) {
           throw new BadRequestException('Khung giờ không hợp lệ');
