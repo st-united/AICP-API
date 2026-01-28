@@ -283,10 +283,11 @@ model AssessmentMethod {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  examSet              ExamSet[]
-  exam                 Exam[]
-  competencyAssessment CompetencyAssessment[]
-  competencyAspects    CompetencyAspectAssessmentMethod[]
+  examSet               ExamSet[]
+  exam                  Exam[]
+  competencyAssessment  CompetencyAssessment[]
+  competencyAspects     CompetencyAspectAssessmentMethod[]
+  frameworkAssessments  FrameworkAssessment[]
 }
 
 model CompetencyAspectAssessmentMethod {
@@ -436,13 +437,14 @@ model CompetencyFramework {
   name        String   @db.VarChar
   searchText  String?  @map("search_text") @db.Text
 
-  assessment       CompetencyAssessment[]
-  domain           Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  examSet          ExamSet[]
-  learningPath     LearningPath[]
-  pillars          CompetencyPillar[]
-  pillarFrameworks PillarFramework[]
-  frameworkLevels  FrameworkLevel[]
+  assessment            CompetencyAssessment[]
+  domain                Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  examSet               ExamSet[]
+  learningPath          LearningPath[]
+  pillars               CompetencyPillar[]
+  pillarFrameworks      PillarFramework[]
+  frameworkLevels       FrameworkLevel[]
+  frameworkAssessments  FrameworkAssessment[]
 }
 
 model CompetencyPillar {
@@ -505,7 +507,7 @@ model CompetencyAssessment {
   user               User                @relation("UserAssessment", fields: [userId], references: [id], onDelete: Cascade)
   level              Level?              @relation(fields: [levelId], references: [id], onDelete: SetNull)
   score              CompetencyScore[]
-  assessmentMethod   AssessmentMethod?   @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
+  assessmentMethod      AssessmentMethod?      @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model CompetencyScore {
@@ -743,6 +745,23 @@ model FrameworkLevel {
   @@index([frameworkId])
   @@index([levelId])
 }
+
+model FrameworkAssessment {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  frameworkId            String   @map("framework_id") @db.Uuid
+  assessmentMethodId     String   @map("assessment_method_id") @db.Uuid
+  weightWithinFramework  Decimal  @map("weight_within_framework") @db.Decimal(3, 2)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  framework        CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  assessmentMethod AssessmentMethod    @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
+
+  @@unique([frameworkId, assessmentMethodId])
+  @@index([frameworkId])
+  @@index([assessmentMethodId])
+}
+
 
 enum QuestionType {
   SINGLE_CHOICE

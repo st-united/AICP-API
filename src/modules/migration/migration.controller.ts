@@ -31,4 +31,16 @@ export class MigrationController {
   async checkMigrationStatus() {
     return this.migrationService.checkMigrationStatus();
   }
+
+  @Post('intermediate-tables')
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  @ApiOperation({
+    summary: 'Migrate Framework to Intermediate Tables',
+    description: 'Migrates existing Framework, Pillar, Aspect, Level data to new intermediate tables structure',
+  })
+  @ApiResponse({ status: 200, description: 'Framework intermediate tables migration completed successfully' })
+  @ApiResponse({ status: 500, description: 'Migration failed' })
+  async migrateToIntermediateTables() {
+    return this.migrationService.migrateToIntermediateTables();
+  }
 }
