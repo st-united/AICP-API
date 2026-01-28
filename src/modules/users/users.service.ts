@@ -556,6 +556,8 @@ export class UsersService {
       portfolioDto.deleted_experiences,
       portfolioDto.linkedInUrl,
       portfolioDto.githubUrl,
+      portfolioDto.portfolioUrl,
+      portfolioDto.developmentFocusAnswer,
       portfolioDto.isStudent
     );
 
@@ -576,6 +578,8 @@ export class UsersService {
           data: {
             linkedInUrl: portfolioDto.linkedInUrl,
             githubUrl: portfolioDto.githubUrl,
+            portfolioUrl: portfolioDto.portfolioUrl,
+            developmentFocusAnswer: portfolioDto.developmentFocusAnswer,
             certificateFiles,
             experienceFiles,
             userId,
@@ -666,6 +670,8 @@ export class UsersService {
         data: {
           linkedInUrl: portfolioDto.linkedInUrl,
           githubUrl: portfolioDto.githubUrl,
+          portfolioUrl: portfolioDto.portfolioUrl,
+          developmentFocusAnswer: portfolioDto.developmentFocusAnswer,
           certificateFiles,
           experienceFiles,
         },
