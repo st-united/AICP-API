@@ -1,11 +1,58 @@
 import { BadRequestException } from '@nestjs/common';
 import { CompetencyAspectStatus, CompetencyDimension, Prisma } from '@prisma/client';
-import { CompetencyPillarDto as RequestPillarDto } from '../dto/request/create-competency-framework.dto';
+import {
+  AssessmentMethodDto,
+  CompetencyPillarDto as RequestPillarDto,
+} from '../dto/request/create-competency-framework.dto';
 import { DomainDto } from '../../domain/dto/response/domain.dto';
 import { isNullOrEmpty } from '@app/common/utils/stringUtils';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AspectLevelDto, FrameworkLevelDto } from '../dto/request/create-competency-framework.dto';
 import { isArrayNotNullOrEmpty } from '@app/common/utils/list.utils';
+
+export const validateFrameworkAssessmentMethods = async (
+  assessmentMethods: AssessmentMethodDto[] | undefined,
+  isSubmit: boolean,
+  prismaService: PrismaService
+): Promise<void> => {
+  if (!isArrayNotNullOrEmpty(assessmentMethods)) {
+    if (isSubmit) {
+      throw new BadRequestException('Danh sách phương pháp đánh giá không được rỗng');
+    }
+    return;
+  }
+
+  let totalWeight = 0;
+  const methodIds: string[] = [];
+
+  for (const method of assessmentMethods) {
+    if (!method.id) {
+      throw new BadRequestException('ID của phương pháp đánh giá không được rỗng');
+    }
+    methodIds.push(method.id);
+    if (isSubmit) {
+      if (method.weightWithinDimension == null) {
+        throw new BadRequestException('Trọng số của phương pháp đánh giá không được rỗng');
+      }
+      totalWeight += method.weightWithinDimension;
+    }
+  }
+
+  if (isSubmit && Math.abs(totalWeight - 100) > 0.01) {
+    throw new BadRequestException(
+      `Tổng trọng số của các phương pháp đánh giá phải bằng 100% (hiện tại: ${totalWeight}%)`
+    );
+  }
+
+  const existingMethods = await prismaService.assessmentMethod.findMany({
+    where: { id: { in: methodIds }, isActive: true },
+    select: { id: true },
+  });
+
+  if (existingMethods.length !== methodIds.length) {
+    throw new BadRequestException('Một hoặc nhiều phương pháp đánh giá không tồn tại hoặc đã bị vô hiệu hóa');
+  }
+};
 
 const validateIdsUniqueness = (ids: string[], errorMessage: string) => {
   const uniqueIds = new Set(ids);

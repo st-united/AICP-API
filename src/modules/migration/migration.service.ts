@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SFIALevel } from '@prisma/client';
+import { AssessmentMethodSeedEnum } from 'prisma/seed/constant/assessmentMethodSeedEnum';
 
 export interface MigrationResult {
   success: boolean;
@@ -318,6 +319,9 @@ export class MigrationService {
       const frameworkLevelStats = await this.migrateFrameworkLevelFromData(frameworks);
       this.logger.log(`✅ Created ${frameworkLevelStats.created} FrameworkLevel records`);
 
+      const frameworkAssessmentStats = await this.migrateFrameworkAssessment(frameworks);
+      this.logger.log(`✅ Created ${frameworkAssessmentStats.created} FrameworkAssessment records`);
+
       this.logger.log('✅ Framework Intermediate Tables Migration completed successfully');
 
       return {
@@ -328,6 +332,7 @@ export class MigrationService {
           aspectPillarsCreated: aspectPillarStats.created,
           aspectPillarLevelsCreated: aspectPillarLevelStats.created,
           frameworkLevelsCreated: frameworkLevelStats.created,
+          frameworkAssessmentsCreated: frameworkAssessmentStats.created,
         },
       };
     } catch (error) {
@@ -504,5 +509,63 @@ export class MigrationService {
     }
 
     return { created };
+  }
+
+  /**
+   * Migrate FrameworkAssessment - populate junction table between Framework and AssessmentMethod
+   * Weight distribution: TEST_ONLINE (30%), EVIDENCE (10%), INTERVIEW (60%)
+   */
+  private async migrateFrameworkAssessment(frameworks: any[]) {
+    let createdCount = 0;
+
+    const assessmentMethods = await this.prisma.assessmentMethod.findMany({
+      select: { id: true, name: true },
+    });
+
+    const weightMap: Record<string, number> = {
+      [AssessmentMethodSeedEnum.TEST_ONLINE]: 0.3,
+      [AssessmentMethodSeedEnum.EVIDENCE]: 0.1,
+      [AssessmentMethodSeedEnum.INTERVIEW]: 0.6,
+    };
+
+    for (const framework of frameworks) {
+      for (const method of assessmentMethods) {
+        const weight = weightMap[method.name];
+
+        if (weight === undefined) {
+          this.logger.warn(`Unknown assessment method: ${method.name}, skipping for framework ${framework.id}`);
+          continue;
+        }
+
+        const existing = await this.prisma.frameworkAssessment.findUnique({
+          where: {
+            frameworkId_assessmentMethodId: {
+              frameworkId: framework.id,
+              assessmentMethodId: method.id,
+            },
+          },
+        });
+
+        if (existing) {
+          this.logger.log(
+            `FrameworkAssessment already exists for framework ${framework.name} and method ${method.name}, skipping`
+          );
+          continue;
+        }
+
+        await this.prisma.frameworkAssessment.create({
+          data: {
+            frameworkId: framework.id,
+            assessmentMethodId: method.id,
+            weightWithinFramework: weight,
+          },
+        });
+
+        createdCount++;
+        this.logger.log(`Created FrameworkAssessment: ${framework.name} + ${method.name} = ${weight * 100}%`);
+      }
+    }
+
+    return { created: createdCount };
   }
 }

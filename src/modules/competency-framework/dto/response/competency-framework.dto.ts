@@ -163,4 +163,11 @@ export class CompetencyFrameworkDto {
     type: [LevelDto],
   })
   levels?: LevelDto[];
+
+  @Expose()
+  @ApiProperty({
+    description: 'Danh sách các phương pháp đánh giá của khung năng lực',
+    type: [AssessmentMethodDto],
+  })
+  assessmentMethods?: AssessmentMethodDto[];
 }
