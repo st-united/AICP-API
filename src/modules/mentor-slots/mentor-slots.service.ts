@@ -48,21 +48,13 @@ export class MentorSlotsService {
 
     const mentor = await this.prisma.mentor.findUnique({
       where: { userId },
-      select: {
-        id: true,
-        user: { select: { email: true } },
-      },
+      select: { id: true },
     });
 
     if (!mentor) {
       throw new BadRequestException(`Mentor not found for user: ${userId}`);
     }
 
-    if (!mentor.user?.email) {
-      throw new BadRequestException('Mentor email is required');
-    }
-
-    const mentorEmail = mentor.user.email;
     const rawCalendarConcurrency = Number(process.env.MENTOR_SLOTS_CALENDAR_CONCURRENCY ?? 5);
     const calendarConcurrency = Number.isFinite(rawCalendarConcurrency)
       ? Math.max(1, Math.min(20, Math.trunc(rawCalendarConcurrency)))
@@ -200,35 +192,12 @@ export class MentorSlotsService {
 
     if (!slotsToCreate.length) return { created: 0, deleted: deletedCount };
 
-    const slotsWithMeetUrl = await Promise.all(
-      slotsToCreate.map((slot) =>
-        limitCalendar(async () => {
-          let meetUrl: string | null = null;
-          let calendarEventId: string | null = null;
-
-          try {
-            const eventInfo = await GoogleCalendarService.createInterviewEvent(mentorEmail, mentorEmail, {
-              startAt: slot.startAt,
-              endAt: slot.endAt,
-              timezone: slot.timezone,
-              meetUrl: null,
-            });
-            meetUrl = eventInfo.meetUrl;
-            calendarEventId = eventInfo.eventId;
-          } catch (error) {
-            console.error('Error creating Google Calendar event for slot:', error);
-            meetUrl = 'https://meet.google.com/default-link';
-            calendarEventId = null;
-          }
-
-          return {
-            ...slot,
-            meetUrl,
-            calendarEventId,
-          };
-        })
-      )
-    );
+    // Create slots without meet URL - will be created when user books
+    const slotsData = slotsToCreate.map((slot) => ({
+      ...slot,
+      meetUrl: null,
+      calendarEventId: null,
+    }));
 
     if (conflictPolicy === 'REPLACE' && existing.length) {
       await safeDeleteCalendarEvents(
@@ -241,7 +210,7 @@ export class MentorSlotsService {
         });
 
         const result = await tx.mentorTimeSpot.createMany({
-          data: slotsWithMeetUrl,
+          data: slotsData,
           skipDuplicates: true,
         });
 
@@ -250,7 +219,7 @@ export class MentorSlotsService {
     }
 
     const result = await this.prisma.mentorTimeSpot.createMany({
-      data: slotsWithMeetUrl,
+      data: slotsData,
       skipDuplicates: true,
     });
 
