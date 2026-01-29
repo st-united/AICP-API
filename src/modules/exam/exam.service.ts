@@ -227,7 +227,11 @@ export class ExamService {
                   id: true,
                   name: true,
                   represent: true,
-                  pillarId: true,
+                  aspectPillarFrameworks: {
+                    select: {
+                      pillar: { select: { pillar: { select: { id: true } } } },
+                    },
+                  },
                 },
               },
               score: true,
@@ -244,7 +248,9 @@ export class ExamService {
         const pillar = pillarSnapshot.pillar;
 
         const aspects = examAspectSnapshot
-          .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+          .filter((aspectSnapshot) =>
+            aspectSnapshot.aspect.aspectPillarFrameworks.some((ap) => ap.pillar.pillar.id === pillar.id)
+          )
           .map((aspectSnapshot) => ({
             id: aspectSnapshot.aspect.id,
             name: aspectSnapshot.aspect.name,
@@ -513,21 +519,45 @@ export class ExamService {
     );
   }
 
-  private mapExamLevelToSFIALevel(level: ExamLevelEnum): SFIALevel {
-    const mapping: Record<ExamLevelEnum, SFIALevel> = {
-      [ExamLevelEnum.LEVEL_1_STARTER]: SFIALevel.LEVEL_1_AWARENESS,
-      [ExamLevelEnum.LEVEL_2_EXPLORER]: SFIALevel.LEVEL_2_FOUNDATION,
-      [ExamLevelEnum.LEVEL_3_PRACTITIONER]: SFIALevel.LEVEL_3_APPLICATION,
-      [ExamLevelEnum.LEVEL_4_INTEGRATOR]: SFIALevel.LEVEL_4_INTEGRATION,
-      [ExamLevelEnum.LEVEL_5_STRATEGIST]: SFIALevel.LEVEL_5_INNOVATION,
-      [ExamLevelEnum.LEVEL_6_LEADER]: SFIALevel.LEVEL_6_LEADERSHIP,
-      [ExamLevelEnum.LEVEL_7_EXPERT]: SFIALevel.LEVEL_7_MASTERY,
+  private async mapExamLevelToSFIALevel(level: ExamLevelEnum): Promise<SFIALevel> {
+    const numericMapping: Record<ExamLevelEnum, number> = {
+      [ExamLevelEnum.LEVEL_1_STARTER]: 1,
+      [ExamLevelEnum.LEVEL_2_EXPLORER]: 2,
+      [ExamLevelEnum.LEVEL_3_PRACTITIONER]: 3,
+      [ExamLevelEnum.LEVEL_4_INTEGRATOR]: 4,
+      [ExamLevelEnum.LEVEL_5_STRATEGIST]: 5,
+      [ExamLevelEnum.LEVEL_6_LEADER]: 6,
+      [ExamLevelEnum.LEVEL_7_EXPERT]: 7,
     };
-    return mapping[level];
+
+    const numericValue = numericMapping[level];
+
+    const levelRecord = await this.prisma.level.findFirst({
+      where: {
+        numericValue,
+        isActive: true,
+      },
+    });
+
+    if (!levelRecord) {
+      // Fallback to old hardcoded mapping if not found
+      const fallbackMapping: Record<ExamLevelEnum, SFIALevel> = {
+        [ExamLevelEnum.LEVEL_1_STARTER]: SFIALevel.LEVEL_1_AWARENESS,
+        [ExamLevelEnum.LEVEL_2_EXPLORER]: SFIALevel.LEVEL_2_FOUNDATION,
+        [ExamLevelEnum.LEVEL_3_PRACTITIONER]: SFIALevel.LEVEL_3_APPLICATION,
+        [ExamLevelEnum.LEVEL_4_INTEGRATOR]: SFIALevel.LEVEL_4_INTEGRATION,
+        [ExamLevelEnum.LEVEL_5_STRATEGIST]: SFIALevel.LEVEL_5_INNOVATION,
+        [ExamLevelEnum.LEVEL_6_LEADER]: SFIALevel.LEVEL_6_LEADERSHIP,
+        [ExamLevelEnum.LEVEL_7_EXPERT]: SFIALevel.LEVEL_7_MASTERY,
+      };
+      return fallbackMapping[level];
+    }
+
+    return levelRecord.sfiaLevel;
   }
 
   async getCoursesByExamLevel(examLevel: ExamLevelEnum, userId: string) {
-    const mappedLevel = this.mapExamLevelToSFIALevel(examLevel);
+    const mappedLevel = await this.mapExamLevelToSFIALevel(examLevel);
 
     const allCourses = await this.prisma.course.findMany({
       where: {
@@ -633,7 +663,11 @@ export class ExamService {
                       id: true,
                       name: true,
                       represent: true,
-                      pillarId: true,
+                      aspectPillarFrameworks: {
+                        select: {
+                          pillar: { select: { pillar: { select: { id: true } } } },
+                        },
+                      },
                     },
                   },
                   score: true,
@@ -652,7 +686,9 @@ export class ExamService {
             const pillar = pillarSnapshot.pillar;
 
             const aspects = examAspectSnapshot
-              .filter((aspectSnapshot) => aspectSnapshot.aspect.pillarId === pillar.id)
+              .filter((aspectSnapshot) =>
+                aspectSnapshot.aspect.aspectPillarFrameworks.some((ap) => ap.pillar.pillar.id === pillar.id)
+              )
               .map((aspectSnapshot) => ({
                 id: aspectSnapshot.aspect.id,
                 name: aspectSnapshot.aspect.name,
