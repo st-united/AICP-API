@@ -20,6 +20,7 @@ import { CoursesModule } from './modules/courses/courses.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { ExportModule } from './modules/export/export.module';
 import { AspectsModule } from './modules/aspects/aspects.module';
+import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { AspectsModule } from './modules/aspects/aspects.module';
     BookingModule,
     ExportModule,
     AspectsModule,
+    MentorSlotsModule,
   ],
   providers: [
     {

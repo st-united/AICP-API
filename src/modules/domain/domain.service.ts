@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { ResponseItem } from '@app/common/dtos';
 import { DomainNamesDto } from './dto/domain-names.dto';
+import { Order } from '@Constant/enums';
 
 @Injectable()
 export class DomainService {
@@ -10,8 +11,8 @@ export class DomainService {
   async findNames(): Promise<ResponseItem<DomainNamesDto>> {
     try {
       const domains = await this.prisma.domain.findMany({
-        where: { isActice: true },
-        orderBy: { createdAt: 'desc' },
+        where: { isActive: true },
+        orderBy: { createdAt: Order.DESC },
         select: {
           id: true,
           name: true,

@@ -1,9 +1,16 @@
 import { SFIALevel } from '@prisma/client';
 
+export class InterviewInfoDto {
+  startAt: Date;
+  endAt: Date;
+  timezone: string;
+  status: string;
+}
 export class UserInterviewInfoDto {
   personalInfo: PersonalInfoDto;
   examResult: ExamResultDto;
   portfolio: PortfolioDto;
+  interview: InterviewInfoDto | null;
 }
 
 export class PersonalInfoDto {
