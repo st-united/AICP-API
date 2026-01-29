@@ -4,6 +4,7 @@ import { BookingGateway } from './booking.gateway';
 import { ExamSlotsReportDto } from './dto/exam-slots-report.dto';
 import { ResponseItem } from '@app/common/dtos';
 import { FilterMentorBookingRequestDto } from './dto/filter-mentor-booking-request.dto';
+import { GetAvailableSlotsQueryDto } from './dto/get-available-slots-query.dto';
 
 @Controller('bookings')
 export class BookingController {
@@ -19,9 +20,10 @@ export class BookingController {
 
   @Get('available-slots/:examId')
   async getAvailableSlotsByExamId(
-    @Param('examId', new ParseUUIDPipe()) examId: string
+    @Param('examId', new ParseUUIDPipe()) examId: string,
+    @Query() query: GetAvailableSlotsQueryDto
   ): Promise<ResponseItem<ExamSlotsReportDto>> {
-    return await this.bookingService.getAvailableSlotsByExamId(examId);
+    return await this.bookingService.getAvailableSlotsByExamId(examId, query);
   }
 
   @Get()

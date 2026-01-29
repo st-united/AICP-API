@@ -19,7 +19,7 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { UserTokenPayloadDto } from './dto/user-token-payload.dto';
 import { ClientTypeEnum, UserProviderEnum, UserRoleEnum } from '@Constant/enums';
 import { UserTrackingStatus } from '@prisma/client';
-import { generateSecurePassword } from '@app/helpers/randomPassword';
+import { generateSecurePassword } from '@app/common/helpers/randomPassword';
 
 @Injectable()
 export class AuthService {

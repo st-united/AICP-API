@@ -1,14 +1,16 @@
-import { InterviewShift } from '@Constant/enums';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsISO8601, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateMentorBookingDto {
   @IsString()
   examId: string;
 
-  @IsOptional()
-  @IsString()
-  interviewDate?: string;
+  @IsISO8601()
+  startAt: string;
 
-  @IsEnum(InterviewShift)
-  interviewShift: InterviewShift;
+  @IsISO8601()
+  endAt: string;
+
+  @IsOptional()
+  @IsUUID()
+  mentorId?: string;
 }

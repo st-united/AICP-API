@@ -23,6 +23,7 @@ import { AspectsModule } from './modules/aspects/aspects.module';
 import { CompetencyFrameworkModule } from './modules/competency-framework/competency-framework.module';
 import { CompetencyPillarModule } from './modules/competency-pillar/competency-pillar.module';
 import { LevelScaleModule } from './modules/level-scale/level-scale.module';
+import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 import { MigrationModule } from './modules/migration/migration.module';
 
 @Module({
@@ -72,6 +73,7 @@ import { MigrationModule } from './modules/migration/migration.module';
     CompetencyFrameworkModule,
     CompetencyPillarModule,
     LevelScaleModule,
+    MentorSlotsModule,
     MigrationModule,
   ],
   providers: [

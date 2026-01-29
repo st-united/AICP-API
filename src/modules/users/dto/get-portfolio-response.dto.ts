@@ -16,6 +16,17 @@ export class GetPortfolioResponseDto {
   githubUrl?: string;
 
   @Expose()
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  portfolioUrl?: string;
+
+  @Expose()
+  @ApiProperty({ required: false })
+  @IsOptional()
+  developmentFocusAnswer?: string;
+
+  @Expose()
   @ApiProperty({ type: [String], description: 'Array of certification file URLs' })
   @IsOptional()
   @IsArray()

@@ -1,10 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, IsEnum, IsDateString } from 'class-validator';
-import { TimeSlotBooking } from '@prisma/client';
+import { IsOptional, IsString, IsUUID, IsISO8601 } from 'class-validator';
 
 export class UserBookingDto {
   @ApiProperty({
-    description: 'Mentor ID (optional, will use default mentor if not provided)',
+    description: 'Mentor ID (optional, hệ thống sẽ auto assign nếu không truyền)',
     required: false,
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
@@ -13,26 +12,21 @@ export class UserBookingDto {
   mentorId?: string;
 
   @ApiProperty({
-    description: 'Scheduled date and time for the booking',
-    required: false,
-    example: '2024-01-15T10:00:00Z',
+    description: 'Thời gian bắt đầu phỏng vấn (ISO 8601)',
+    example: '2025-08-07T08:00:00+07:00',
   })
-  @IsOptional()
-  @IsDateString()
-  scheduledAt?: string;
+  @IsISO8601()
+  startAt: string;
 
   @ApiProperty({
-    description: 'Time slot for the booking',
-    required: false,
-    enum: TimeSlotBooking,
-    example: 'AM_09_10',
+    description: 'Thời gian kết thúc phỏng vấn (ISO 8601)',
+    example: '2025-08-07T09:00:00+07:00',
   })
-  @IsOptional()
-  @IsEnum(TimeSlotBooking)
-  timeSlot?: TimeSlotBooking;
+  @IsISO8601()
+  endAt: string;
 
   @ApiProperty({
-    description: 'Notes for the booking',
+    description: 'Ghi chú cho buổi phỏng vấn',
     required: false,
     example: 'I would like to discuss AI fundamentals',
   })
@@ -41,7 +35,7 @@ export class UserBookingDto {
   notes?: string;
 
   @ApiProperty({
-    description: 'Pillar focus for the booking',
+    description: 'Pillar focus cho buổi phỏng vấn',
     required: false,
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
