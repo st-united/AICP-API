@@ -9,6 +9,9 @@ import { AspectsQueries } from './aspects.queries';
 import { CompetencyAspectStatus, CompetencyDimension } from '@prisma/client';
 import { AspectStatisticsResponseDto } from './dto/response/aspect-statistics.response.dto';
 import { AspectItemRaw } from './interface/AspectItemRaw';
+import { CreateAspectRequestDto } from './dto/request/create-aspect.request.dto';
+import { UUID } from 'crypto';
+import { generateAspectRepresent } from './utils/aspect.helper';
 
 @Injectable()
 export class AspectsService {
@@ -103,5 +106,124 @@ export class AspectsService {
     });
 
     return new ResponseItem(aspects, 'Lấy danh sách aspect thành công', AspectNameListDto);
+  }
+
+  async create(body: CreateAspectRequestDto): Promise<ResponseItem<AspectListItemDto>> {
+    const { name, pillarId, isDraft, assessmentMethods = [] } = body;
+
+    // 1. Uniqueness check (pillarId + name)
+    const existingAspect = await this.prisma.competencyAspect.findUnique({
+      where: {
+        pillarId_name: {
+          pillarId: pillarId as string,
+          name,
+        },
+      },
+      select: { id: true },
+    });
+    if (existingAspect) {
+      throw new BadRequestException(`Aspect trùng tên "${name}" đã tồn tại trong pillar này.`);
+    }
+
+    // 2. Validate Pillar
+    const pillar = await this.prisma.competencyPillar.findUnique({
+      where: { id: pillarId as string },
+      select: { dimension: true },
+    });
+    if (!pillar) {
+      throw new BadRequestException('Pillar không tồn tại');
+    }
+
+    // 3. Validation for non-draft aspects (Spec 2.2)
+    if (!isDraft) {
+      if (assessmentMethods.length === 0) {
+        throw new BadRequestException('Bắt buộc phải có ít nhất một phương pháp đánh giá khi không phải bản nháp');
+      }
+
+      const totalWeight = assessmentMethods.reduce((sum, method) => sum + method.weightWithinDimension, 0);
+      if (Math.abs(totalWeight - 1) > 0.001) {
+        throw new BadRequestException('Tổng trọng số các phương pháp đánh giá phải bằng 1.0 (100%)');
+      }
+    }
+
+    // 4. Determine Status
+    const status: CompetencyAspectStatus = isDraft ? CompetencyAspectStatus.DRAFT : CompetencyAspectStatus.AVAILABLE;
+
+    // 5. Execution in Transaction
+    const result = await this.prisma.$transaction(async (transaction) => {
+      // 5.1 Validation for Assessment Methods
+      if (assessmentMethods.length > 0) {
+        const methodIds = assessmentMethods.map((m) => m.id as string);
+        const activeMethodsCount = await transaction.assessmentMethod.count({
+          where: {
+            id: { in: methodIds },
+            isActive: true,
+          },
+        });
+        if (activeMethodsCount !== assessmentMethods.length) {
+          throw new BadRequestException('Một hoặc nhiều phương pháp đánh giá không hợp lệ hoặc bị vô hiệu hóa');
+        }
+      }
+
+      // 5.2 Generate Represent (A1, B2, etc.)
+      const nextNumResult = await transaction.$queryRaw<{ max_num: number }[]>`
+        SELECT COALESCE(MAX(SUBSTRING(represent FROM 2)::INTEGER), 0) as max_num
+        FROM "CompetencyAspect"
+        WHERE dimension::text = ${pillar.dimension}
+      `;
+      const nextNumber = Number(nextNumResult[0]?.max_num ?? 0) + 1;
+      const represent = generateAspectRepresent(pillar.dimension, nextNumber);
+
+      // 5.3 Create Aspect
+      return transaction.competencyAspect.create({
+        data: {
+          name,
+          pillarId: pillarId as string,
+          represent,
+          status,
+          weightWithinDimension: 0,
+          dimension: pillar.dimension,
+          assessmentMethods: {
+            create: assessmentMethods.map((m) => ({
+              assessmentMethodId: m.id as string,
+              weightWithinDimension: m.weightWithinDimension,
+            })),
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          pillarId: true,
+          status: true,
+          createdAt: true,
+          assessmentMethods: {
+            select: {
+              weightWithinDimension: true,
+              assessmentMethod: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
+    const mapperData: AspectListItemDto = {
+      id: result.id,
+      name: result.name,
+      pillarId: result.pillarId as UUID,
+      status: result.status,
+      createdDate: result.createdAt,
+      assessmentMethods: (result.assessmentMethods || []).map((am: any) => ({
+        id: am.assessmentMethod.id as UUID,
+        name: am.assessmentMethod.name,
+        weightWithinDimension: am.weightWithinDimension ? Number(am.weightWithinDimension) : 0,
+      })),
+    };
+
+    return new ResponseItem(mapperData, 'Tạo aspect thành công', AspectListItemDto);
   }
 }
