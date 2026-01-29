@@ -136,19 +136,19 @@ model Level {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  scale                 LevelScale?            @relation(fields: [scaleId], references: [id], onDelete: SetNull)
-  question              Question[]
+  scale                       LevelScale?                  @relation(fields: [scaleId], references: [id], onDelete: SetNull)
+  question                    Question[]
   aspectPillarFrameworkLevels AspectPillarFrameworkLevel[]
-  frameworkLevels       FrameworkLevel[]
-  courses               Course[]
-  exams                 Exam[]
-  mentors               Mentor[]
-  mentorCompetencies    MentorCompetency[]
-  competencySkills      CompetencySkill[]
-  competencyAssessments CompetencyAssessment[]
-  competencyScores      CompetencyScore[]
-  learningPaths         LearningPath[]
-  portfolios            Portfolio[]
+  frameworkLevels             FrameworkLevel[]
+  courses                     Course[]
+  exams                       Exam[]
+  mentors                     Mentor[]
+  mentorCompetencies          MentorCompetency[]
+  competencySkills            CompetencySkill[]
+  competencyAssessments       CompetencyAssessment[]
+  competencyScores            CompetencyScore[]
+  learningPaths               LearningPath[]
+  portfolios                  Portfolio[]
 }
 
 model LevelScale {
@@ -253,22 +253,22 @@ model Domain {
 }
 
 model CompetencyAspect {
-  id                    String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                  String                             @db.VarChar
-  represent             String                             @default("") @db.VarChar
-  description           String?                            @db.Text
-  pillarId              String                             @map("pillar_id") @db.Uuid
-  dimension             CompetencyDimension
-  weightWithinDimension Decimal                            @map("weight_within_dimension") @db.Decimal(3, 2)
-  createdAt             DateTime                           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime                           @updatedAt @map("updated_at") @db.Timestamptz(6)
-  competencyPillar      CompetencyPillar                   @relation(fields: [pillarId], references: [id], onDelete: Cascade)
-  competencySkill       CompetencySkill[]
-  examAspectSnapshot    ExamAspectSnapshot[]
-  courseAspects         CourseAspect[]
+  id                     String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                   String                             @db.VarChar
+  represent              String                             @default("") @db.VarChar
+  description            String?                            @db.Text
+  pillarId               String                             @map("pillar_id") @db.Uuid
+  dimension              CompetencyDimension
+  weightWithinDimension  Decimal                            @map("weight_within_dimension") @db.Decimal(3, 2)
+  createdAt              DateTime                           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  competencyPillar       CompetencyPillar                   @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+  competencySkill        CompetencySkill[]
+  examAspectSnapshot     ExamAspectSnapshot[]
+  courseAspects          CourseAspect[]
   aspectPillarFrameworks AspectPillarFramework[]
-  assessmentMethods     CompetencyAspectAssessmentMethod[]
-  status                CompetencyAspectStatus             @default(DRAFT) @map("status")
+  assessmentMethods      CompetencyAspectAssessmentMethod[]
+  status                 CompetencyAspectStatus             @default(DRAFT) @map("status")
 
   @@unique([pillarId, name])
   @@index([status])
@@ -282,10 +282,10 @@ model AssessmentMethod {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  examSet               ExamSet[]
-  exam                  Exam[]
-  competencyAssessment  CompetencyAssessment[]
-  competencyAspects     CompetencyAspectAssessmentMethod[]
+  examSet              ExamSet[]
+  exam                 Exam[]
+  competencyAssessment CompetencyAssessment[]
+  competencyAspects    CompetencyAspectAssessmentMethod[]
 }
 
 model CompetencyAspectAssessmentMethod {
@@ -416,7 +416,6 @@ model MentorBooking {
   competencyPillar CompetencyPillar? @relation(fields: [pillarFocus], references: [id], onDelete: SetNull)
 }
 
-
 model MentorTimeSpot {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   mentorId String @map("mentor_id") @db.Uuid
@@ -428,10 +427,10 @@ model MentorTimeSpot {
   status   MentorSpotStatus @default(AVAILABLE)
   timezone String
 
-  meetUrl String? @map("meet_url") @db.Text
+  meetUrl         String? @map("meet_url") @db.Text
   calendarEventId String? @map("calendar_event_id") @db.Text
 
-  mentor Mentor          @relation("MentorSpots", fields: [mentorId], references: [id])
+  mentor Mentor @relation("MentorSpots", fields: [mentorId], references: [id])
 
   interviewRequest InterviewRequest? @relation("SpotInterview")
 
@@ -469,13 +468,13 @@ model CompetencyFramework {
   name        String   @db.VarChar
   searchText  String?  @map("search_text") @db.Text
 
-  assessment            CompetencyAssessment[]
-  domain                Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  examSet               ExamSet[]
-  learningPath          LearningPath[]
-  pillars               CompetencyPillar[]
-  pillarFrameworks      PillarFramework[]
-  frameworkLevels       FrameworkLevel[]
+  assessment       CompetencyAssessment[]
+  domain           Domain                 @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  examSet          ExamSet[]
+  learningPath     LearningPath[]
+  pillars          CompetencyPillar[]
+  pillarFrameworks PillarFramework[]
+  frameworkLevels  FrameworkLevel[]
 }
 
 model CompetencyPillar {
@@ -537,7 +536,7 @@ model CompetencyAssessment {
   user               User                @relation("UserAssessment", fields: [userId], references: [id], onDelete: Cascade)
   level              Level?              @relation(fields: [levelId], references: [id], onDelete: SetNull)
   score              CompetencyScore[]
-  assessmentMethod      AssessmentMethod?      @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
+  assessmentMethod   AssessmentMethod?   @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
 }
 
 model CompetencyScore {
@@ -631,24 +630,26 @@ model UserLearningProgress {
 }
 
 model Portfolio {
-  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId           String            @unique @map("user_id") @db.Uuid
-  linkedInUrl      String?           @map("linked_in_url")
-  githubUrl        String?           @map("github_url")
-  sfiaLevelClaimed SFIALevel?        @map("sfia_level_claimed")
-  levelId          String?           @map("level_id") @db.Uuid
-  isVerified       Boolean           @default(false) @map("is_verified")
-  verifiedBy       String?           @map("verified_by") @db.Uuid
-  verifiedAt       DateTime?         @map("verified_at")
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  certificateFiles String[]          @default([])
-  experienceFiles  String[]          @default([])
-  pillarId         String?           @map("pillar_id") @db.Uuid
-  pillar           CompetencyPillar? @relation(fields: [pillarId], references: [id])
-  level            Level?            @relation(fields: [levelId], references: [id], onDelete: SetNull)
-  user             User              @relation("UserPortfolio", fields: [userId], references: [id])
-  verifier         User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String            @unique @map("user_id") @db.Uuid
+  linkedInUrl            String?           @map("linked_in_url")
+  githubUrl              String?           @map("github_url")
+  portfolioUrl           String?           @map("portfolio_url")
+  developmentFocusAnswer String?           @map("development_focus_answer") @db.Text
+  sfiaLevelClaimed       SFIALevel?        @map("sfia_level_claimed")
+  levelId                String?           @map("level_id") @db.Uuid
+  isVerified             Boolean           @default(false) @map("is_verified")
+  verifiedBy             String?           @map("verified_by") @db.Uuid
+  verifiedAt             DateTime?         @map("verified_at")
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  certificateFiles       String[]          @default([])
+  experienceFiles        String[]          @default([])
+  pillarId               String?           @map("pillar_id") @db.Uuid
+  pillar                 CompetencyPillar? @relation(fields: [pillarId], references: [id])
+  level                  Level?            @relation(fields: [levelId], references: [id], onDelete: SetNull)
+  user                   User              @relation("UserPortfolio", fields: [userId], references: [id])
+  verifier               User?             @relation("VerifierPortfolio", fields: [verifiedBy], references: [id])
 }
 
 model OrganizationalMetrics {
@@ -717,8 +718,8 @@ model AspectPillarFramework {
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  aspect CompetencyAspect    @relation(fields: [aspectId], references: [id], onDelete: Cascade)
-  pillar PillarFramework    @relation(fields: [pillarFrameworkId], references: [id], onDelete: Cascade)
+  aspect CompetencyAspect             @relation(fields: [aspectId], references: [id], onDelete: Cascade)
+  pillar PillarFramework              @relation(fields: [pillarFrameworkId], references: [id], onDelete: Cascade)
   levels AspectPillarFrameworkLevel[]
 
   @@unique([aspectId, pillarFrameworkId])
@@ -734,8 +735,8 @@ model PillarFramework {
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  pillar    CompetencyPillar    @relation(fields: [pillarId], references: [id], onDelete: Cascade)
-  framework CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  pillar                 CompetencyPillar        @relation(fields: [pillarId], references: [id], onDelete: Cascade)
+  framework              CompetencyFramework     @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
   aspectPillarFrameworks AspectPillarFramework[]
 
   @@unique([pillarId, frameworkId])
@@ -744,17 +745,17 @@ model PillarFramework {
 }
 
 model AspectPillarFrameworkLevel {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   aspectPillarFrameworkId String   @map("aspect_pillar_framework_id") @db.Uuid
-  levelId        String   @map("level_id") @db.Uuid
-  description    String   @db.Text
-  criteria       String?  @db.Text
-  examples       String?  @db.Text
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  levelId                 String   @map("level_id") @db.Uuid
+  description             String   @db.Text
+  criteria                String?  @db.Text
+  examples                String?  @db.Text
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   aspectPillarFramework AspectPillarFramework @relation(fields: [aspectPillarFrameworkId], references: [id], onDelete: Cascade)
-  level        Level        @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  level                 Level                 @relation(fields: [levelId], references: [id], onDelete: Cascade)
 
   @@unique([aspectPillarFrameworkId, levelId])
   @@index([aspectPillarFrameworkId])
