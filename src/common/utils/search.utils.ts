@@ -18,22 +18,22 @@ import { Prisma } from '@prisma/client';
  * - If keyword has NO accents → searches unaccented (matches all variations)
  * - If keyword HAS accents → searches with exact accents (case-insensitive)
  */
-export function createVietnameseSearchCondition(columnName: string, keyword: string): Prisma.Sql {
+export function createVietnameseSearchCondition(columnExpr: string, keyword?: string): Prisma.Sql {
   const trimmedKeyword = (keyword ?? '').trim();
 
-  if (trimmedKeyword.length === 0) {
+  if (!trimmedKeyword) {
     return Prisma.sql`TRUE`;
   }
 
   const normalizedKeyword = trimmedKeyword.toLowerCase();
-  const searchPattern = '%' + normalizedKeyword + '%';
+  const searchPattern = `%${normalizedKeyword}%`;
 
   return Prisma.sql`
-    CASE 
+    CASE
       WHEN ${normalizedKeyword} = unaccent_immutable(${normalizedKeyword}) THEN
-        unaccent_immutable(LOWER(${Prisma.raw(`"${columnName}"`)})) LIKE ${searchPattern}
+        unaccent_immutable(LOWER(${Prisma.raw(columnExpr)})) LIKE ${searchPattern}
       ELSE
-        LOWER(${Prisma.raw(`"${columnName}"`)}) LIKE ${searchPattern}
+        LOWER(${Prisma.raw(columnExpr)}) LIKE ${searchPattern}
     END
   `;
 }

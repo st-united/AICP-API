@@ -23,6 +23,7 @@ import { validateCompetencyFrameworkForPublish } from './validator/validate-comp
 import { persistPillars } from './getter/competency-framework.getter';
 import { competencyFrameworkSelect, CompetencyFrameworkPayload } from './types/competency-framework.types';
 import { mapCompetencyFrameworkDto } from './mapper/competency-framework.mapper';
+import { createVietnameseSearchCondition } from '@app/common/utils/search.utils';
 
 @Injectable()
 export class CompetencyFrameworkService {
@@ -230,55 +231,73 @@ export class CompetencyFrameworkService {
     request: SearchCompetencyFrameworkRequestDto
   ): Promise<ResponsePaginate<CompetencyFrameworkDto>> {
     const { search, take, status } = request;
-    const where: Prisma.CompetencyFrameworkWhereInput = {
-      ...(!isNullOrEmpty(search) && {
-        searchText: { contains: convertStringToEnglish(search, true), mode: 'insensitive' },
-      }),
-      ...{ isActive: status },
-    };
+    const statusCondition: Prisma.Sql =
+      status === undefined || status === null ? Prisma.sql`TRUE` : Prisma.sql`"is_active" = ${status}`;
+    const searchCondition = createVietnameseSearchCondition('cf.name', search);
 
-    const [itemCount, frameworks] = await this.prismaService.$transaction([
-      this.prismaService.competencyFramework.count({ where }),
-      this.prismaService.competencyFramework.findMany({
-        where,
-        orderBy: { createdAt: Order.DESC },
-        skip: request.skip,
-        take,
-        select: {
-          id: true,
-          name: true,
-          createdAt: true,
-          updatedAt: true,
-          isActive: true,
-          domain: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              isActice: true,
-            },
-          },
-        },
-      }),
+    const whereSql = Prisma.sql`${statusCondition} AND ${searchCondition}`;
+
+    const [frameworks, totalRows] = await this.prismaService.$transaction([
+      this.prismaService.$queryRaw<
+        {
+          id: string;
+          name: string;
+          createdAt: Date;
+          updatedAt: Date;
+          isActive: boolean;
+          domainId: string;
+          domainName: string;
+          domainDescription: string | null;
+          domainIsActive: boolean;
+        }[]
+      >(
+        Prisma.sql`
+    SELECT
+      cf.id,
+      cf.name,
+      cf.created_at AS "createdAt",
+      cf.updated_at AS "updatedAt",
+      cf.is_active AS "isActive",
+
+      d.id AS "domainId",
+      d.name AS "domainName",
+      d.description AS "domainDescription",
+      d.is_active AS "domainIsActive"
+
+    FROM "CompetencyFramework" cf
+    JOIN "Domain" d ON d.id = cf.domain_id
+    WHERE ${whereSql}
+    ORDER BY cf.created_at DESC
+    LIMIT ${take} OFFSET ${request.skip}
+  `
+      ),
+
+      this.prismaService.$queryRaw<{ count: bigint }[]>(
+        Prisma.sql`
+    SELECT COUNT(*)::bigint AS count
+    FROM "CompetencyFramework" cf
+    WHERE ${whereSql}
+  `
+      ),
     ]);
 
-    const data = frameworks.map((framework) => ({
-      id: framework.id,
-      name: framework.name,
-      createdAt: framework.createdAt,
-      updatedAt: framework.updatedAt,
-      isActive: framework.isActive,
-      domain: framework.domain
-        ? {
-            id: framework.domain.id,
-            name: framework.domain.name,
-            description: framework.domain.description,
-            isActive: framework.domain.isActice,
-          }
-        : undefined,
+    const total = Number(totalRows[0]?.count ?? 0);
+
+    const data = frameworks.map((fw) => ({
+      id: fw.id,
+      name: fw.name,
+      createdAt: fw.createdAt,
+      updatedAt: fw.updatedAt,
+      isActive: fw.isActive,
+      domain: {
+        id: fw.domainId,
+        name: fw.domainName,
+        description: fw.domainDescription,
+        isActive: fw.domainIsActive,
+      },
     }));
 
-    const meta = new PageMetaDto({ pageOptionsDto: request, itemCount });
+    const meta = new PageMetaDto({ pageOptionsDto: request, itemCount: total });
     return new ResponsePaginate(data, meta, 'Lấy danh sách khung năng lực thành công');
   }
 
@@ -362,7 +381,6 @@ export class CompetencyFrameworkService {
       }
 
       await this.prismaService.$transaction(async (tx) => {
-        // Delete FrameworkAssessment junction table records
         await tx.frameworkAssessment.deleteMany({
           where: { frameworkId: competencyFrameworkId },
         });
