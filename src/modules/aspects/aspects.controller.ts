@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, UseGuards, Query, Body, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
 import { AspectsService } from '@app/modules/aspects/aspects.service';
@@ -11,6 +11,7 @@ import { ResponsePaginate, ResponseItem } from '@app/common/dtos';
 import { CompetencyDimension } from '@prisma/client';
 import { AspectStatisticsResponseDto } from './dto/response/aspect-statistics.response.dto';
 import { AspectNamesRequestDto } from './dto/request/aspect-names.request.dto';
+import { CreateAspectRequestDto } from './dto/request/create-aspect.request.dto';
 
 @ApiTags('aspects')
 // @ApiBearerAuth('access-token')
@@ -32,8 +33,13 @@ export class AspectsController {
   }
 
   @Get('by-pillar')
-  // @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   async getByPillar(@Query() query: AspectNamesRequestDto): Promise<ResponseItem<AspectNameListDto>> {
     return this.aspectsService.findAspectNamesByPillar(query);
+  }
+  @Post()
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  async create(@Body() body: CreateAspectRequestDto): Promise<ResponseItem<AspectListItemDto>> {
+    return this.aspectsService.create(body);
   }
 }

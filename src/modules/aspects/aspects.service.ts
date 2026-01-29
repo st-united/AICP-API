@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
 import { AspectListRequestDto } from './dto/request/aspect-list.request.dto';
 import { AspectNamesRequestDto } from './dto/request/aspect-names.request.dto';
@@ -9,6 +9,8 @@ import { AspectsQueries } from './aspects.queries';
 import { CompetencyAspectStatus } from '@prisma/client';
 import { AspectStatisticsResponseDto } from './dto/response/aspect-statistics.response.dto';
 import { AspectItemRaw } from './interface/AspectItemRaw';
+import { CreateAspectRequestDto } from './dto/request/create-aspect.request.dto';
+import { UUID } from 'crypto';
 
 @Injectable()
 export class AspectsService {
@@ -103,5 +105,97 @@ export class AspectsService {
     });
 
     return new ResponseItem(aspects, 'Lấy danh sách aspect thành công', AspectNameListDto);
+  }
+
+  async create(body: CreateAspectRequestDto): Promise<ResponseItem<AspectListItemDto>> {
+    const { name, pillarId, isDraft, assessmentMethods = [] } = body;
+    const status = isDraft ? CompetencyAspectStatus.DRAFT : CompetencyAspectStatus.AVAILABLE;
+
+    // 1. Uniqueness check (pillarId + name)
+    const existingAspect = await this.prisma.competencyAspect.findUnique({
+      where: {
+        pillarId_name: {
+          pillarId: pillarId as string,
+          name,
+        },
+      },
+    });
+    if (existingAspect) {
+      throw new BadRequestException(`Aspect trùng tên "${name}" đã tồn tại trong pillar này.`);
+    }
+
+    // 2. Validate Pillar
+    const pillar = await this.prisma.competencyPillar.findUnique({
+      where: { id: pillarId as string },
+    });
+    if (!pillar) {
+      throw new BadRequestException('Pillar không tồn tại');
+    }
+
+    // 3. Weight Validation for Assessment Methods (if not draft and methods exist)
+    if (!isDraft && assessmentMethods.length > 0) {
+      const totalWeight = assessmentMethods.reduce((sum, method) => sum + method.weightWithinDimension, 0);
+      if (Math.abs(totalWeight - 1) > 0.001) {
+        throw new BadRequestException('Tổng trọng số các phương pháp đánh giá phải bằng 1.0 (100%)');
+      }
+    }
+
+    // 4. Execution in Transaction
+    const result = await this.prisma.$transaction(async (transaction) => {
+      // Validate Assessment Methods existence/activity
+      if (assessmentMethods.length > 0) {
+        const methodIds = assessmentMethods.map((m) => m.id as string);
+        const activeMethodsCount = await transaction.assessmentMethod.count({
+          where: {
+            id: { in: methodIds },
+            isActive: true,
+          },
+        });
+        if (activeMethodsCount !== assessmentMethods.length) {
+          throw new BadRequestException('Một hoặc nhiều phương pháp đánh giá không hợp lệ hoặc bị vô hiệu hóa');
+        }
+      }
+
+      return transaction.competencyAspect.create({
+        data: {
+          name,
+          pillarId: pillarId as string,
+          represent: name.slice(0, 2).toUpperCase(),
+          status,
+          weightWithinDimension: 0.1, // Remove later
+          dimension: pillar.dimension,
+          assessmentMethods: {
+            create: assessmentMethods.map((m) => ({
+              assessmentMethodId: m.id as string,
+              weightWithinDimension: m.weightWithinDimension,
+            })),
+          },
+        },
+        include: {
+          assessmentMethods: {
+            include: {
+              assessmentMethod: true,
+            },
+          },
+        },
+      });
+    });
+
+    return new ResponseItem(this.mapToListItemDto(result), 'Tạo aspect thành công', AspectListItemDto);
+  }
+
+  private mapToListItemDto(item: any): AspectListItemDto {
+    return {
+      id: item.id,
+      name: item.name,
+      pillarId: item.pillarId as UUID,
+      status: item.status,
+      createdDate: item.createdAt,
+      assessmentMethods: (item.assessmentMethods || []).map((am: any) => ({
+        id: am.assessmentMethodId as UUID,
+        name: am.assessmentMethod.name,
+        weightWithinDimension: am.weightWithinDimension ? Number(am.weightWithinDimension) : 0,
+      })),
+    };
   }
 }
