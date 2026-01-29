@@ -227,9 +227,9 @@ export class ExamService {
                   id: true,
                   name: true,
                   represent: true,
-                  aspectPillars: {
+                  aspectPillarFrameworks: {
                     select: {
-                      pillar: { select: { id: true } },
+                      pillar: { select: { pillar: { select: { id: true } } } },
                     },
                   },
                 },
@@ -248,7 +248,9 @@ export class ExamService {
         const pillar = pillarSnapshot.pillar;
 
         const aspects = examAspectSnapshot
-          .filter((aspectSnapshot) => aspectSnapshot.aspect.aspectPillars.some((ap) => ap.pillar.id === pillar.id))
+          .filter((aspectSnapshot) =>
+            aspectSnapshot.aspect.aspectPillarFrameworks.some((ap) => ap.pillar.pillar.id === pillar.id)
+          )
           .map((aspectSnapshot) => ({
             id: aspectSnapshot.aspect.id,
             name: aspectSnapshot.aspect.name,
@@ -661,9 +663,9 @@ export class ExamService {
                       id: true,
                       name: true,
                       represent: true,
-                      aspectPillars: {
+                      aspectPillarFrameworks: {
                         select: {
-                          pillar: { select: { id: true } },
+                          pillar: { select: { pillar: { select: { id: true } } } },
                         },
                       },
                     },
@@ -684,7 +686,9 @@ export class ExamService {
             const pillar = pillarSnapshot.pillar;
 
             const aspects = examAspectSnapshot
-              .filter((aspectSnapshot) => aspectSnapshot.aspect.aspectPillars.some((ap) => ap.pillar.id === pillar.id))
+              .filter((aspectSnapshot) =>
+                aspectSnapshot.aspect.aspectPillarFrameworks.some((ap) => ap.pillar.pillar.id === pillar.id)
+              )
               .map((aspectSnapshot) => ({
                 id: aspectSnapshot.aspect.id,
                 name: aspectSnapshot.aspect.name,

@@ -65,10 +65,14 @@ export class AnswersService {
                       select: {
                         id: true,
                         name: true,
-                        aspectPillars: {
+                        aspectPillarFrameworks: {
                           select: {
                             weightWithinDimension: true,
-                            pillar: { select: { id: true, name: true } },
+                            pillar: {
+                              select: {
+                                pillar: { select: { id: true, name: true } },
+                              },
+                            },
                           },
                         },
                       },
@@ -110,9 +114,13 @@ export class AnswersService {
                     aspect: {
                       select: {
                         name: true,
-                        aspectPillars: {
+                        aspectPillarFrameworks: {
                           select: {
-                            pillar: { select: { name: true } },
+                            pillar: {
+                              select: {
+                                pillar: { select: { name: true } },
+                              },
+                            },
                           },
                         },
                       },
@@ -173,15 +181,21 @@ export class AnswersService {
 
       const validPillarIds = pillars.map((p) => p.id);
 
-      const aspectPillars = await this.prisma.aspectPillar.findMany({
-        where: { pillarId: { in: validPillarIds } },
+      const aspectPillarFrameworks = await this.prisma.aspectPillarFramework.findMany({
+        where: {
+          pillar: {
+            pillarId: { in: validPillarIds },
+          },
+        },
         select: {
           weightWithinDimension: true,
           aspect: {
             select: { id: true, name: true },
           },
           pillar: {
-            select: { id: true, name: true },
+            select: {
+              pillar: { select: { id: true, name: true } },
+            },
           },
         },
       });
@@ -206,11 +220,11 @@ export class AnswersService {
         pillarFrameworks.map((pf) => [pf.pillarId, pf.weightWithinDimension.toNumber()])
       );
 
-      const snapshots = aspectPillars.map((ap) => {
+      const snapshots = aspectPillarFrameworks.map((ap) => {
         const aspectName = ap.aspect.name;
         const aspectId = ap.aspect.id;
-        const pillarName = ap.pillar.name;
-        const pillarId = ap.pillar.id;
+        const pillarName = ap.pillar.pillar.name;
+        const pillarId = ap.pillar.pillar.id;
 
         const weightedScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.weighted ?? 0;
         const rawScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.raw ?? 0;
