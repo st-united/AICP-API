@@ -1,4 +1,3 @@
-
 -- AlterTable
 ALTER TABLE "public"."CompetencyAspect" ALTER COLUMN "weight_within_dimension" SET DATA TYPE DECIMAL(5,2);
 

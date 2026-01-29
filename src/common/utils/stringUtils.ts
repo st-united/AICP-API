@@ -51,3 +51,7 @@ export const convertStringToEnglish = (text: string, isLowerKey: boolean = false
 
   return isLowerKey ? normalized.toLowerCase() : normalized;
 };
+
+export const isNullOrEmpty = (str: string | null | undefined): boolean => {
+  return !str || str.trim().length === 0;
+};

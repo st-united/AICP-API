@@ -1,4 +1,3 @@
-
 -- AlterTable
 ALTER TABLE "public"."CompetencyFramework" ADD COLUMN     "search_text" TEXT;
 
