@@ -277,7 +277,6 @@ model CompetencyAspect {
 model AssessmentMethod {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String   @unique @db.VarChar
-  searchText  String   @default("") @map("search_text") @db.Text
   description String?  @db.Text
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
