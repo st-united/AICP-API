@@ -24,6 +24,7 @@ import { ActivateAccountDto } from './dto/request/activate-account.dto';
 import { BookingGateway } from '../booking/booking.gateway';
 import { FilterMentorBookingDto } from './dto/request/filter-mentor-booking.dto';
 import { PaginatedMentorBookingResponseDto } from './dto/response/paginated-booking-response.dto';
+import { Public } from '../auth/guards/decorator/public.decorator';
 import { JwtAccessTokenGuard } from '../auth/guards/jwt-access-token.guard';
 import { AssignMentorDto } from './dto/response/assign-mentor.dto';
 import { AssignMentorResultDto } from './dto/response/assign-mentor-result.dto';
@@ -98,6 +99,7 @@ export class MentorsController {
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return await this.mentorsService.getMentor(id);
   }
+  @Public()
   @Patch('activate-link-account')
   async activateAccountByMentor(@Body() activateAccountDto: ActivateAccountDto, @Req() req) {
     const url = req.headers.origin;
