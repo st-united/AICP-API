@@ -14,22 +14,16 @@ export class MigrationService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Main migration method - runs all migration steps
-   */
   async migrateToLevelSystem(): Promise<MigrationResult> {
     try {
       this.logger.log('Starting Level System Migration...');
 
-      // Step 1: Create LevelScale
       const levelScale = await this.createLevelScale();
       this.logger.log(`✅ Created LevelScale: ${levelScale.id}`);
 
-      // Step 2: Update existing 7 Level records
       const levels = await this.createLevels(levelScale.id);
       this.logger.log(`✅ Updated ${levels.length} existing Level records with scaleId and code`);
 
-      // Step 3: Migrate existing data
       const migrationStats = await this.migrateExistingData(levels);
       this.logger.log('✅ Migration completed successfully');
 
@@ -52,11 +46,7 @@ export class MigrationService {
     }
   }
 
-  /**
-   * Step 1: Create LevelScale record
-   */
   private async createLevelScale() {
-    // Check if already exists
     const existing = await this.prisma.levelScale.findFirst({
       where: { name: 'SFIA Framework' },
     });
@@ -75,12 +65,7 @@ export class MigrationService {
     });
   }
 
-  /**
-   * Step 2: Update existing 7 Level records to link with LevelScale
-   * Set code = sfiaLevel enum value
-   */
   private async createLevels(scaleId: string) {
-    // Get all existing levels
     const existingLevels = await this.prisma.level.findMany({
       orderBy: { numericValue: 'asc' },
     });
@@ -94,12 +79,11 @@ export class MigrationService {
     const updatedLevels = [];
 
     for (const level of existingLevels) {
-      // Update with scaleId and code (code = sfiaLevel enum value)
       const updated = await this.prisma.level.update({
         where: { id: level.id },
         data: {
           scaleId,
-          code: level.sfiaLevel, // Set code = enum value (e.g., "LEVEL_1_AWARENESS")
+          code: level.sfiaLevel,
           isActive: true,
         },
       });
@@ -111,9 +95,6 @@ export class MigrationService {
     return updatedLevels;
   }
 
-  /**
-   * Step 3: Migrate existing data - populate levelId fields
-   */
   private async migrateExistingData(levels: any[]) {
     const stats = {
       coursesUpdated: 0,
@@ -127,13 +108,11 @@ export class MigrationService {
       portfoliosUpdated: 0,
     };
 
-    // Create a map: SFIALevel -> Level ID
     const levelMap = new Map<SFIALevel, string>();
     levels.forEach((level) => {
       levelMap.set(level.sfiaLevel, level.id);
     });
 
-    // Migrate Course
     const courses = await this.prisma.course.findMany({
       where: { levelId: null },
       select: { id: true, difficultyLevel: true },
@@ -149,7 +128,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate Exam
     const exams = await this.prisma.exam.findMany({
       where: { levelId: null },
       select: { id: true, sfiaLevel: true },
@@ -165,7 +143,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate Mentor
     const mentors = await this.prisma.mentor.findMany({
       where: { levelId: null },
       select: { id: true, sfiaLevel: true },
@@ -181,7 +158,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate MentorCompetency
     const mentorCompetencies = await this.prisma.mentorCompetency.findMany({
       where: { levelId: null },
       select: { mentorId: true, pillarId: true, sfiaLevel: true },
@@ -202,7 +178,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate CompetencySkill
     const competencySkills = await this.prisma.competencySkill.findMany({
       where: { levelId: null },
       select: { id: true, sfiaLevel: true },
@@ -218,7 +193,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate CompetencyAssessment
     const assessments = await this.prisma.competencyAssessment.findMany({
       where: { levelId: null },
       select: { id: true, sfiaLevel: true },
@@ -234,7 +208,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate CompetencyScore
     const scores = await this.prisma.competencyScore.findMany({
       where: { levelId: null },
       select: { id: true, sfiaLevel: true },
@@ -250,7 +223,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate LearningPath
     const learningPaths = await this.prisma.learningPath.findMany({
       where: { targetLevelId: null },
       select: { id: true, targetSfiaLevel: true },
@@ -266,7 +238,6 @@ export class MigrationService {
       }
     }
 
-    // Migrate Portfolio
     const portfolios = await this.prisma.portfolio.findMany({
       where: { levelId: null },
       select: { id: true, sfiaLevelClaimed: true },
@@ -286,9 +257,6 @@ export class MigrationService {
     return stats;
   }
 
-  /**
-   * Check migration status
-   */
   async checkMigrationStatus() {
     const levelScale = await this.prisma.levelScale.findFirst({
       where: { name: 'SFIA Framework' },
@@ -330,5 +298,211 @@ export class MigrationService {
       message: 'Migration completed',
       ...stats,
     };
+  }
+
+  async migrateToIntermediateTables(): Promise<MigrationResult> {
+    try {
+      this.logger.log('Starting Framework Intermediate Tables Migration...');
+
+      const frameworks = await this.getFrameworksWithFullData();
+
+      const pillarFrameworkStats = await this.migratePillarFrameworkFromData(frameworks);
+      this.logger.log(`✅ Created ${pillarFrameworkStats.created} PillarFramework records`);
+
+      const aspectPillarStats = await this.migrateAspectPillarFromData(frameworks);
+      this.logger.log(`✅ Created ${aspectPillarStats.created} AspectPillar records`);
+
+      const aspectPillarLevelStats = await this.migrateAspectPillarLevel();
+      this.logger.log(`✅ Created ${aspectPillarLevelStats.created} AspectPillarLevel records`);
+
+      const frameworkLevelStats = await this.migrateFrameworkLevelFromData(frameworks);
+      this.logger.log(`✅ Created ${frameworkLevelStats.created} FrameworkLevel records`);
+
+      this.logger.log('✅ Framework Intermediate Tables Migration completed successfully');
+
+      return {
+        success: true,
+        message: 'Framework Intermediate Tables Migration completed successfully',
+        details: {
+          pillarFrameworksCreated: pillarFrameworkStats.created,
+          aspectPillarsCreated: aspectPillarStats.created,
+          aspectPillarLevelsCreated: aspectPillarLevelStats.created,
+          frameworkLevelsCreated: frameworkLevelStats.created,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Framework Intermediate Tables Migration failed:', error);
+      return {
+        success: false,
+        message: `Framework Intermediate Tables Migration failed: ${error.message}`,
+        details: error,
+      };
+    }
+  }
+
+  private async getFrameworksWithFullData() {
+    return await this.prisma.competencyFramework.findMany({
+      select: {
+        id: true,
+        name: true,
+        pillars: {
+          select: {
+            id: true,
+            dimension: true,
+            weightWithinDimension: true,
+            aspects: {
+              select: {
+                id: true,
+                name: true,
+                weightWithinDimension: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  private async migratePillarFrameworkFromData(frameworks: any[]) {
+    let created = 0;
+
+    for (const framework of frameworks) {
+      for (const pillar of framework.pillars) {
+        const existing = await this.prisma.pillarFramework.findFirst({
+          where: {
+            frameworkId: framework.id,
+            pillarId: pillar.id,
+          },
+        });
+
+        if (!existing) {
+          await this.prisma.pillarFramework.create({
+            data: {
+              frameworkId: framework.id,
+              pillarId: pillar.id,
+              weightWithinDimension: pillar.weightWithinDimension,
+            },
+          });
+          created++;
+          this.logger.log(
+            `Created PillarFramework: ${framework.name} -> ${pillar.dimension} (weight: ${pillar.weightWithinDimension})`
+          );
+        }
+      }
+    }
+
+    return { created };
+  }
+
+  private async migrateAspectPillarFromData(frameworks: any[]) {
+    let created = 0;
+
+    for (const framework of frameworks) {
+      for (const pillar of framework.pillars) {
+        for (const aspect of pillar.aspects) {
+          const existing = await this.prisma.aspectPillar.findFirst({
+            where: {
+              pillarId: pillar.id,
+              aspectId: aspect.id,
+            },
+          });
+
+          if (!existing) {
+            await this.prisma.aspectPillar.create({
+              data: {
+                pillarId: pillar.id,
+                aspectId: aspect.id,
+                weightWithinDimension: aspect.weightWithinDimension,
+              },
+            });
+            created++;
+            this.logger.log(
+              `Created AspectPillar: ${pillar.dimension} -> ${aspect.name} (weight: ${aspect.weightWithinDimension})`
+            );
+          }
+        }
+      }
+    }
+
+    return { created };
+  }
+
+  private async migrateFrameworkLevelFromData(frameworks: any[]) {
+    let created = 0;
+
+    const levels = await this.prisma.level.findMany({
+      where: { isActive: true },
+      select: { id: true, numericValue: true, name: true },
+    });
+
+    for (const framework of frameworks) {
+      for (const level of levels) {
+        const existing = await this.prisma.frameworkLevel.findFirst({
+          where: {
+            frameworkId: framework.id,
+            levelId: level.id,
+          },
+        });
+
+        if (!existing) {
+          await this.prisma.frameworkLevel.create({
+            data: {
+              frameworkId: framework.id,
+              levelId: level.id,
+              description: `${level.name} requirements for ${framework.name}`,
+            },
+          });
+          created++;
+        }
+      }
+
+      this.logger.log(`Created FrameworkLevel for: ${framework.name} (${levels.length} levels)`);
+    }
+
+    return { created };
+  }
+
+  private async migrateAspectPillarLevel() {
+    let created = 0;
+
+    const aspectPillars = await this.prisma.aspectPillar.findMany({
+      include: {
+        aspect: { select: { name: true } },
+        pillar: { select: { dimension: true } },
+      },
+    });
+
+    const levels = await this.prisma.level.findMany({
+      where: { isActive: true },
+      select: { id: true, numericValue: true },
+    });
+
+    for (const aspectPillar of aspectPillars) {
+      for (const level of levels) {
+        const existing = await this.prisma.aspectPillarLevel.findFirst({
+          where: {
+            aspectPillarId: aspectPillar.id,
+            levelId: level.id,
+          },
+        });
+
+        if (!existing) {
+          await this.prisma.aspectPillarLevel.create({
+            data: {
+              aspectPillarId: aspectPillar.id,
+              levelId: level.id,
+              description: `Level ${level.numericValue} description for ${aspectPillar.aspect.name} in ${aspectPillar.pillar.dimension}`,
+            },
+          });
+          created++;
+        }
+      }
+
+      this.logger.log(
+        `Created AspectPillarLevel for: ${aspectPillar.pillar.dimension} -> ${aspectPillar.aspect.name} (${levels.length} levels)`
+      );
+    }
+
+    return { created };
   }
 }
