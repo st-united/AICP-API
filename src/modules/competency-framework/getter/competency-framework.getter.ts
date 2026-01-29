@@ -23,7 +23,7 @@ export const persistPillars = async (
   for (const pillar of pillars) {
     if (!pillar || !pillar.id) continue;
 
-    await tx.pillarFramework.create({
+    const pillarFramework = await tx.pillarFramework.create({
       data: {
         pillarId: pillar.id,
         frameworkId,
@@ -34,18 +34,18 @@ export const persistPillars = async (
     for (const aspect of pillar.aspects || []) {
       if (!aspect.id) continue;
 
-      const createdAspectPillar = await tx.aspectPillar.create({
+      const createdAspectPillarFramework = await tx.aspectPillarFramework.create({
         data: {
           aspectId: aspect.id,
-          pillarId: pillar.id,
+          pillarFrameworkId: pillarFramework.id,
           weightWithinDimension: aspect.weightDimension / 100,
         },
       });
 
       for (const level of aspect.levels || []) {
-        await tx.aspectPillarLevel.create({
+        await tx.aspectPillarFrameworkLevel.create({
           data: {
-            aspectPillarId: createdAspectPillar.id,
+            aspectPillarFrameworkId: createdAspectPillarFramework.id,
             levelId: level.id,
             description: level.description,
           },

@@ -182,7 +182,7 @@ export const validateDomain = async (domain: DomainDto, isActive: boolean, prism
   }
   try {
     const domainExists = await prismaService.domain.findUnique({
-      where: { id: domain.id, isActice: true },
+      where: { id: domain.id, isActive: true },
     });
     if (!domainExists) {
       throw new BadRequestException('Lĩnh vực không tồn tại');

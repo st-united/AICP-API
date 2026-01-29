@@ -9,12 +9,12 @@ export const competencyFrameworkSelect = {
       id: true,
       name: true,
       description: true,
-      isActice: true,
+      isActive: true,
     },
   },
   createdAt: true,
   updatedAt: true,
-  pillars: {
+  pillarFrameworks: {
     select: {
       id: true,
       weightWithinDimension: true,
@@ -23,37 +23,37 @@ export const competencyFrameworkSelect = {
           id: true,
           name: true,
           dimension: true,
-          aspectPillars: {
-            where: {
-              aspect: {
-                status: {
-                  not: CompetencyAspectStatus.DRAFT,
-                },
-              },
+        },
+      },
+      aspectPillarFrameworks: {
+        where: {
+          aspect: {
+            status: {
+              not: CompetencyAspectStatus.DRAFT,
             },
+          },
+        },
+        select: {
+          id: true,
+          weightWithinDimension: true,
+          aspect: {
             select: {
               id: true,
-              weightWithinDimension: true,
-              aspect: {
+              name: true,
+              description: true,
+              represent: true,
+              dimension: true,
+            },
+          },
+          levels: {
+            select: {
+              id: true,
+              description: true,
+              levelId: true,
+              level: {
                 select: {
                   id: true,
                   name: true,
-                  description: true,
-                  represent: true,
-                  dimension: true,
-                },
-              },
-              levels: {
-                select: {
-                  id: true,
-                  description: true,
-                  levelId: true,
-                  level: {
-                    select: {
-                      id: true,
-                      name: true,
-                    },
-                  },
                 },
               },
             },
@@ -62,7 +62,7 @@ export const competencyFrameworkSelect = {
       },
     },
   },
-  levels: {
+  frameworkLevels: {
     select: {
       id: true,
       description: true,
@@ -81,7 +81,7 @@ export type CompetencyFrameworkPayload = Prisma.CompetencyFrameworkGetPayload<{
   select: typeof competencyFrameworkSelect;
 }>;
 
-export type PillarFrameworkPayload = CompetencyFrameworkPayload['pillars'][number];
-export type AspectPillarPayload = PillarFrameworkPayload['pillar']['aspectPillars'][number];
-export type AspectPillarLevelPayload = AspectPillarPayload['levels'][number];
-export type FrameworkLevelPayload = CompetencyFrameworkPayload['levels'][number];
+export type PillarFrameworkPayload = CompetencyFrameworkPayload['pillarFrameworks'][number];
+export type AspectPillarFrameworkPayload = PillarFrameworkPayload['aspectPillarFrameworks'][number];
+export type AspectPillarFrameworkLevelPayload = AspectPillarFrameworkPayload['levels'][number];
+export type FrameworkLevelPayload = CompetencyFrameworkPayload['frameworkLevels'][number];

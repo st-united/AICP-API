@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUUID, IsBoolean, IsObject, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsBoolean, IsObject, IsNotEmpty, IsArray, IsArray } from 'class-validator';
 import { DomainDto } from '@app/modules/domain/dto/response/domain.dto';
 import { Expose, Transform, Type } from 'class-transformer';
 
@@ -166,6 +166,8 @@ export class CreateCompetencyFrameworkDto {
   })
   isActive: boolean;
 
+  @IsOptional()
+  @IsArray()
   @Expose()
   @Type(() => FrameworkLevelDto)
   @ApiProperty({

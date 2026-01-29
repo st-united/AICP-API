@@ -157,23 +157,19 @@ export class CompetencyFrameworkService {
         }
 
         if (mindset || skillset || toolset || levels !== undefined) {
-          await tx.aspectPillarLevel.deleteMany({
+          await tx.aspectPillarFrameworkLevel.deleteMany({
             where: {
-              aspectPillar: {
+              aspectPillarFramework: {
                 pillar: {
-                  pillarFrameworks: {
-                    some: { frameworkId: competencyFrameworkId },
-                  },
+                  frameworkId: competencyFrameworkId,
                 },
               },
             },
           });
-          await tx.aspectPillar.deleteMany({
+          await tx.aspectPillarFramework.deleteMany({
             where: {
               pillar: {
-                pillarFrameworks: {
-                  some: { frameworkId: competencyFrameworkId },
-                },
+                frameworkId: competencyFrameworkId,
               },
             },
           });
@@ -277,11 +273,9 @@ export class CompetencyFrameworkService {
       where: { id: competencyFrameworkId },
       select: competencyFrameworkSelect,
     });
-
     if (!framework) {
       throw new NotFoundException('Không thể tìm thấy khung năng lực');
     }
-
     const result = mapCompetencyFrameworkDto(framework);
 
     return new ResponseItem(result, 'Lấy chi tiết khung năng lực thành công');
@@ -355,38 +349,19 @@ export class CompetencyFrameworkService {
         await tx.competencyAssessment.deleteMany({
           where: { frameworkId: competencyFrameworkId },
         });
-        await tx.competencyAspectAssessmentMethod.deleteMany({
+        await tx.aspectPillarFrameworkLevel.deleteMany({
           where: {
-            competencyAspect: {
-              aspectPillars: {
-                some: {
-                  pillar: {
-                    pillarFrameworks: {
-                      some: { frameworkId: competencyFrameworkId },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        });
-        await tx.aspectPillarLevel.deleteMany({
-          where: {
-            aspectPillar: {
+            aspectPillarFramework: {
               pillar: {
-                pillarFrameworks: {
-                  some: { frameworkId: competencyFrameworkId },
-                },
+                frameworkId: competencyFrameworkId,
               },
             },
           },
         });
-        await tx.aspectPillar.deleteMany({
+        await tx.aspectPillarFramework.deleteMany({
           where: {
             pillar: {
-              pillarFrameworks: {
-                some: { frameworkId: competencyFrameworkId },
-              },
+              frameworkId: competencyFrameworkId,
             },
           },
         });

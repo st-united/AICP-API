@@ -13,6 +13,13 @@ export class LevelDto {
 
   @Expose()
   @ApiProperty({
+    example: 'LEVEL_1',
+    description: 'Tên của Level',
+  })
+  name: string;
+
+  @Expose()
+  @ApiProperty({
     example: 'Level 1-2',
     description: 'Mô tả của Level',
   })

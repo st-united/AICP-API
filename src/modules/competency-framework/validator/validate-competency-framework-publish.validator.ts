@@ -33,9 +33,15 @@ export const validateCompetencyFrameworkForPublish = async (
   });
   const activeAssessmentMethodIds = new Set(activeAssessmentMethods.map((am) => am.id));
 
-  const mindsetPillar = framework.pillars?.find((pf: any) => pf.pillar?.dimension === CompetencyDimension.MINDSET);
-  const skillsetPillar = framework.pillars?.find((pf: any) => pf.pillar?.dimension === CompetencyDimension.SKILLSET);
-  const toolsetPillar = framework.pillars?.find((pf: any) => pf.pillar?.dimension === CompetencyDimension.TOOLSET);
+  const mindsetPillar = framework.pillarFrameworks?.find(
+    (pf: any) => pf.pillar?.dimension === CompetencyDimension.MINDSET
+  );
+  const skillsetPillar = framework.pillarFrameworks?.find(
+    (pf: any) => pf.pillar?.dimension === CompetencyDimension.SKILLSET
+  );
+  const toolsetPillar = framework.pillarFrameworks?.find(
+    (pf: any) => pf.pillar?.dimension === CompetencyDimension.TOOLSET
+  );
 
   if (!mindsetPillar || !skillsetPillar || !toolsetPillar) {
     throw new BadRequestException('Phải có đủ 3 pillars: Mindset, Skillset và Toolset');
@@ -57,56 +63,59 @@ export const validateCompetencyFrameworkForPublish = async (
   const activeLevelIds = new Set(activeLevels.map((l) => l.id));
   const activeLevelCount = activeLevelIds.size;
 
-  for (const pillarFramework of (framework.pillars || []) as any[]) {
-    const aspectPillars = pillarFramework.pillar?.aspectPillars || [];
+  for (const pillarFramework of (framework.pillarFrameworks || []) as any[]) {
+    const aspectPillarFrameworks = pillarFramework.aspectPillarFrameworks || [];
 
-    if (!isArrayNotNullOrEmpty(aspectPillars)) {
+    if (!isArrayNotNullOrEmpty(aspectPillarFrameworks)) {
       throw new BadRequestException(`Pillar ${pillarFramework.pillar?.dimension} phải có ít nhất 1 tiêu chí`);
     }
 
-    const totalAspectWeight = aspectPillars.reduce((sum: number, ap: any) => sum + Number(ap.weightWithinDimension), 0);
+    const totalAspectWeight = aspectPillarFrameworks.reduce(
+      (sum: number, ap: any) => sum + Number(ap.weightWithinDimension),
+      0
+    );
     if (Math.abs(totalAspectWeight - 1.0) > 0.0001) {
       throw new BadRequestException(
         `Tổng trọng số của các tiêu chí trong pillar ${pillarFramework.pillar?.dimension} phải bằng 100%`
       );
     }
 
-    for (const aspectPillar of aspectPillars) {
-      if (!isArrayNotNullOrEmpty(aspectPillar.levels)) {
+    for (const aspectPillarFramework of aspectPillarFrameworks) {
+      if (!isArrayNotNullOrEmpty(aspectPillarFramework.levels)) {
         throw new BadRequestException(
-          `Tiêu chí "${aspectPillar.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} phải có ít nhất 1 cấp độ`
+          `Tiêu chí "${aspectPillarFramework.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} phải có ít nhất 1 cấp độ`
         );
       }
 
-      const aspectLevelIds = aspectPillar.levels.map((l: any) => l.levelId);
+      const aspectLevelIds = aspectPillarFramework.levels.map((l: any) => l.levelId);
 
       if (aspectLevelIds.length !== activeLevelCount) {
         throw new BadRequestException(
-          `Tiêu chí "${aspectPillar.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} phải bao gồm tất cả ${activeLevelCount} cấp độ mặc định`
+          `Tiêu chí "${aspectPillarFramework.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} phải bao gồm tất cả ${activeLevelCount} cấp độ mặc định`
         );
       }
 
       const hasInvalidLevel = aspectLevelIds.some((id: any) => !activeLevelIds.has(id));
       if (hasInvalidLevel) {
         throw new BadRequestException(
-          `Tiêu chí "${aspectPillar.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} có cấp độ không hợp lệ`
+          `Tiêu chí "${aspectPillarFramework.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} có cấp độ không hợp lệ`
         );
       }
 
-      const hasEmptyDescription = aspectPillar.levels.some((l: any) => isNullOrEmpty(l.description));
+      const hasEmptyDescription = aspectPillarFramework.levels.some((l: any) => isNullOrEmpty(l.description));
       if (hasEmptyDescription) {
         throw new BadRequestException(
-          `Tất cả cấp độ của tiêu chí "${aspectPillar.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} phải có mô tả`
+          `Tất cả cấp độ của tiêu chí "${aspectPillarFramework.aspect?.name}" trong pillar ${pillarFramework.pillar?.dimension} phải có mô tả`
         );
       }
     }
   }
 
-  if (!isArrayNotNullOrEmpty(framework.levels as any[])) {
+  if (!isArrayNotNullOrEmpty(framework.frameworkLevels as any[])) {
     throw new BadRequestException('Framework phải có ít nhất 1 cấp độ');
   }
 
-  const frameworkLevelIds = (framework.levels as any[]).map((l: any) => l.levelId);
+  const frameworkLevelIds = (framework.frameworkLevels as any[]).map((l: any) => l.levelId);
   if (frameworkLevelIds.length !== activeLevelCount) {
     throw new BadRequestException(`Framework phải bao gồm tất cả ${activeLevelCount} cấp độ mặc định của hệ thống`);
   }
@@ -116,7 +125,7 @@ export const validateCompetencyFrameworkForPublish = async (
     throw new BadRequestException('Một hoặc nhiều cấp độ trong framework không hợp lệ');
   }
 
-  const hasEmptyDescription = (framework.levels as any[]).some((l: any) => isNullOrEmpty(l.description));
+  const hasEmptyDescription = (framework.frameworkLevels as any[]).some((l: any) => isNullOrEmpty(l.description));
   if (hasEmptyDescription) {
     throw new BadRequestException('Tất cả các cấp độ phải có mô tả');
   }
