@@ -66,7 +66,7 @@ export class MentorsService {
       await this.redisService.setValue(`active_mentor:${emailContent.token}`, 'true');
       this.emailService.sendEmailNewMentor(emailContent);
 
-      return new ResponseItem(mentor, 'Tạo mentor thành công', MentorResponseDto);
+      return new ResponseItem(mentor, 'Tạo mentor thành công');
     } catch (error) {
       throw new BadRequestException('Lỗi khi tạo mentor');
     }
@@ -285,7 +285,7 @@ export class MentorsService {
         throw new NotFoundException('Không tìm thấy mentor');
       }
 
-      return new ResponseItem(mentor, 'Lấy thông tin mentor thành công', MentorResponseDto);
+      return new ResponseItem(mentor, 'Lấy thông tin mentor thành công');
     } catch (error) {
       throw new BadRequestException('Lỗi khi lấy thông tin mentor');
     }
@@ -345,7 +345,7 @@ export class MentorsService {
           },
         });
 
-        return new ResponseItem(updatedMentor, 'Cập nhật mentor thành công', MentorResponseDto);
+        return new ResponseItem(updatedMentor, 'Cập nhật mentor thành công');
       });
     } catch (error) {
       throw new BadRequestException('Lỗi khi cập nhật mentor');
