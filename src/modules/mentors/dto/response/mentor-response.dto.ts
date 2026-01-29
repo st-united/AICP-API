@@ -1,9 +1,9 @@
 // mentor-response.dto.ts
 import { Expose, Type } from 'class-transformer';
 import { UserResponseDto } from '@UsersModule/dto/response/user-response.dto';
-import { $Enums, Mentor } from '@prisma/client';
+import { $Enums } from '@prisma/client';
 
-export class MentorResponseDto implements Mentor {
+export class MentorResponseDto {
   sfiaLevel: $Enums.SFIALevel;
   maxMentees: number;
   @Expose()

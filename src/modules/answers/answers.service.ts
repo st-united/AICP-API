@@ -66,7 +66,7 @@ export class AnswersService {
         data: { status: UserAnswerStatus.SUBMIT },
       });
 
-      const [existingAnswers, examQuestions, pillars, allPillars] = await Promise.all([
+      const [existingAnswers, examQuestions, pillars] = await Promise.all([
         this.prisma.userAnswer.findMany({
           where: { userId, examId, status: UserAnswerStatus.SUBMIT },
           select: { id: true, questionId: true },
@@ -81,9 +81,14 @@ export class AnswersService {
                   select: {
                     aspect: {
                       select: {
+                        id: true,
                         name: true,
-                        weightWithinDimension: true,
-                        competencyPillar: { select: { name: true } },
+                        aspectPillars: {
+                          select: {
+                            weightWithinDimension: true,
+                            pillar: { select: { id: true, name: true } },
+                          },
+                        },
                       },
                     },
                   },
@@ -98,10 +103,6 @@ export class AnswersService {
               in: [CompetencyDimension.MINDSET, CompetencyDimension.SKILLSET, CompetencyDimension.TOOLSET],
             },
           },
-        }),
-        this.prisma.competencyPillar.findMany({
-          where: { frameworkId: existingExam.examSet.framework.id },
-          select: { id: true, name: true, weightWithinDimension: true },
         }),
       ]);
 
@@ -127,7 +128,11 @@ export class AnswersService {
                     aspect: {
                       select: {
                         name: true,
-                        competencyPillar: { select: { name: true } },
+                        aspectPillars: {
+                          select: {
+                            pillar: { select: { name: true } },
+                          },
+                        },
                       },
                     },
                   },
@@ -184,25 +189,46 @@ export class AnswersService {
         {} as Record<string, Record<string, { weighted: number; raw: number }>>
       );
 
-      const validPillarIds = allPillars.map((p) => p.id);
-      const aspects = await this.prisma.competencyAspect.findMany({
+      const validPillarIds = pillars.map((p) => p.id);
+
+      const aspectPillars = await this.prisma.aspectPillar.findMany({
         where: { pillarId: { in: validPillarIds } },
         select: {
-          id: true,
-          name: true,
-          competencyPillar: {
-            select: {
-              id: true,
-              name: true,
-              weightWithinDimension: true,
-            },
+          weightWithinDimension: true,
+          aspect: {
+            select: { id: true, name: true },
+          },
+          pillar: {
+            select: { id: true, name: true },
           },
         },
       });
 
-      const snapshots = aspects.map((aspect) => {
-        const { name: aspectName, id: aspectId, competencyPillar } = aspect;
-        const { name: pillarName, id: pillarId, weightWithinDimension } = competencyPillar;
+      const examSet = await this.prisma.examSet.findUnique({
+        where: { id: existingExam.examSetId },
+        select: { frameworkId: true },
+      });
+
+      const pillarFrameworks = await this.prisma.pillarFramework.findMany({
+        where: {
+          frameworkId: examSet.frameworkId,
+          pillarId: { in: validPillarIds },
+        },
+        select: {
+          pillarId: true,
+          weightWithinDimension: true,
+        },
+      });
+
+      const pillarWeightMap = Object.fromEntries(
+        pillarFrameworks.map((pf) => [pf.pillarId, pf.weightWithinDimension.toNumber()])
+      );
+
+      const snapshots = aspectPillars.map((ap) => {
+        const aspectName = ap.aspect.name;
+        const aspectId = ap.aspect.id;
+        const pillarName = ap.pillar.name;
+        const pillarId = ap.pillar.id;
 
         const weightedScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.weighted ?? 0;
         const rawScore = aspectScoresPerPillar[pillarName]?.[aspectName]?.raw ?? 0;
@@ -211,7 +237,7 @@ export class AnswersService {
           id: pillarId,
           weightedScore: 0,
           rawScore: 0,
-          weightWithinDimension: weightWithinDimension.toNumber(),
+          weightWithinDimension: pillarWeightMap[pillarId] ?? 0,
         };
         totalScorePerPillar[pillarName].weightedScore += weightedScore;
         totalScorePerPillar[pillarName].rawScore += rawScore;
@@ -239,7 +265,7 @@ export class AnswersService {
       const overallScore = +Object.values(totalScorePerPillar)
         .reduce((acc, s) => acc + s.weightedScore * s.weightWithinDimension, 0)
         .toFixed(2);
-      const level = this.getSFIALevel(overallScore);
+      const level = await this.getSFIALevel(overallScore);
       const levelNumber = level.split('_')[1];
       const matchedExamLevels = Object.values(ExamLevelEnum).filter((level) =>
         level.startsWith(`LEVEL_${levelNumber}_`)
@@ -253,12 +279,20 @@ export class AnswersService {
         },
       });
 
+      const levelRecord = await this.prisma.level.findFirst({
+        where: {
+          sfiaLevel: level,
+          isActive: true,
+        },
+      });
+
       await this.prisma.exam.update({
         where: { id: examId },
         data: {
           overallScore,
           examStatus: ExamStatus.SUBMITTED,
           sfiaLevel: level,
+          levelId: levelRecord?.id || null,
           examLevelId: examLevels ? examLevels.id : null,
         },
       });
@@ -294,14 +328,40 @@ export class AnswersService {
     });
   }
 
-  private getSFIALevel(overallScore: number): SFIALevel {
-    if (overallScore < 2) return SFIALevel.LEVEL_1_AWARENESS;
-    if (overallScore < 3) return SFIALevel.LEVEL_2_FOUNDATION;
-    if (overallScore < 4) return SFIALevel.LEVEL_3_APPLICATION;
-    if (overallScore < 5) return SFIALevel.LEVEL_4_INTEGRATION;
-    if (overallScore < 6) return SFIALevel.LEVEL_5_INNOVATION;
-    if (overallScore < 7) return SFIALevel.LEVEL_6_LEADERSHIP;
-    return SFIALevel.LEVEL_7_MASTERY;
+  private async getSFIALevel(overallScore: number): Promise<SFIALevel> {
+    let numericValue = 1;
+    if (overallScore >= 7) {
+      numericValue = 7;
+    } else if (overallScore >= 6) {
+      numericValue = 6;
+    } else if (overallScore >= 5) {
+      numericValue = 5;
+    } else if (overallScore >= 4) {
+      numericValue = 4;
+    } else if (overallScore >= 3) {
+      numericValue = 3;
+    } else if (overallScore >= 2) {
+      numericValue = 2;
+    }
+
+    const levelRecord = await this.prisma.level.findFirst({
+      where: {
+        numericValue,
+        isActive: true,
+      },
+    });
+
+    if (!levelRecord) {
+      if (overallScore < 2) return SFIALevel.LEVEL_1_AWARENESS;
+      if (overallScore < 3) return SFIALevel.LEVEL_2_FOUNDATION;
+      if (overallScore < 4) return SFIALevel.LEVEL_3_APPLICATION;
+      if (overallScore < 5) return SFIALevel.LEVEL_4_INTEGRATION;
+      if (overallScore < 6) return SFIALevel.LEVEL_5_INNOVATION;
+      if (overallScore < 7) return SFIALevel.LEVEL_6_LEADERSHIP;
+      return SFIALevel.LEVEL_7_MASTERY;
+    }
+
+    return levelRecord.sfiaLevel;
   }
 
   private async handleSelectionAnswers(userId, params: userAnswerDto) {
@@ -357,14 +417,21 @@ export class AnswersService {
 
     for (const questionItem of questions) {
       const aspect = questionItem.question?.skill?.aspect;
-      const pillarName = aspect?.competencyPillar?.name;
       const aspectName = aspect?.name;
-      const weight = aspect?.weightWithinDimension ?? 0;
+      const aspectPillars = aspect?.aspectPillars || [];
 
-      if (!pillarName || !aspectName || !pillarMap[pillarName]) continue;
+      if (!aspectName || aspectPillars.length === 0) continue;
 
-      if (!pillarMap[pillarName][aspectName]) {
-        pillarMap[pillarName][aspectName] = { weight };
+      // Get the first pillar relationship (or you could loop through all)
+      for (const ap of aspectPillars) {
+        const pillarName = ap.pillar?.name;
+        const weight = ap.weightWithinDimension ?? 0;
+
+        if (!pillarName || !pillarMap[pillarName]) continue;
+
+        if (!pillarMap[pillarName][aspectName]) {
+          pillarMap[pillarName][aspectName] = { weight: Number(weight) };
+        }
       }
     }
 
@@ -389,8 +456,10 @@ export class AnswersService {
     return answerOptions.reduce(
       (acc, curr) => {
         const { questionId, id, content, isCorrect, question } = curr;
-        const pillarName = question?.skill?.aspect?.competencyPillar?.name || null;
-        const aspectName = question?.skill?.aspect?.name || null;
+        const aspect = question?.skill?.aspect;
+        const aspectPillars = aspect?.aspectPillars || [];
+        const pillarName = aspectPillars[0]?.pillar?.name || null;
+        const aspectName = aspect?.name || null;
         const maxPossibleScore = question?.maxPossibleScore.toNumber() || 0;
 
         if (!acc[questionId]) {

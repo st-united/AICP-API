@@ -26,6 +26,7 @@ import { AspectsModule } from './modules/aspects/aspects.module';
 import { MentorSlotsModule } from './modules/mentor-slots/mentor-slots.module';
 import { AssessmentMethodsModule } from './modules/assessment-methods/assessment-methods.module';
 import { CompetencyFrameworkModule } from './modules/competency-framework/competency-framework.module';
+import { MigrationModule } from './modules/migration/migration.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { CompetencyFrameworkModule } from './modules/competency-framework/compet
     MentorSlotsModule,
     AssessmentMethodsModule,
     CompetencyFrameworkModule,
+    MigrationModule,
   ],
   providers: [
     {

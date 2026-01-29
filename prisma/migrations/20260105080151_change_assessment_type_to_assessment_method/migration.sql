@@ -14,10 +14,12 @@ ALTER TABLE "public"."CompetencyAssessment" DROP COLUMN "assessment_type",
 ADD COLUMN     "assessment_method_id" UUID;
 
 -- AlterTable
-ALTER TABLE "public"."Exam" DROP COLUMN "assessment_type";
+ALTER TABLE "public"."Exam" DROP COLUMN "assessment_type",
+ADD COLUMN     "assessment_method_id" UUID;
 
 -- AlterTable
-ALTER TABLE "public"."ExamSet" DROP COLUMN "assessment_type";
+ALTER TABLE "public"."ExamSet" DROP COLUMN "assessment_type",
+ADD COLUMN     "assessment_method_id" UUID;
 
 -- DropEnum
 DROP TYPE "public"."AssessmentType";
@@ -37,4 +39,11 @@ CREATE TABLE "public"."AssessmentMethod" (
 -- CreateIndex
 CREATE UNIQUE INDEX "AssessmentMethod_name_key" ON "public"."AssessmentMethod"("name");
 
+-- AddForeignKey
+ALTER TABLE "public"."ExamSet" ADD CONSTRAINT "ExamSet_assessment_method_id_fkey" FOREIGN KEY ("assessment_method_id") REFERENCES "public"."AssessmentMethod"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."Exam" ADD CONSTRAINT "Exam_assessment_method_id_fkey" FOREIGN KEY ("assessment_method_id") REFERENCES "public"."AssessmentMethod"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."CompetencyAssessment" ADD CONSTRAINT "CompetencyAssessment_assessment_method_id_fkey" FOREIGN KEY ("assessment_method_id") REFERENCES "public"."AssessmentMethod"("id") ON DELETE CASCADE ON UPDATE CASCADE;
