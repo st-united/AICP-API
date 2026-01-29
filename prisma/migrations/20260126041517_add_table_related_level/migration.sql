@@ -43,9 +43,9 @@ CREATE TABLE "public"."LevelScale" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."AspectPillarLevel" (
+CREATE TABLE "public"."AspectPillarFrameworkLevel" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "aspect_pillar_id" UUID NOT NULL,
+    "aspect_pillar_framework_id" UUID NOT NULL,
     "level_id" UUID NOT NULL,
     "description" TEXT NOT NULL,
     "criteria" TEXT,
@@ -53,7 +53,7 @@ CREATE TABLE "public"."AspectPillarLevel" (
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
-    CONSTRAINT "AspectPillarLevel_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "AspectPillarFrameworkLevel_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -72,13 +72,13 @@ CREATE TABLE "public"."FrameworkLevel" (
 CREATE UNIQUE INDEX "LevelScale_name_key" ON "public"."LevelScale"("name");
 
 -- CreateIndex
-CREATE INDEX "AspectPillarLevel_aspect_pillar_id_idx" ON "public"."AspectPillarLevel"("aspect_pillar_id");
+CREATE INDEX "AspectPillarFrameworkLevel_aspect_pillar_framework_id_idx" ON "public"."AspectPillarFrameworkLevel"("aspect_pillar_framework_id");
 
 -- CreateIndex
-CREATE INDEX "AspectPillarLevel_level_id_idx" ON "public"."AspectPillarLevel"("level_id");
+CREATE INDEX "AspectPillarFrameworkLevel_level_id_idx" ON "public"."AspectPillarFrameworkLevel"("level_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AspectPillarLevel_aspect_pillar_id_level_id_key" ON "public"."AspectPillarLevel"("aspect_pillar_id", "level_id");
+CREATE UNIQUE INDEX "AspectPillarFrameworkLevel_aspect_pillar_framework_id_level_id_key" ON "public"."AspectPillarFrameworkLevel"("aspect_pillar_framework_id", "level_id");
 
 -- CreateIndex
 CREATE INDEX "FrameworkLevel_framework_id_idx" ON "public"."FrameworkLevel"("framework_id");
@@ -120,10 +120,10 @@ ALTER TABLE "public"."LearningPath" ADD CONSTRAINT "LearningPath_target_level_id
 ALTER TABLE "public"."Portfolio" ADD CONSTRAINT "Portfolio_level_id_fkey" FOREIGN KEY ("level_id") REFERENCES "public"."Level"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."AspectPillarLevel" ADD CONSTRAINT "AspectPillarLevel_aspect_pillar_id_fkey" FOREIGN KEY ("aspect_pillar_id") REFERENCES "public"."AspectPillar"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."AspectPillarFrameworkLevel" ADD CONSTRAINT "AspectPillarFrameworkLevel_aspect_pillar_framework_id_fkey" FOREIGN KEY ("aspect_pillar_framework_id") REFERENCES "public"."AspectPillarFramework"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."AspectPillarLevel" ADD CONSTRAINT "AspectPillarLevel_level_id_fkey" FOREIGN KEY ("level_id") REFERENCES "public"."Level"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."AspectPillarFrameworkLevel" ADD CONSTRAINT "AspectPillarFrameworkLevel_level_id_fkey" FOREIGN KEY ("level_id") REFERENCES "public"."Level"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."FrameworkLevel" ADD CONSTRAINT "FrameworkLevel_framework_id_fkey" FOREIGN KEY ("framework_id") REFERENCES "public"."CompetencyFramework"("id") ON DELETE CASCADE ON UPDATE CASCADE;

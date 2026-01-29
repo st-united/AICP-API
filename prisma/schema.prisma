@@ -138,7 +138,7 @@ model Level {
 
   scale                 LevelScale?            @relation(fields: [scaleId], references: [id], onDelete: SetNull)
   question              Question[]
-  aspectPillarLevels    AspectPillarLevel[]
+  aspectPillarFrameworkLevels AspectPillarFrameworkLevel[]
   frameworkLevels       FrameworkLevel[]
   courses               Course[]
   exams                 Exam[]
@@ -266,7 +266,7 @@ model CompetencyAspect {
   competencySkill       CompetencySkill[]
   examAspectSnapshot    ExamAspectSnapshot[]
   courseAspects         CourseAspect[]
-  aspectPillars         AspectPillar[]
+  aspectPillarFrameworks AspectPillarFramework[]
   assessmentMethods     CompetencyAspectAssessmentMethod[]
   status                CompetencyAspectStatus             @default(DRAFT) @map("status")
 
@@ -462,7 +462,6 @@ model CompetencyPillar {
   mentorBooking         MentorBooking[]
   mentorCompetency      MentorCompetency[]
   portfolio             Portfolio[]
-  aspectPillars         AspectPillar[]
   pillarFrameworks      PillarFramework[]
 }
 
@@ -677,21 +676,21 @@ model CourseAspect {
   @@unique([courseId, aspectId])
 }
 
-model AspectPillar {
+model AspectPillarFramework {
   id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   aspectId              String   @map("aspect_id") @db.Uuid
-  pillarId              String   @map("pillar_id") @db.Uuid
+  pillarFrameworkId     String   @map("pillar_framework_id") @db.Uuid
   weightWithinDimension Decimal  @map("weight_within_dimension") @db.Decimal(3, 2)
   createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   aspect CompetencyAspect    @relation(fields: [aspectId], references: [id], onDelete: Cascade)
-  pillar CompetencyPillar    @relation(fields: [pillarId], references: [id], onDelete: Cascade)
-  levels AspectPillarLevel[]
+  pillar PillarFramework    @relation(fields: [pillarFrameworkId], references: [id], onDelete: Cascade)
+  levels AspectPillarFrameworkLevel[]
 
-  @@unique([aspectId, pillarId])
+  @@unique([aspectId, pillarFrameworkId])
   @@index([aspectId])
-  @@index([pillarId])
+  @@index([pillarFrameworkId])
 }
 
 model PillarFramework {
@@ -704,15 +703,16 @@ model PillarFramework {
 
   pillar    CompetencyPillar    @relation(fields: [pillarId], references: [id], onDelete: Cascade)
   framework CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  aspectPillarFrameworks AspectPillarFramework[]
 
   @@unique([pillarId, frameworkId])
   @@index([pillarId])
   @@index([frameworkId])
 }
 
-model AspectPillarLevel {
+model AspectPillarFrameworkLevel {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  aspectPillarId String   @map("aspect_pillar_id") @db.Uuid
+  aspectPillarFrameworkId String   @map("aspect_pillar_framework_id") @db.Uuid
   levelId        String   @map("level_id") @db.Uuid
   description    String   @db.Text
   criteria       String?  @db.Text
@@ -720,11 +720,11 @@ model AspectPillarLevel {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  aspectPillar AspectPillar @relation(fields: [aspectPillarId], references: [id], onDelete: Cascade)
+  aspectPillarFramework AspectPillarFramework @relation(fields: [aspectPillarFrameworkId], references: [id], onDelete: Cascade)
   level        Level        @relation(fields: [levelId], references: [id], onDelete: Cascade)
 
-  @@unique([aspectPillarId, levelId])
-  @@index([aspectPillarId])
+  @@unique([aspectPillarFrameworkId, levelId])
+  @@index([aspectPillarFrameworkId])
   @@index([levelId])
 }
 

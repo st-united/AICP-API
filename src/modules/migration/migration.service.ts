@@ -398,26 +398,29 @@ export class MigrationService {
     let created = 0;
 
     for (const framework of frameworks) {
-      for (const pillar of framework.pillars) {
-        for (const aspect of pillar.aspects) {
-          const existing = await this.prisma.aspectPillar.findFirst({
+      for (const pillarFramework of framework.pillars) {
+        // pillarFramework is actually a PillarFramework record with nested pillar data
+        const pillarFrameworkId = pillarFramework.id;
+
+        for (const aspect of pillarFramework.aspects) {
+          const existing = await this.prisma.aspectPillarFramework.findFirst({
             where: {
-              pillarId: pillar.id,
+              pillarFrameworkId: pillarFrameworkId,
               aspectId: aspect.id,
             },
           });
 
           if (!existing) {
-            await this.prisma.aspectPillar.create({
+            await this.prisma.aspectPillarFramework.create({
               data: {
-                pillarId: pillar.id,
+                pillarFrameworkId: pillarFrameworkId,
                 aspectId: aspect.id,
                 weightWithinDimension: aspect.weightWithinDimension,
               },
             });
             created++;
             this.logger.log(
-              `Created AspectPillar: ${pillar.dimension} -> ${aspect.name} (weight: ${aspect.weightWithinDimension})`
+              `Created AspectPillarFramework: ${pillarFramework.pillar?.dimension} -> ${aspect.name} (weight: ${aspect.weightWithinDimension})`
             );
           }
         }
@@ -465,10 +468,14 @@ export class MigrationService {
   private async migrateAspectPillarLevel() {
     let created = 0;
 
-    const aspectPillars = await this.prisma.aspectPillar.findMany({
+    const aspectPillarFrameworks = await this.prisma.aspectPillarFramework.findMany({
       include: {
         aspect: { select: { name: true } },
-        pillar: { select: { dimension: true } },
+        pillar: {
+          include: {
+            pillar: { select: { dimension: true } },
+          },
+        },
       },
     });
 
@@ -477,21 +484,21 @@ export class MigrationService {
       select: { id: true, numericValue: true },
     });
 
-    for (const aspectPillar of aspectPillars) {
+    for (const aspectPillarFramework of aspectPillarFrameworks) {
       for (const level of levels) {
-        const existing = await this.prisma.aspectPillarLevel.findFirst({
+        const existing = await this.prisma.aspectPillarFrameworkLevel.findFirst({
           where: {
-            aspectPillarId: aspectPillar.id,
+            aspectPillarFrameworkId: aspectPillarFramework.id,
             levelId: level.id,
           },
         });
 
         if (!existing) {
-          await this.prisma.aspectPillarLevel.create({
+          await this.prisma.aspectPillarFrameworkLevel.create({
             data: {
-              aspectPillarId: aspectPillar.id,
+              aspectPillarFrameworkId: aspectPillarFramework.id,
               levelId: level.id,
-              description: `Level ${level.numericValue} description for ${aspectPillar.aspect.name} in ${aspectPillar.pillar.dimension}`,
+              description: `Level ${level.numericValue} description for ${aspectPillarFramework.aspect.name} in ${aspectPillarFramework.pillar.pillar.dimension}`,
             },
           });
           created++;
@@ -499,7 +506,7 @@ export class MigrationService {
       }
 
       this.logger.log(
-        `Created AspectPillarLevel for: ${aspectPillar.pillar.dimension} -> ${aspectPillar.aspect.name} (${levels.length} levels)`
+        `Created AspectPillarFrameworkLevel for: ${aspectPillarFramework.pillar.pillar.dimension} -> ${aspectPillarFramework.aspect.name} (${levels.length} levels)`
       );
     }
 

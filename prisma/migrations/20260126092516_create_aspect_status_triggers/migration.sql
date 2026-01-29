@@ -3,8 +3,8 @@
 -- ============================================================================
 
 -- Performance Indexes
-CREATE INDEX IF NOT EXISTS "AspectPillar_pillar_id_idx" ON "public"."AspectPillar"("pillar_id");
-CREATE INDEX IF NOT EXISTS "AspectPillar_aspect_id_idx" ON "public"."AspectPillar"("aspect_id");
+CREATE INDEX IF NOT EXISTS "AspectPillarFramework_pillar_framework_id_idx" ON "public"."AspectPillarFramework"("pillar_framework_id");
+CREATE INDEX IF NOT EXISTS "AspectPillarFramework_aspect_id_idx" ON "public"."AspectPillarFramework"("aspect_id");
 CREATE INDEX IF NOT EXISTS "PillarFramework_pillar_id_idx" ON "public"."PillarFramework"("pillar_id");
 CREATE INDEX IF NOT EXISTS "PillarFramework_framework_id_idx" ON "public"."PillarFramework"("framework_id");
 CREATE INDEX IF NOT EXISTS "CompetencyAspectAssessmentMethod_competency_aspect_id_idx" ON "public"."CompetencyAspectAssessmentMethod"("competency_aspect_id");
@@ -29,8 +29,8 @@ BEGIN
         ),
         EXISTS (
             SELECT 1 
-            FROM "AspectPillar" ap
-            JOIN "PillarFramework" pf ON ap.pillar_id = pf.pillar_id
+            FROM "AspectPillarFramework" ap
+            JOIN "PillarFramework" pf ON ap.pillar_framework_id = pf.id
             WHERE ap.aspect_id = aspect_id_uuid
         ),
         ca.status
@@ -78,8 +78,8 @@ BEGIN
             WHEN EXISTS (SELECT 1 FROM "CompetencyAspectAssessmentMethod" WHERE competency_aspect_id = ca.id) 
                  AND EXISTS (
                     SELECT 1 
-                    FROM "AspectPillar" ap 
-                    JOIN "PillarFramework" pf ON ap.pillar_id = pf.pillar_id 
+                    FROM "AspectPillarFramework" ap 
+                    JOIN "PillarFramework" pf ON ap.pillar_framework_id = pf.id 
                     WHERE ap.aspect_id = ca.id
                  )
             THEN 'REFERENCED'::"CompetencyAspectStatus"
@@ -97,8 +97,8 @@ BEGIN
             WHEN EXISTS (SELECT 1 FROM "CompetencyAspectAssessmentMethod" WHERE competency_aspect_id = ca.id) 
                  AND EXISTS (
                     SELECT 1 
-                    FROM "AspectPillar" ap 
-                    JOIN "PillarFramework" pf ON ap.pillar_id = pf.pillar_id 
+                    FROM "AspectPillarFramework" ap 
+                    JOIN "PillarFramework" pf ON ap.pillar_framework_id = pf.id 
                     WHERE ap.aspect_id = ca.id
                  )
             THEN 'REFERENCED'::"CompetencyAspectStatus"
@@ -146,7 +146,7 @@ FOR EACH ROW
 EXECUTE FUNCTION trg_func_aspect_method_change();
 
 -- ============================================================================
--- TRIGGER FUNCTION: AspectPillar
+-- TRIGGER FUNCTION: AspectPillarFramework
 -- ============================================================================
 CREATE OR REPLACE FUNCTION trg_func_aspect_pillar_change()
 RETURNS TRIGGER AS $$
@@ -155,8 +155,8 @@ BEGIN
         PERFORM recalculate_aspect_status(OLD.aspect_id);
         RETURN OLD;
     ELSIF (TG_OP = 'UPDATE') THEN
-        -- Only recalculate if pillar_id or aspect_id changed
-        IF OLD.pillar_id <> NEW.pillar_id OR OLD.aspect_id <> NEW.aspect_id THEN
+        -- Only recalculate if pillar_framework_id or aspect_id changed
+        IF OLD.pillar_framework_id <> NEW.pillar_framework_id OR OLD.aspect_id <> NEW.aspect_id THEN
             PERFORM recalculate_aspect_status(NEW.aspect_id);
             PERFORM recalculate_aspect_status(OLD.aspect_id);
         END IF;
@@ -169,9 +169,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_check_status_on_pillar_change ON "AspectPillar";
+DROP TRIGGER IF EXISTS trg_check_status_on_pillar_change ON "AspectPillarFramework";
 CREATE TRIGGER trg_check_status_on_pillar_change
-AFTER DELETE OR UPDATE OR INSERT ON "AspectPillar"
+AFTER DELETE OR UPDATE OR INSERT ON "AspectPillarFramework"
 FOR EACH ROW
 EXECUTE FUNCTION trg_func_aspect_pillar_change();
 
@@ -186,8 +186,8 @@ BEGIN
     IF (TG_OP = 'DELETE') THEN
         -- Get all affected aspect IDs first
         SELECT ARRAY_AGG(DISTINCT aspect_id) INTO affected_aspect_ids
-        FROM "AspectPillar"
-        WHERE pillar_id = OLD.pillar_id;
+        FROM "AspectPillarFramework"
+        WHERE pillar_framework_id = OLD.id;
 
         IF affected_aspect_ids IS NOT NULL AND array_length(affected_aspect_ids, 1) > 0 THEN
             PERFORM recalculate_aspect_status_batch(affected_aspect_ids);
@@ -197,8 +197,8 @@ BEGIN
     ELSIF (TG_OP = 'INSERT') THEN
         -- Get all affected aspect IDs
         SELECT ARRAY_AGG(DISTINCT aspect_id) INTO affected_aspect_ids
-        FROM "AspectPillar"
-        WHERE pillar_id = NEW.pillar_id;
+        FROM "AspectPillarFramework"
+        WHERE pillar_framework_id = NEW.id;
 
         -- Batch upgrade for UPGRADE: AVAILABLE -> REFERENCED
         -- (DRAFT is handled by the batch function's Quality Gate)
@@ -215,25 +215,32 @@ BEGIN
         RETURN NEW;
 
     ELSIF (TG_OP = 'UPDATE') THEN
-        -- If framework link moved between pillars
+        -- If pillar_id changed, recalculate all aspects under both old and new pillar
         IF OLD.pillar_id <> NEW.pillar_id THEN
-            -- Old pillar's aspects
+            -- Old pillar's aspects (through all PillarFramework records with old pillar_id)
             SELECT ARRAY_AGG(DISTINCT aspect_id) INTO affected_aspect_ids
-            FROM "AspectPillar" WHERE pillar_id = OLD.pillar_id;
+            FROM "AspectPillarFramework" apf
+            WHERE apf.pillar_framework_id IN (
+                SELECT id FROM "PillarFramework" WHERE pillar_id = OLD.pillar_id
+            );
             IF affected_aspect_ids IS NOT NULL AND array_length(affected_aspect_ids, 1) > 0 THEN
                 PERFORM recalculate_aspect_status_batch(affected_aspect_ids);
             END IF;
             
-            -- New pillar's aspects
+            -- New pillar's aspects (through all PillarFramework records with new pillar_id)
             SELECT ARRAY_AGG(DISTINCT aspect_id) INTO affected_aspect_ids
-            FROM "AspectPillar" WHERE pillar_id = NEW.pillar_id;
+            FROM "AspectPillarFramework" apf
+            WHERE apf.pillar_framework_id IN (
+                SELECT id FROM "PillarFramework" WHERE pillar_id = NEW.pillar_id
+            );
             IF affected_aspect_ids IS NOT NULL AND array_length(affected_aspect_ids, 1) > 0 THEN
                 PERFORM recalculate_aspect_status_batch(affected_aspect_ids);
             END IF;
         ELSIF OLD.framework_id <> NEW.framework_id THEN
-            -- Framework ID changed - still need to check all aspects under this pillar
+            -- Framework ID changed - recalculate aspects linked to this PillarFramework
             SELECT ARRAY_AGG(DISTINCT aspect_id) INTO affected_aspect_ids
-            FROM "AspectPillar" WHERE pillar_id = NEW.pillar_id;
+            FROM "AspectPillarFramework"
+            WHERE pillar_framework_id = NEW.id;
             IF affected_aspect_ids IS NOT NULL AND array_length(affected_aspect_ids, 1) > 0 THEN
                 PERFORM recalculate_aspect_status_batch(affected_aspect_ids);
             END IF;
