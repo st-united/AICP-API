@@ -19,22 +19,6 @@ export class AspectLevelDto {
   description: string;
 }
 
-export class AssessmentMethodDto {
-  @Expose()
-  @ApiProperty({
-    example: '36812a1d-2357-49f8-bc0f-3d78bdb46746',
-    description: 'ID của phương pháp đánh giá',
-  })
-  id: string;
-
-  @Expose()
-  @ApiProperty({
-    example: 100,
-    description: 'Trọng số của phương pháp đánh giá trong đối tượng',
-  })
-  weightWithinDimension: number;
-}
-
 export class AspectDto {
   @Expose()
   @ApiProperty({
@@ -198,13 +182,6 @@ export class CreateCompetencyFrameworkDto {
     description: 'Danh sách các cấp độ (level) thuộc tiêu chí',
   })
   levels: FrameworkLevelDto[];
-
-  @Expose()
-  @Type(() => AssessmentMethodDto)
-  @ApiProperty({
-    description: 'Danh sách các phương pháp đánh giá thuộc tiêu chí',
-  })
-  assessmentMethods?: AssessmentMethodDto[];
 }
 
 export class UpdateCompetencyFrameworkDto extends CreateCompetencyFrameworkDto {}

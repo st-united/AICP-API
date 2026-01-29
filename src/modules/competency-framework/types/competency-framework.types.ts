@@ -75,18 +75,6 @@ export const competencyFrameworkSelect = {
       },
     },
   },
-  frameworkAssessments: {
-    select: {
-      id: true,
-      weightWithinFramework: true,
-      assessmentMethod: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  },
 } as const;
 
 export type CompetencyFrameworkPayload = Prisma.CompetencyFrameworkGetPayload<{

@@ -48,12 +48,6 @@ export const mapCompetencyFrameworkDto = (framework: any): CompetencyFrameworkDt
     createdAt: framework.createdAt,
     updatedAt: framework.updatedAt,
     levels: framework.levels?.map((level: any) => mapLevelDto(level)) || [],
-    assessmentMethods:
-      framework.frameworkAssessments?.map((fa: any) => ({
-        id: fa.assessmentMethod?.id,
-        name: fa.assessmentMethod?.name,
-        weightWithinDimension: fa.weightWithinFramework ? Number(fa.weightWithinFramework) * 100 : 0,
-      })) || [],
   };
 };
 

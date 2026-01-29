@@ -33,23 +33,6 @@ export const validateCompetencyFrameworkForPublish = async (
   });
   const activeAssessmentMethodIds = new Set(activeAssessmentMethods.map((am) => am.id));
 
-  for (const fa of framework.frameworkAssessments || []) {
-    if (!activeAssessmentMethodIds.has(fa.assessmentMethod.id)) {
-      throw new BadRequestException(
-        `Phương pháp đánh giá "${fa.assessmentMethod.name}" không hợp lệ hoặc không hoạt động`
-      );
-    }
-  }
-
-  const totalWeight = (framework.frameworkAssessments || []).reduce(
-    (sum, fa) => sum + Number(fa.weightWithinFramework),
-    0
-  );
-  if (Math.abs(totalWeight - 1.0) > 0.0001) {
-    throw new BadRequestException(
-      `Tổng trọng số của các phương pháp đánh giá phải bằng 100% (hiện tại: ${(totalWeight * 100).toFixed(2)}%)`
-    );
-  }
   const mindsetPillar = framework.pillars?.find((pf: any) => pf.pillar?.dimension === CompetencyDimension.MINDSET);
   const skillsetPillar = framework.pillars?.find((pf: any) => pf.pillar?.dimension === CompetencyDimension.SKILLSET);
   const toolsetPillar = framework.pillars?.find((pf: any) => pf.pillar?.dimension === CompetencyDimension.TOOLSET);
