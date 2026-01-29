@@ -287,7 +287,6 @@ model AssessmentMethod {
   exam                  Exam[]
   competencyAssessment  CompetencyAssessment[]
   competencyAspects     CompetencyAspectAssessmentMethod[]
-  frameworkAssessments  FrameworkAssessment[]
 }
 
 model CompetencyAspectAssessmentMethod {
@@ -444,7 +443,6 @@ model CompetencyFramework {
   pillars               CompetencyPillar[]
   pillarFrameworks      PillarFramework[]
   frameworkLevels       FrameworkLevel[]
-  frameworkAssessments  FrameworkAssessment[]
 }
 
 model CompetencyPillar {
@@ -745,23 +743,6 @@ model FrameworkLevel {
   @@index([frameworkId])
   @@index([levelId])
 }
-
-model FrameworkAssessment {
-  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  frameworkId            String   @map("framework_id") @db.Uuid
-  assessmentMethodId     String   @map("assessment_method_id") @db.Uuid
-  weightWithinFramework  Decimal  @map("weight_within_framework") @db.Decimal(3, 2)
-  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  framework        CompetencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
-  assessmentMethod AssessmentMethod    @relation(fields: [assessmentMethodId], references: [id], onDelete: Cascade)
-
-  @@unique([frameworkId, assessmentMethodId])
-  @@index([frameworkId])
-  @@index([assessmentMethodId])
-}
-
 
 enum QuestionType {
   SINGLE_CHOICE
