@@ -1,4 +1,5 @@
-import { PrismaClient, Question, CompetencyFramework } from '@prisma/client';
+import { PrismaClient, Question, CompetencyFramework, AssessmentMethod } from '@prisma/client';
+import { AssessmentMethodSeedEnum } from './constant/assessmentMethodSeedEnum';
 
 export async function seedExamSets(
   prisma: PrismaClient,
