@@ -4,38 +4,39 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MutateAssessmentMethodDto } from './dto/request/mutate-assessment-method.dto';
 import { PageMetaDto, ResponseItem, ResponsePaginate } from '@app/common/dtos';
 import { RequestListAssessmentMethodDto } from './dto/request/request-list-assessment-method.dto';
-import { plainToInstance } from 'class-transformer';
-import { convertStringToEnglish } from '@app/common/utils';
+import { AssessmentMethodsQueries } from './assessment-methods.queries';
+import { AssessmentMethodRaw } from './interface/AssessmentMethodRaw';
 import { ResponseAssessmentMethodDto } from './dto/response/response-assessment-method.dto';
+import { plainToInstance } from 'class-transformer';
 import { RequestChangeStatusDto } from './dto/request/request-change-status';
 
 @Injectable()
 export class AssessmentMethodsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly assessmentMethodsQueries: AssessmentMethodsQueries
+  ) {}
 
   async list(dto: RequestListAssessmentMethodDto): Promise<ResponsePaginate<ResponseAssessmentMethodDto>> {
-    const where: Prisma.AssessmentMethodWhereInput = {};
+    const { dataQuery, countQuery } = this.assessmentMethodsQueries.getAssessmentMethodsList(dto);
 
-    if (dto.name) {
-      where.searchText = { contains: convertStringToEnglish(dto.name, true) };
-    }
-
-    if (dto.isActive !== undefined) {
-      where.isActive = dto.isActive;
-    }
-    const [result, total] = await this.prisma.$transaction([
-      this.prisma.assessmentMethod.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        take: dto.take,
-        skip: dto.skip,
-      }),
-      this.prisma.assessmentMethod.count({ where }),
+    const [data, totalRows] = await this.prisma.$transaction([
+      this.prisma.$queryRaw<AssessmentMethodRaw[]>(dataQuery),
+      this.prisma.$queryRaw<{ count: number }[]>(countQuery),
     ]);
-    const methodsData = plainToInstance(ResponseAssessmentMethodDto, result, {
-      excludeExtraneousValues: false,
+
+    const count = totalRows[0]?.count ?? 0;
+
+    const methodsData: ResponseAssessmentMethodDto[] = data.map((item) => {
+      return {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        isActive: item.is_active,
+      };
     });
-    const pageMetaDto = new PageMetaDto({ itemCount: total, pageOptionsDto: dto });
+
+    const pageMetaDto = new PageMetaDto({ itemCount: count, pageOptionsDto: dto });
 
     return new ResponsePaginate<ResponseAssessmentMethodDto>(
       methodsData,
@@ -57,7 +58,6 @@ export class AssessmentMethodsService {
       data: {
         name: dto.name,
         description: dto.description || null,
-        searchText: convertStringToEnglish(dto.name, true),
       },
     });
     return new ResponseItem(
@@ -73,7 +73,6 @@ export class AssessmentMethodsService {
         where: { id },
         data: {
           name: dto.name,
-          searchText: convertStringToEnglish(dto.name, true),
           description: dto.description,
         },
       });
