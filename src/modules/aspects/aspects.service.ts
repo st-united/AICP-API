@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@app/modules/prisma/prisma.service';
 import { AspectListRequestDto } from './dto/request/aspect-list.request.dto';
 import { AspectNamesRequestDto } from './dto/request/aspect-names.request.dto';
@@ -6,12 +6,13 @@ import { AspectListItemDto } from './dto/response/aspect-list.response.dto';
 import { AspectNameListDto } from './dto/response/aspect-dropdown.response.dto';
 import { ResponsePaginate, PageMetaDto, ResponseItem } from '@app/common/dtos';
 import { AspectsQueries } from './aspects.queries';
-import { CompetencyAspectStatus, CompetencyDimension } from '@prisma/client';
+import { CompetencyAspectStatus } from '@prisma/client';
 import { AspectStatisticsResponseDto } from './dto/response/aspect-statistics.response.dto';
 import { AspectItemRaw } from './interface/AspectItemRaw';
 import { CreateAspectRequestDto } from './dto/request/create-aspect.request.dto';
 import { UUID } from 'crypto';
 import { generateAspectRepresent } from './utils/aspect.helper';
+import { AspectDetailResponseDto } from './dto/response/aspect-detail.response.dto';
 
 @Injectable()
 export class AspectsService {
@@ -225,5 +226,68 @@ export class AspectsService {
     };
 
     return new ResponseItem(mapperData, 'Tạo aspect thành công', AspectListItemDto);
+  }
+
+  async findOne(id: string): Promise<ResponseItem<AspectDetailResponseDto>> {
+    const aspect = await this.prisma.competencyAspect.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        status: true,
+        competencyPillar: true,
+        assessmentMethods: {
+          select: {
+            weightWithinDimension: true,
+            assessmentMethod: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        aspectPillarFrameworks: {
+          select: {
+            weightWithinDimension: true,
+            pillar: {
+              select: {
+                framework: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!aspect) {
+      throw new NotFoundException('Aspect không tồn tại');
+    }
+
+    const result: AspectDetailResponseDto = {
+      id: aspect.id,
+      name: aspect.name,
+      pillarName: aspect.competencyPillar.name,
+      description: aspect.description ?? '',
+      status: aspect.status,
+      assessmentMethods: aspect.assessmentMethods.map((method) => ({
+        id: method.assessmentMethod.id,
+        name: method.assessmentMethod.name,
+        weightWithinDimension: method.weightWithinDimension ? Number(method.weightWithinDimension) : 0,
+      })),
+      frameworkUsage: aspect.aspectPillarFrameworks.map((apf) => ({
+        id: apf.pillar.framework.id,
+        frameworkName: apf.pillar.framework.name,
+        weightWithinDimension: apf.weightWithinDimension ? Number(apf.weightWithinDimension) : 0,
+      })),
+    };
+
+    return new ResponseItem(result, 'Lấy chi tiết aspect thành công', AspectDetailResponseDto);
   }
 }

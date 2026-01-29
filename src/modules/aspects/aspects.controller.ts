@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Query, Body, Post } from '@nestjs/common';
+import { Controller, Get, UseGuards, Query, Body, Post, Param } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAccessTokenGuard } from '@app/modules/auth/guards/jwt-access-token.guard';
 import { AspectsService } from '@app/modules/aspects/aspects.service';
@@ -11,6 +11,7 @@ import { ResponsePaginate, ResponseItem } from '@app/common/dtos';
 import { AspectStatisticsResponseDto } from './dto/response/aspect-statistics.response.dto';
 import { AspectNamesRequestDto } from './dto/request/aspect-names.request.dto';
 import { CreateAspectRequestDto } from './dto/request/create-aspect.request.dto';
+import { AspectDetailResponseDto } from './dto/response/aspect-detail.response.dto';
 
 @ApiTags('aspects')
 @ApiBearerAuth('access-token')
@@ -40,5 +41,11 @@ export class AspectsController {
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   async create(@Body() body: CreateAspectRequestDto): Promise<ResponseItem<AspectListItemDto>> {
     return this.aspectsService.create(body);
+  }
+
+  @Get(':id')
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  async getOne(@Param('id') id: string): Promise<ResponseItem<AspectDetailResponseDto>> {
+    return this.aspectsService.findOne(id);
   }
 }
