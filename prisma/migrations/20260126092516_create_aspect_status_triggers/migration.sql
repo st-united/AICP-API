@@ -10,6 +10,8 @@ CREATE INDEX IF NOT EXISTS "PillarFramework_framework_id_idx" ON "public"."Pilla
 CREATE INDEX IF NOT EXISTS "CompetencyAspectAssessmentMethod_competency_aspect_id_idx" ON "public"."CompetencyAspectAssessmentMethod"("competency_aspect_id");
 CREATE INDEX IF NOT EXISTS "CompetencyAspect_status_idx" ON "public"."CompetencyAspect"("status");
 
+ALTER INDEX "public"."AspectPillarFrameworkLevel_aspect_pillar_framework_id_level_id_" RENAME TO "AspectPillarFrameworkLevel_aspect_pillar_framework_id_level_key";
+
 -- ============================================================================
 -- CORE FUNCTION: Recalculate Single Aspect Status (Row-Level)
 -- ============================================================================
