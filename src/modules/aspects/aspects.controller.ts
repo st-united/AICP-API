@@ -12,6 +12,7 @@ import { AspectStatisticsResponseDto } from './dto/response/aspect-statistics.re
 import { AspectNamesRequestDto } from './dto/request/aspect-names.request.dto';
 import { CreateAspectRequestDto } from './dto/request/create-aspect.request.dto';
 import { AspectDetailResponseDto } from './dto/response/aspect-detail.response.dto';
+import { UpdateAspectRequestDto } from './dto/request/update-aspect.request.dto';
 
 @ApiTags('aspects')
 @ApiBearerAuth('access-token')
@@ -47,5 +48,14 @@ export class AspectsController {
   @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
   async getOne(@Param('id') id: string): Promise<ResponseItem<AspectDetailResponseDto>> {
     return this.aspectsService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Roles(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN)
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAspectRequestDto
+  ): Promise<ResponseItem<AspectListItemDto>> {
+    return this.aspectsService.update(id, body);
   }
 }

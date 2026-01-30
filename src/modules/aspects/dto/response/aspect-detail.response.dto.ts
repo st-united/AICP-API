@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
 import { AspectAssessmentMethodItemDto } from './aspect-assesment-method.dto';
 import { CompetencyAspectStatus } from '@prisma/client';
-import { IsString, IsUUID } from 'class-validator';
+import { IsUUID } from 'class-validator';
 
 export class AspectFrameworkUsageDto {
   @Expose()
@@ -12,7 +12,6 @@ export class AspectFrameworkUsageDto {
 
   @Expose()
   @ApiProperty({ example: 'Backend Developer V1' })
-  @IsString()
   frameworkName: string;
 
   @Expose()
@@ -23,7 +22,6 @@ export class AspectFrameworkUsageDto {
 export class AspectDetailResponseDto {
   @Expose()
   @ApiProperty({ example: 'e7c2e649-3d1a-4c1e-8d4f-577668c5f0f1' })
-  @IsUUID()
   id: string;
 
   @Expose()
@@ -31,7 +29,7 @@ export class AspectDetailResponseDto {
   name: string;
 
   @Expose()
-  @ApiProperty({ example: 'Mindset' })
+  @ApiProperty({ example: 'MINDSET' })
   pillarName: string;
 
   @Expose()
@@ -39,16 +37,16 @@ export class AspectDetailResponseDto {
   description: string;
 
   @Expose()
-  @ApiProperty({ enum: CompetencyAspectStatus, example: CompetencyAspectStatus.AVAILABLE })
+  @ApiProperty({ example: 'AVAILABLE' })
   status: CompetencyAspectStatus;
 
   @Expose()
-  @ApiProperty({ type: [AspectAssessmentMethodItemDto] })
   @Type(() => AspectAssessmentMethodItemDto)
+  @ApiProperty({ type: [AspectAssessmentMethodItemDto] })
   assessmentMethods: AspectAssessmentMethodItemDto[];
 
   @Expose()
-  @ApiProperty({ type: [AspectFrameworkUsageDto] })
   @Type(() => AspectFrameworkUsageDto)
+  @ApiProperty({ type: [AspectFrameworkUsageDto] })
   frameworkUsage: AspectFrameworkUsageDto[];
 }
