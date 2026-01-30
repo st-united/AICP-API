@@ -254,7 +254,6 @@ export class ExamService {
           .map((aspectSnapshot) => ({
             id: aspectSnapshot.aspect.id,
             name: aspectSnapshot.aspect.name,
-            represent: aspectSnapshot.aspect.represent,
             score: Number(aspectSnapshot.score),
           }));
 
@@ -692,7 +691,6 @@ export class ExamService {
               .map((aspectSnapshot) => ({
                 id: aspectSnapshot.aspect.id,
                 name: aspectSnapshot.aspect.name,
-                represent: aspectSnapshot.aspect.represent,
                 score: Number(aspectSnapshot.score),
               }));
 
